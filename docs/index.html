@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:title" content="Epstein Files RAG Benchmark">
+    <meta property="og:description" content="The Files Don’t Lie, But Your RAG Might. A robust evaluation benchmark for Retrieval Augmented Generation.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/yourbuddyconner/epstein-bench/refs/heads/main/meta.png">
+    <meta property="og:url" content="https://yourbuddyconner.github.io/epstein-bench/">
+    <meta property="og:type" content="website">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Epstein Bench Leaderboard">
+    <meta name="twitter:description" content="The Files Don’t Lie, But Your RAG Might. A robust evaluation benchmark for Retrieval Augmented Generation.">
+    <meta name="twitter:image" content="https://raw.githubusercontent.com/yourbuddyconner/epstein-bench/refs/heads/main/meta.png">
+
+    <title>Epstein Bench Leaderboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --surface: #ffffff;
+            --background: #f3f4f6;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --border: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            line-height: 1.5;
+            color: var(--text-primary);
+            background-color: var(--background);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        header {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), #60a5fa);
+        }
+
+        .mascot {
+            width: 120px;
+            height: auto;
+            border-radius: 50%;
+            border: 4px solid #eff6ff;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .mascot:hover {
+            transform: scale(1.05) rotate(3deg);
+        }
+
+        .header-content {
+            flex: 1;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+        }
+
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: #1f2937;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: background-color 0.2s;
+        }
+
+        .github-link:hover {
+            background-color: #111827;
+        }
+
+        /* Sections */
+        section {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1e293b;
+            border-bottom: 2px solid var(--background);
+            padding-bottom: 0.5rem;
+        }
+        
+        h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.5rem;
+            color: #1e293b;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .methodology-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .methodology-card {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #f9fafb;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            padding: 1rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-feature-settings: "tnum";
+            color: #0f172a;
+            background: #f1f5f9;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .system-name {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .timestamp {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        a { color: var(--primary); text-decoration: none; font-weight: 500; }
+        a:hover { text-decoration: underline; }
+
+        /* Loading State */
+        .loading {
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 2rem;
+            font-style: italic;
+        }
+
+        /* Tooltips */
+        [data-tooltip] {
+            cursor: help;
+        }
+
+        #tooltip {
+            position: fixed;
+            background: #1e293b;
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            line-height: 1.4;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            max-width: 250px;
+            text-align: center;
+            transform: translate(-50%, -100%);
+            margin-top: -12px;
+        }
+        
+        #tooltip.visible {
+            opacity: 1;
+        }
+        
+        #tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #1e293b transparent transparent transparent;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            background: var(--surface);
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+        
+        .modal-title h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+        }
+        
+        .modal-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .close-modal:hover {
+            background-color: var(--background);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 2rem;
+            overflow-y: auto;
+            padding-top: 2.5rem; 
+        }
+
+        .phase-section {
+            margin-bottom: 2rem;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .phase-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.75rem;
+        }
+        
+        .phase-header svg {
+            color: var(--primary);
+        }
+
+        .sub-category {
+            margin-bottom: 1.5rem;
+        }
+
+        .sub-category:last-child {
+            margin-bottom: 0;
+        }
+
+        .sub-category-title {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sub-category-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+            opacity: 0.5;
+        }
+
+        .status-badge {
+            padding: 0.15rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .status-green {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-yellow {
+            background-color: #fef9c3;
+            color: #854d0e;
+        }
+        
+        .status-red {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .detail-item {
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .detail-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-color: #cbd5e1;
+        }
+
+        .detail-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+
+        .detail-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .json-wrapper {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        .json-wrapper pre {
+            margin: 0;
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        tr[data-filename] {
+            cursor: pointer;
+            transition: background-color 0.1s;
+        }
+        
+        tr[data-filename]:active {
+            background-color: #eff6ff;
+        }
+
+        @media (max-width: 640px) {
+            header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="https://raw.githubusercontent.com/yourbuddyconner/epstein-bench/refs/heads/main/mascot.png" alt="Epstein Bench Mascot" class="mascot">
+            <div class="header-content">
+                <h1>Epstein Bench</h1>
+                <p class="subtitle">The Files Don’t Lie, But Your RAG Might</p>
+                <a href="https://github.com/yourbuddyconner/epstein-bench" class="github-link">
+                    <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                    </svg>
+                    View on GitHub
+                </a>
+            </div>
+        </header>
+
+        <section id="about">
+            <h2>Overview</h2>
+            <p><strong>Epstein Bench</strong> is a RAG benchmark built upon the <strong>Epstein Files</strong>—a complex, noisy collection of publicly released documents regarding the Jeffrey Epstein associates. Similar to how the <strong>Enron Email Dataset</strong> became a standard for network analysis and NLP in the early 2000s, this corpus provides a highly complex, noisy, and entity-rich environment for stress-testing modern Retrieval-Augmented Generation systems.</p>
+            
+            <div class="methodology-grid">
+                <div class="methodology-card">
+                    <h3>The Challenge</h3>
+                    <p>Real-world data is messy. This benchmark simulates enterprise environments with:</p>
+                    <ul>
+                        <li><strong>Extreme Noise:</strong> Scanned PDFs, handwritten notes, and messy OCR.</li>
+                        <li><strong>Complex Graph:</strong> Multi-hop reasoning across thousands of entities.</li>
+                        <li><strong>Needle-in-a-Haystack:</strong> Critical info buried in legalese.</li>
+                    </ul>
+                </div>
+                <div class="methodology-card">
+                    <h3>The Framework</h3>
+                    <p>Based on the <strong>Auepora</strong> evaluation methodology, we decouple performance into:</p>
+                    <ul>
+                        <li><strong>Retrieval:</strong> Relevance (Recall@K) and Accuracy (MRR).</li>
+                        <li><strong>Generation:</strong> Correctness (ROUGE/BLEU) and Faithfulness (LLM Judges).</li>
+                        <li><strong>Robustness:</strong> Handling paraphrases and noise.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="leaderboard">
+            <h2>Performance Leaderboard</h2>
+            <p>Live benchmark results from the latest system evaluations. Metrics are computed using the standard Auepora evaluation suite.</p>
+            
+            <div class="table-wrapper">
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            <th>System Name</th>
+                            <th>Dataset</th>
+                            <th data-tooltip="Retrieval Relevance: Fraction of relevant documents retrieved">Recall</th>
+                            <th data-tooltip="Generation Correctness: Overlap between prediction and reference tokens">Token F1</th>
+                            <th data-tooltip="Generation Semantic: Semantic similarity via BERT embeddings">BERTScore</th>
+                            <th data-tooltip="Generation Relevance: LLM-judged quality of the answer">LLM Quality</th>
+                            <th data-tooltip="System Latency: Time taken to generate response">Latency</th>
+                            <th>Date (UTC)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body">
+                        <tr><td colspan="8" class="loading">Loading benchmark data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="citation">
+            <h2>Citation</h2>
+            <p>If you use Epstein Bench in your research, please cite it as follows:</p>
+            <div class="json-wrapper">
+<pre>@software{epstein_bench_2025,
+  title  = {Epstein Bench: The Files Don’t Lie, But Your RAG Might},
+  author = {Conner Swann},
+  year   = {2025},
+  url    = {https://github.com/yourbuddyconner/epstein-bench}
+}</pre>
+            </div>
+        </section>
+
+        <footer>
+            <p>Maintained by <a href="https://github.com/yourbuddyconner">@yourbuddyconner</a> &bull; Epstein Bench &copy; <span id="year"></span></p>
+        </footer>
+
+        <!-- Details Modal -->
+        <div class="modal-overlay" id="details-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <h3 id="modal-system-name">System Details</h3>
+                        <div class="modal-subtitle" id="modal-timestamp"></div>
+                    </div>
+                    <button class="close-modal" onclick="closeModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="modal-content">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Global Tooltip Logic
+        const tooltip = document.createElement('div');
+        tooltip.id = 'tooltip';
+        document.body.appendChild(tooltip);
+
+        document.addEventListener('mouseover', (e) => {
+            const target = e.target.closest('[data-tooltip]');
+            if (target) {
+                const text = target.getAttribute('data-tooltip');
+                if (!text) return;
+
+                tooltip.textContent = text;
+                tooltip.classList.add('visible');
+
+                const rect = target.getBoundingClientRect();
+                const left = rect.left + rect.width / 2;
+                const top = rect.top;
+                
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`;
+            }
+        });
+
+        document.addEventListener('mouseout', (e) => {
+            const target = e.target.closest('[data-tooltip]');
+            if (target) {
+                tooltip.classList.remove('visible');
+            }
+        });
+        
+        // Hide tooltip on scroll to prevent detachment
+        window.addEventListener('scroll', () => {
+             tooltip.classList.remove('visible');
+        }, true);
+
+        const modal = document.getElementById('details-modal');
+        const modalContent = document.getElementById('modal-content');
+        
+        function closeModal() {
+            modal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+        });
+
+        async function showDetails(filename, systemName, timestamp) {
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            
+            document.getElementById('modal-system-name').textContent = systemName;
+            document.getElementById('modal-timestamp').textContent = timestamp;
+            modalContent.innerHTML = '<div class="loading">Loading detailed metrics...</div>';
+
+            try {
+                const response = await fetch(`benchmark_data/${filename}`);
+                if (!response.ok) throw new Error('Failed to load details');
+                const data = await response.json();
+                
+                // Format specific metrics sections
+                const metrics = data.metrics || {};
+                
+                // Helper to safely get values
+                const getVal = (key) => {
+                    const m = metrics[key];
+                    if (!m) return 'N/A';
+                    return typeof m.value === 'number' ? m.value.toFixed(4) : m.value;
+                };
+
+                // Descriptions for tooltips
+                const descriptions = {
+                    dataset: "The specific evaluation dataset file used for this run.",
+                    recall: "Fraction of relevant documents found in the top 5 retrieved results.",
+                    mrr: "Mean Reciprocal Rank: Higher score means relevant docs appear higher in the list.",
+                    token_f1: "Measures word overlap between the generated answer and the reference answer.",
+                    rouge: "Longest common subsequence; measures structural similarity to reference.",
+                    bert: "Semantic similarity score using BERT embeddings (captures meaning over exact words).",
+                    faithfulness: "How accurately the answer reflects the provided evidence (checked by LLM).",
+                    quality: "Overall quality, helpfulness, and relevance of the answer (judged by LLM)."
+                };
+
+                const sections = [
+                    {
+                        id: 'retrieval',
+                        title: 'Retrieval Phase',
+                        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>',
+                        groups: [
+                            {
+                                title: 'Relevance (Did we find it?)',
+                                metrics: [
+                                    { key: 'recall@5', label: 'Recall@5', tooltip: descriptions.recall }
+                                ]
+                            },
+                            {
+                                title: 'Accuracy (Is it ranked high?)',
+                                metrics: [
+                                    { key: 'mrr@5', label: 'MRR@5', tooltip: descriptions.mrr }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 'generation',
+                        title: 'Generation Phase',
+                        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+                        groups: [
+                            {
+                                title: 'Correctness (vs Reference)',
+                                metrics: [
+                                    { key: 'token_f1', label: 'Token F1', tooltip: descriptions.token_f1 },
+                                    { key: 'rougeL_answer', label: 'ROUGE-L', tooltip: descriptions.rouge },
+                                    { key: 'openai_bertscore_f1_reference', label: 'BERTScore F1', tooltip: descriptions.bert }
+                                ]
+                            },
+                            {
+                                title: 'Faithfulness (vs Context)',
+                                metrics: [
+                                    { key: 'llm_faithfulness', label: 'LLM Faithfulness', tooltip: descriptions.faithfulness }
+                                ]
+                            },
+                            {
+                                title: 'Quality (vs Query)',
+                                metrics: [
+                                    { key: 'llm_answer_quality', label: 'LLM Quality', tooltip: descriptions.quality }
+                                ]
+                            }
+                        ]
+                    }
+                ];
+
+                // Helper to determine status color
+                const getStatus = (val) => {
+                    if (val >= 0.6) return { class: 'status-green', text: 'Good' };
+                    if (val >= 0.3) return { class: 'status-yellow', text: 'Fair' };
+                    return { class: 'status-red', text: 'Poor' };
+                };
+
+                // Helper to calculate group average
+                const getGroupAverage = (groupMetrics) => {
+                    let sum = 0;
+                    let count = 0;
+                    groupMetrics.forEach(m => {
+                        const val = metrics[m.key];
+                        if (val && typeof val.value === 'number') {
+                            sum += val.value;
+                            count++;
+                        }
+                    });
+                    return count > 0 ? sum / count : 0;
+                };
+
+                let html = ``;
+
+                sections.forEach(section => {
+                    html += `
+                        <div class="phase-section">
+                            <div class="phase-header">
+                                ${section.icon}
+                                ${section.title}
+                            </div>
+                    `;
+                    
+                    section.groups.forEach(group => {
+                        const avg = getGroupAverage(group.metrics);
+                        const status = getStatus(avg);
+                        
+                        html += `
+                            <div class="sub-category">
+                                <div class="sub-category-title">
+                                    ${group.title}
+                                    <span class="status-badge ${status.class}">${status.text}</span>
+                                </div>
+                                <div class="metrics-row">
+                        `;
+                        
+                        group.metrics.forEach(metric => {
+                            html += `
+                                <div class="detail-item" data-tooltip="${metric.tooltip}">
+                                    <span class="detail-label">${metric.label}</span>
+                                    <div class="detail-value">${getVal(metric.key)}</div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+                });
+
+                html += `
+                    <div class="phase-section">
+                        <div class="phase-header">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Metadata
+                        </div>
+                        <div class="metrics-row">
+                            <div class="detail-item" data-tooltip="${descriptions.dataset}">
+                                <span class="detail-label">Dataset</span>
+                                <div class="detail-value">${data.dataset || 'N/A'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                modalContent.innerHTML = html;
+
+            } catch (error) {
+                console.error(error);
+                modalContent.innerHTML = '<div class="loading" style="color: #ef4444">Error loading detailed metrics file.</div>';
+            }
+        }
+
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('benchmark_data/index.json');
+                if (!response.ok) {
+                    throw new Error('Failed to load index.json');
+                }
+                const data = await response.json();
+                
+                const tbody = document.getElementById('results-body');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="loading">No benchmark results found yet.</td></tr>';
+                    return;
+                }
+
+                data.forEach(run => {
+                    const tr = document.createElement('tr');
+                    tr.setAttribute('data-filename', run.filename);
+                    
+                    const date = new Date(run.timestamp);
+                    const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                    const recall = typeof run.recall === 'number' ? run.recall.toFixed(4) : run.recall;
+                    const recallLabel = run.recall_k || 'Recall';
+                    
+                    const f1 = typeof run.token_f1 === 'number' ? run.token_f1.toFixed(4) : run.token_f1;
+                    const bert = typeof run.bertscore === 'number' ? run.bertscore.toFixed(4) : run.bertscore;
+                    const qual = typeof run.llm_quality === 'number' ? run.llm_quality.toFixed(2) : run.llm_quality;
+                    const lat = typeof run.latency === 'number' ? run.latency.toFixed(3) + 's' : run.latency;
+
+                    tr.innerHTML = `
+                        <td class="system-name">${run.system_name}</td>
+                        <td>${run.dataset}</td>
+                        <td><span class="metric-value" title="${recallLabel}">${recall}</span></td>
+                        <td><span class="metric-value">${f1}</span></td>
+                        <td><span class="metric-value">${bert}</span></td>
+                        <td><span class="metric-value">${qual}</span></td>
+                        <td><span class="metric-value">${lat}</span></td>
+                        <td class="timestamp">${dateStr}</td>
+                    `;
+                    
+                    // Add click handler
+                    tr.addEventListener('click', () => {
+                        showDetails(run.filename, run.system_name, dateStr);
+                    });
+
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('results-body').innerHTML = 
+                    '<tr><td colspan="8" class="loading" style="color: #ef4444;">Error loading leaderboard data.</td></tr>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadLeaderboard);
+    </script>
+</body>
+</html>

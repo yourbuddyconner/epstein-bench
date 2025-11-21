@@ -1,0 +1,149 @@
+{
+  "system_name": "My Simple RAG",
+  "timestamp": "2025-11-21T04:39:49.696167+00:00",
+  "dataset": "my_bench.jsonl",
+  "metrics": {
+    "recall@5": {
+      "value": 0.4963369963369963,
+      "target": "RETRIEVAL_RELEVANCE",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "precision@5": {
+      "value": 0.12087912087912088,
+      "target": "RETRIEVAL_RELEVANCE",
+      "details": {
+        "num_samples": 182,
+        "num_skipped": 0
+      }
+    },
+    "hit_rate@5": {
+      "value": 0.5824175824175825,
+      "target": "RETRIEVAL_RELEVANCE",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "mrr@5": {
+      "value": 0.4206959706959707,
+      "target": "RETRIEVAL_ACCURACY",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "map@5": {
+      "value": 0.34464285714285714,
+      "target": "RETRIEVAL_ACCURACY",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "ndcg@5": {
+      "value": 0.40054381050043136,
+      "target": "RETRIEVAL_ACCURACY",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "exact_match": {
+      "value": 0.0,
+      "target": "GENERATION_CORRECTNESS",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "token_f1": {
+      "value": 0.12380312715031633,
+      "target": "GENERATION_CORRECTNESS",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "rouge1_answer": {
+      "value": 0.12457103420667431,
+      "target": "GENERATION_CORRECTNESS",
+      "details": {
+        "num_samples": 182,
+        "num_skipped": 0
+      }
+    },
+    "rouge2_answer": {
+      "value": 0.06074235790646071,
+      "target": "GENERATION_CORRECTNESS",
+      "details": {
+        "num_samples": 182,
+        "num_skipped": 0
+      }
+    },
+    "rougeL_answer": {
+      "value": 0.1127364451385398,
+      "target": "GENERATION_CORRECTNESS",
+      "details": {
+        "num_samples": 182,
+        "num_skipped": 0
+      }
+    },
+    "bleu_4": {
+      "value": 0.04818559097126375,
+      "target": "GENERATION_CORRECTNESS",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "evidence_overlap_n1": {
+      "value": 0.620857201760917,
+      "target": "GENERATION_FAITHFULNESS",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "embedding_similarity_reference": {
+      "value": 0.18178063789056817,
+      "target": "GENERATION_CORRECTNESS",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "embedding_similarity_query": {
+      "value": 0.3676365955779538,
+      "target": "GENERATION_RELEVANCE",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "openai_bertscore_f1_reference": {
+      "value": 0.27179789318763614,
+      "target": "GENERATION_CORRECTNESS",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "openai_bertscore_f1_query": {
+      "value": 0.38971658553341676,
+      "target": "GENERATION_RELEVANCE",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "llm_faithfulness": {
+      "value": 0.4296703296703297,
+      "target": "GENERATION_FAITHFULNESS",
+      "details": {
+        "num_samples": 182
+      }
+    },
+    "llm_answer_quality": {
+      "value": 0.4076923076923077,
+      "target": "GENERATION_RELEVANCE",
+      "details": {
+        "num_samples": 182
+      }
+    }
+  },
+  "config": {
+    "top_k": 5,
+    "bertscore": true,
+    "llm_metrics": true
+  }
+}

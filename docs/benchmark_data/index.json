@@ -1,0 +1,14 @@
+[
+  {
+    "filename": "My_Simple_RAG_1763699989.json",
+    "system_name": "My Simple RAG",
+    "timestamp": "2025-11-21T04:39:49.696167+00:00",
+    "dataset": "my_bench.jsonl",
+    "recall": 0.4963369963369963,
+    "recall_k": "recall@5",
+    "token_f1": 0.12380312715031633,
+    "bertscore": 0.27179789318763614,
+    "llm_quality": 0.4076923076923077,
+    "latency": "N/A"
+  }
+]
