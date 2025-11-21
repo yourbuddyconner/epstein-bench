@@ -236,7 +236,7 @@ def generate_multi_hop_tasks(
     llm: LLMClient,
     cfg: MultiHopConfig,
     max_workers: int = 3
-) -> List[EvaluationSample]:
+) -> Tuple[List[EvaluationSample], Dict[str, List[str]]]:
     # 1. Build Graph
     graph = build_entity_graph(chunks, cfg, llm if cfg.use_llm_entities else None)
     
@@ -263,4 +263,4 @@ def generate_multi_hop_tasks(
                         f.cancel()
                     break
 
-    return samples
+    return samples, graph

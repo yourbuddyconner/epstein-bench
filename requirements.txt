@@ -8,3 +8,5 @@ tqdm>=4.60.0
 
 python-dotenv
 openai>=1.0.0
+networkx
+matplotlib

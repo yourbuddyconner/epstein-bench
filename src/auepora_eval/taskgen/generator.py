@@ -40,6 +40,7 @@ class TaskGenerator:
         self.llm = llm
         self.config = config
         self.sample_filters = sample_filters or []
+        self.last_entity_graph: Dict[str, List[str]] = {}
 
     def build_corpus(self) -> List[Document]:
         if self.config.hf_corpus is not None:
@@ -98,13 +99,14 @@ class TaskGenerator:
         if self.config.multi_hop is not None:
             logger.info("Step 5/7: Generating Multi-Hop Tasks...")
             anchors_by_doc = group_anchors_by_doc(anchors)
-            multi_hop_samples = generate_multi_hop_tasks(
+            multi_hop_samples, graph = generate_multi_hop_tasks(
                 chunks=chunks,
                 anchors_by_doc=anchors_by_doc,
                 llm=self.llm,
                 cfg=self.config.multi_hop,
                 max_workers=self.config.max_workers,
             )
+            self.last_entity_graph = graph
             logger.info(f"Generated {len(multi_hop_samples)} multi-hop samples.")
             all_samples.extend(multi_hop_samples)
 

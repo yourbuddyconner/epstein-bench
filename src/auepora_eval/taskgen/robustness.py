@@ -1,14 +1,15 @@
 import uuid
 import random
-import uuid
-import random
 import re
+import logging
 from typing import List, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
 
 from ..core.types import EvaluationSample, Response, Document
 from .config import LLMClient, RobustnessConfig
 from .retriever import CorpusRetriever
 
+logger = logging.getLogger(__name__)
 
 def build_paraphrase_prompt(query: str) -> str:
     return f"Paraphrase the following question while keeping the meaning exactly the same:\nQuestion: {query}\nParaphrase:"
@@ -27,33 +28,31 @@ def add_typos(text: str, rate: float) -> str:
     return "".join(chars)
 
 
-from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
-
 def _process_paraphrase(
     base: EvaluationSample,
     llm: LLMClient,
     cfg: RobustnessConfig
 ) -> List[EvaluationSample]:
     variants = []
-        for _ in range(cfg.num_paraphrases):
-            prompt = build_paraphrase_prompt(base.query)
-            paraphrased = llm.generate(prompt).strip()
-            noisy = add_typos(paraphrased, cfg.typo_rate) if cfg.add_typos else paraphrased
+    for _ in range(cfg.num_paraphrases):
+        prompt = build_paraphrase_prompt(base.query)
+        paraphrased = llm.generate(prompt).strip()
+        noisy = add_typos(paraphrased, cfg.typo_rate) if cfg.add_typos else paraphrased
 
-            s = EvaluationSample(
-                sample_id=str(uuid.uuid4()),
-                query=noisy,
-                relevant_docs=base.relevant_docs,
-                candidate_docs=base.candidate_docs,
-                reference_answer=base.reference_answer,
-                labels={
-                    **base.labels,
-                    "scenario": "paraphrase",
-                    "variant_of": base.sample_id,
-                },
-                metadata={**base.metadata},
-            )
-            variants.append(s)
+        s = EvaluationSample(
+            sample_id=str(uuid.uuid4()),
+            query=noisy,
+            relevant_docs=base.relevant_docs,
+            candidate_docs=base.candidate_docs,
+            reference_answer=base.reference_answer,
+            labels={
+                **base.labels,
+                "scenario": "paraphrase",
+                "variant_of": base.sample_id,
+            },
+            metadata={**base.metadata},
+        )
+        variants.append(s)
     return variants
 
 
@@ -230,4 +229,3 @@ def generate_unanswerable_tasks(
             f.cancel()
 
     return samples
-

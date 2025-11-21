@@ -3,13 +3,13 @@ import argparse
 import logging
 from pathlib import Path
 
-from ..auepora_eval.taskgen.config import (
+from auepora_eval.taskgen.config import (
     TaskGeneratorConfig, HFCorpusConfig, ChunkingConfig, SingleHopConfig, MultiHopConfig, RobustnessConfig
 )
-from ..auepora_eval.taskgen.generator import TaskGenerator
-from ..auepora_eval.taskgen.openai_client import OpenAIClient
-from ..auepora_eval.io.jsonl import save_jsonl_dataset
-from ..config import config
+from auepora_eval.taskgen.generator import TaskGenerator
+from auepora_eval.taskgen.openai_client import OpenAIClient
+from auepora_eval.io.jsonl import save_jsonl_dataset
+from config import config
 
 # Placeholder LLM Client for fallback or testing
 class MockLLMClient:
