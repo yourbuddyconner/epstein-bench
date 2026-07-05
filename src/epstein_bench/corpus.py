@@ -196,27 +196,28 @@ def build_entity_index(
 
 
 def _stream_hf_rows(config: Config) -> Iterator[dict]:
-    """Stream text-bearing rows with parquet column projection.
+    """Stream text-bearing rows with true parquet column projection.
 
-    Projection matters: the source dataset is 340GB including raw media bytes;
-    the projected text columns are a small fraction of that.
+    We read the dataset's parquet shards directly with pyarrow over
+    HfFileSystem: `iter_batches(columns=...)` issues HTTP range reads for the
+    projected column chunks only. (`datasets` streaming pulls whole row
+    groups — media bytes included, ~83KB/row on this 340GB dataset — which
+    measured ~30 docs/min; direct projection skips the media entirely.)
     """
-    from datasets import load_dataset
+    import pyarrow.parquet as pq
+    from huggingface_hub import HfFileSystem
 
-    try:
-        ds = load_dataset(
-            config.hf_dataset,
-            split="train",
-            streaming=True,
-            columns=list(config.hf_columns),
-        )
-    except TypeError as e:  # datasets too old for `columns`
-        raise RuntimeError(
-            "your `datasets` version does not support parquet column projection; "
-            "upgrade (pip install -U datasets) — streaming this dataset without "
-            "projection would download ~340GB of media bytes"
-        ) from e
-    yield from ds
+    fs = HfFileSystem()
+    paths = sorted(fs.glob(f"datasets/{config.hf_dataset}/**/*.parquet"))
+    if not paths:
+        raise RuntimeError(f"no parquet shards found for {config.hf_dataset}")
+    cols = list(config.hf_columns)
+    for path in paths:
+        with fs.open(path, "rb") as f:
+            pf = pq.ParquetFile(f)
+            available = [c for c in cols if c in pf.schema_arrow.names]
+            for batch in pf.iter_batches(batch_size=512, columns=available):
+                yield from batch.to_pylist()
 
 
 def build_corpus(
