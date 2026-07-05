@@ -1,10 +1,25 @@
-"""JSONL helpers used by every pipeline stage (artifacts are line-oriented)."""
+"""JSONL + concurrency helpers used by every pipeline stage."""
 
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator, TypeVar
+
+_T = TypeVar("_T")
+_R = TypeVar("_R")
+
+
+def parallel_map(
+    fn: Callable[[_T], _R], items: list[_T], max_workers: int
+) -> list[_R]:
+    """Ordered thread-pool map. Per-item error handling belongs inside ``fn``
+    (pipeline stages fail closed per item, never crash the whole stage)."""
+    if max_workers <= 1 or len(items) <= 1:
+        return [fn(x) for x in items]
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        return list(ex.map(fn, items))
 
 
 def read_jsonl(path: str | Path) -> Iterator[dict[str, Any]]:

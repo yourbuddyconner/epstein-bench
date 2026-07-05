@@ -18,7 +18,7 @@ import random
 
 from .config import Config
 from .corpus import load_chunks, load_docs
-from .io_utils import read_jsonl, write_jsonl
+from .io_utils import parallel_map, read_jsonl, write_jsonl
 from .llm import LLM, LLMError
 from .retrievers import build_retrievers
 
@@ -88,15 +88,14 @@ def pool_tasks(config: Config, llm: LLM) -> dict[str, int]:
     docs_by_id = {d["doc_id"]: d for d in docs}
     chunks = load_chunks(config)
     retrievers = build_retrievers(config, chunks, llm)
-    rng = random.Random(config.seed + 5)
 
-    final: list[dict] = []
-    dropped: list[dict] = []
-    for task in read_jsonl(config.build_dir / "verified.jsonl"):
+    def per_task(task: dict) -> tuple[str, dict]:
+        """Return ('kept', task) or ('dropped', record)."""
+        # per-task seeding keeps the stability sample deterministic in parallel
+        rng = random.Random(f"{config.seed}:{task['task_id']}:stability")
         if task["type"] == "unanswerable":
             task["gold_docs"] = []
-            final.append(task)
-            continue
+            return "kept", task
         try:
             pooled = build_pool(task, retrievers, config)
             verdicts = judge_pool(task, pooled, docs_by_id, llm, config)
@@ -116,10 +115,10 @@ def pool_tasks(config: Config, llm: LLM) -> dict[str, int]:
                 )
                 rescued = sorted(d for d, v in rescue.items() if v == "supports")
                 if not rescued:
-                    dropped.append(
-                        {"task_id": task["task_id"], "reason": "source_not_supportive"}
-                    )
-                    continue
+                    return "dropped", {
+                        "task_id": task["task_id"],
+                        "reason": "source_not_supportive",
+                    }
                 gold = sorted(set(gold) | set(rescued))
             # stability re-check on a sample
             if rng.random() < config.stability_sample_rate:
@@ -132,14 +131,21 @@ def pool_tasks(config: Config, llm: LLM) -> dict[str, int]:
                     if {verdicts.get(d), strong.get(d)} == {"supports", "irrelevant"}
                 )
                 if flips:
-                    dropped.append({"task_id": task["task_id"], "reason": "unstable_pool"})
-                    continue
+                    return "dropped", {
+                        "task_id": task["task_id"],
+                        "reason": "unstable_pool",
+                    }
             task["gold_docs"] = gold
             task["provenance"]["pool_size"] = len(pooled)
             task["provenance"]["pool_judge_model"] = config.cheap_model
-            final.append(task)
+            return "kept", task
         except LLMError as e:
-            dropped.append({"task_id": task["task_id"], "reason": f"error:{e}"})
+            return "dropped", {"task_id": task["task_id"], "reason": f"error:{e}"}
+
+    tasks = list(read_jsonl(config.build_dir / "verified.jsonl"))
+    outcomes = parallel_map(per_task, tasks, config.max_workers)
+    final = [rec for status, rec in outcomes if status == "kept"]
+    dropped = [rec for status, rec in outcomes if status == "dropped"]
 
     write_jsonl(config.build_dir / "pooled.jsonl", final)
     write_jsonl(config.build_dir / "pool_dropped.jsonl", dropped)

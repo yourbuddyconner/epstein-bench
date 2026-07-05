@@ -20,7 +20,7 @@ from collections import Counter
 
 from .config import Config
 from .corpus import load_docs
-from .io_utils import read_jsonl, write_jsonl
+from .io_utils import parallel_map, read_jsonl, write_jsonl
 from .llm import LLM, LLMError
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
@@ -53,7 +53,11 @@ class Gauntlet:
         self.llm = llm
         self.docs_by_id = {d["doc_id"]: d for d in docs}
         self.clean_doc_ids = [d["doc_id"] for d in docs if d["quality"] == "clean"]
-        self.rng = random.Random(config.seed + 4)
+
+    def _task_rng(self, task: dict) -> random.Random:
+        # per-task seeding keeps distractor sampling deterministic under
+        # parallel verification (a shared RNG would depend on thread order)
+        return random.Random(f"{self.config.seed}:{task['task_id']}")
 
     # -- stage primitives ----------------------------------------------------
 
@@ -143,7 +147,7 @@ class Gauntlet:
             return False
         # random distractor context must fail
         distractor_ids = [
-            d for d in self.rng.sample(
+            d for d in self._task_rng(task).sample(
                 self.clean_doc_ids, min(3, len(self.clean_doc_ids))
             )
             if d not in task["source_doc_ids"]
@@ -220,10 +224,13 @@ class Gauntlet:
 def verify_candidates(config: Config, llm: LLM) -> dict[str, int]:
     docs = load_docs(config)
     gauntlet = Gauntlet(config, llm, docs)
+    candidates = list(read_jsonl(config.build_dir / "candidates.jsonl"))
+    outcomes = parallel_map(
+        lambda t: gauntlet.run(t), candidates, config.max_workers
+    )
     verified: list[dict] = []
     rejected: list[dict] = []
-    for task in read_jsonl(config.build_dir / "candidates.jsonl"):
-        passed, reason = gauntlet.run(task)
+    for task, (passed, reason) in zip(candidates, outcomes):
         if passed:
             task["provenance"]["verified"] = True
             task["provenance"]["adjudicator_model"] = config.strong_model

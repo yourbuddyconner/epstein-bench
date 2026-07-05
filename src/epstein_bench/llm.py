@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -142,14 +144,21 @@ class LLM:
 
     def _cache_get(self, key: str) -> str | None:
         p = self._cache_path(key)
-        if p.exists():
+        try:
             return json.loads(p.read_text())["text"]
-        return None
+        except FileNotFoundError:
+            return None
+        except (json.JSONDecodeError, KeyError):
+            # concurrent writer or corrupt entry: treat as a miss and rewrite
+            return None
 
     def _cache_put(self, key: str, text: str) -> None:
         p = self._cache_path(key)
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps({"text": text}))
+        # atomic replace so a parallel reader never sees a partial file
+        tmp = p.with_suffix(f".{os.getpid()}.{threading.get_ident()}.tmp")
+        tmp.write_text(json.dumps({"text": text}))
+        os.replace(tmp, p)
 
 
 # -- deterministic stub ---------------------------------------------------------

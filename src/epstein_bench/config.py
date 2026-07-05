@@ -88,6 +88,7 @@ class Config:
     cache_dir: Path = REPO_ROOT / "build" / "llm_cache"
 
     # --- runtime ---
+    max_workers: int = 8  # parallel LLM calls in generate/verify/pool stages
     stub_llm: bool = field(
         default_factory=lambda: os.environ.get("EPSTEIN_BENCH_STUB_LLM") == "1"
     )

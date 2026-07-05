@@ -73,10 +73,8 @@ def dictionary_ratio(text: str, wordlist: frozenset[str]) -> float:
     return hits / len(tokens)
 
 
-def screen_document(
-    text: str, config: Config, wordlist: frozenset[str], llm: LLM | None = None
-) -> str:
-    """Return 'clean' | 'degraded' | 'garbage'."""
+def screen_heuristic(text: str, config: Config, wordlist: frozenset[str]) -> str:
+    """Return 'clean' | 'degraded' | 'garbage' | 'borderline' (needs LLM check)."""
     if len(text) < config.screen_min_chars:
         return "garbage"
     g = garbage_ratio(text)
@@ -89,16 +87,33 @@ def screen_document(
         abs(g - config.screen_max_garbage_ratio) <= config.screen_borderline_band
         or abs(d - config.screen_min_dictionary_ratio) <= config.screen_borderline_band
     )
-    if borderline and llm is not None:
+    if borderline:
+        return "borderline"
+    if g <= config.screen_max_garbage_ratio and d >= config.screen_min_dictionary_ratio:
+        return "clean"
+    return "degraded"
+
+
+def resolve_borderline(text: str, llm: LLM) -> str:
+    try:
         verdict = llm.chat_json(
             "[READABILITY] Is the following OCR'd document text readable enough that "
             "a careful human could reliably extract facts from it? Respond with JSON "
             '{"readable": true|false}.\n\n---\n' + text[:4000]
         )
         return "clean" if verdict.get("readable") else "degraded"
-    if g <= config.screen_max_garbage_ratio and d >= config.screen_min_dictionary_ratio:
-        return "clean"
-    return "degraded"
+    except Exception:  # noqa: BLE001 - fail closed: unresolved -> degraded
+        return "degraded"
+
+
+def screen_document(
+    text: str, config: Config, wordlist: frozenset[str], llm: LLM | None = None
+) -> str:
+    """Return 'clean' | 'degraded' | 'garbage' (borderline resolved via LLM)."""
+    verdict = screen_heuristic(text, config, wordlist)
+    if verdict == "borderline":
+        return resolve_borderline(text, llm) if llm is not None else "degraded"
+    return verdict
 
 
 def chunk_text(text: str, chunk_tokens: int, overlap: int) -> list[str]:
@@ -207,25 +222,24 @@ def _stream_hf_rows(config: Config) -> Iterator[dict]:
 def build_corpus(
     config: Config, llm: LLM, rows: list[dict] | Iterator[dict] | None = None
 ) -> dict[str, int]:
-    """Stream the corpus, screen, chunk, and index entities — incrementally.
+    """Stream the corpus, screen, chunk, and index entities.
 
-    ``rows`` bypasses the HuggingFace download for tests/fixtures; each row
-    needs the configured text/id columns.
+    Three passes so LLM readability checks parallelize instead of blocking the
+    stream: (1) stream rows -> docs_raw.jsonl with heuristic verdicts;
+    (2) resolve 'borderline' docs with parallel LLM calls; (3) write final
+    docs/chunks/entities from disk. ``rows`` bypasses the HuggingFace download
+    for tests/fixtures.
     """
+    from .io_utils import parallel_map, read_jsonl
+
     config.ensure_dirs()
     row_iter: Iterator[dict] = iter(rows) if rows is not None else _stream_hf_rows(config)
-
     wordlist = _load_wordlist()
-    acc = EntityAccumulator()
-    quality_counts: Counter[str] = Counter()
-    n_docs = 0
-    n_chunks = 0
 
-    docs_path = Path(config.build_dir) / "docs.jsonl"
-    chunks_path = Path(config.build_dir) / "chunks.jsonl"
-    with docs_path.open("w", encoding="utf-8") as docs_f, chunks_path.open(
-        "w", encoding="utf-8"
-    ) as chunks_f:
+    # pass 1: stream + heuristic screen
+    raw_path = Path(config.build_dir) / "docs_raw.jsonl"
+    n_docs = 0
+    with raw_path.open("w", encoding="utf-8") as raw_f:
         for idx, row in enumerate(row_iter):
             text = (row.get(config.hf_text_column) or "").strip()
             if not text:
@@ -233,13 +247,13 @@ def build_corpus(
             if config.doc_limit and n_docs >= config.doc_limit:
                 break
             doc_id = str(row.get(config.hf_id_column) or f"doc_{idx}")
-            quality = screen_document(text, config, wordlist, llm)
             meta = {
                 k: row[k]
                 for k in ("file_name", "file_type", "online_url")
                 if row.get(k)
             }
-            docs_f.write(
+            quality = screen_heuristic(text, config, wordlist)
+            raw_f.write(
                 json.dumps(
                     {"doc_id": doc_id, "text": text, "quality": quality, "meta": meta},
                     ensure_ascii=False,
@@ -247,21 +261,53 @@ def build_corpus(
                 + "\n"
             )
             n_docs += 1
-            quality_counts[quality] += 1
-            if quality == "garbage":
+
+    # pass 2: resolve borderline docs with parallel LLM readability checks
+    borderline = [
+        (d["doc_id"], d["text"]) for d in read_jsonl(raw_path) if d["quality"] == "borderline"
+    ]
+    resolved = dict(
+        zip(
+            (doc_id for doc_id, _ in borderline),
+            parallel_map(
+                lambda p: resolve_borderline(p[1], llm), borderline, config.max_workers
+            ),
+        )
+    )
+
+    # pass 3: final artifacts
+    acc = EntityAccumulator()
+    quality_counts: Counter[str] = Counter()
+    n_chunks = 0
+    docs_path = Path(config.build_dir) / "docs.jsonl"
+    chunks_path = Path(config.build_dir) / "chunks.jsonl"
+    with docs_path.open("w", encoding="utf-8") as docs_f, chunks_path.open(
+        "w", encoding="utf-8"
+    ) as chunks_f:
+        for doc in read_jsonl(raw_path):
+            if doc["quality"] == "borderline":
+                doc["quality"] = resolved.get(doc["doc_id"], "degraded")
+            docs_f.write(json.dumps(doc, ensure_ascii=False) + "\n")
+            quality_counts[doc["quality"]] += 1
+            if doc["quality"] == "garbage":
                 continue
-            acc.add_doc(doc_id, text)
+            acc.add_doc(doc["doc_id"], doc["text"])
             for i, chunk in enumerate(
-                chunk_text(text, config.chunk_tokens, config.chunk_overlap)
+                chunk_text(doc["text"], config.chunk_tokens, config.chunk_overlap)
             ):
                 chunks_f.write(
                     json.dumps(
-                        {"chunk_id": f"{doc_id}#{i}", "doc_id": doc_id, "text": chunk},
+                        {
+                            "chunk_id": f"{doc['doc_id']}#{i}",
+                            "doc_id": doc["doc_id"],
+                            "text": chunk,
+                        },
                         ensure_ascii=False,
                     )
                     + "\n"
                 )
                 n_chunks += 1
+    raw_path.unlink()
 
     entities = acc.build(config.entity_min_count)
     (Path(config.build_dir) / "entities.json").write_text(
@@ -275,6 +321,7 @@ def build_corpus(
         "garbage": quality_counts.get("garbage", 0),
         "chunks": n_chunks,
         "entities": len(entities),
+        "borderline_resolved": len(borderline),
     }
 
 

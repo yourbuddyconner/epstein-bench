@@ -19,7 +19,7 @@ import uuid
 from . import __version__
 from .config import Config
 from .corpus import load_docs, load_entities
-from .io_utils import write_jsonl
+from .io_utils import parallel_map, write_jsonl
 from .llm import LLM, LLMError
 from .retrievers import BM25Retriever
 
@@ -50,10 +50,8 @@ def gen_single_hop(config: Config, llm: LLM, docs: list[dict], n: int) -> list[d
     rng = random.Random(config.seed)
     clean = [d for d in docs if d["quality"] == "clean"]
     rng.shuffle(clean)
-    out: list[dict] = []
-    for doc in clean:
-        if len(out) >= n:
-            break
+
+    def per_doc(doc: dict) -> list[dict]:
         prompt = (
             "[FACTS] From the document below, extract up to 3 atomic, verifiable "
             "facts and, for each, write the question an investigative journalist "
@@ -68,20 +66,22 @@ def gen_single_hop(config: Config, llm: LLM, docs: list[dict], n: int) -> list[d
         try:
             resp = llm.chat_json(prompt)
         except LLMError:
-            continue
-        for f in resp.get("facts", []):
-            if not (f.get("question") and f.get("answer")):
-                continue
-            out.append(
-                _mk_task(
-                    config,
-                    "single_hop",
-                    [doc["doc_id"]],
-                    question=f["question"].strip(),
-                    answer=str(f["answer"]).strip(),
-                )
+            return []
+        return [
+            _mk_task(
+                config,
+                "single_hop",
+                [doc["doc_id"]],
+                question=f["question"].strip(),
+                answer=str(f["answer"]).strip(),
             )
-    return out[:n]
+            for f in resp.get("facts", [])
+            if f.get("question") and f.get("answer")
+        ]
+
+    # ~1-3 facts per doc; n docs is comfortably enough for n tasks
+    results = parallel_map(per_doc, clean[:n], config.max_workers)
+    return [t for batch in results for t in batch][:n]
 
 
 def _entity_doc_texts(
@@ -104,13 +104,12 @@ def gen_aggregation(
         (name, e) for name, e in entities.items() if 2 <= len(e["doc_ids"]) <= 15
     ]
     rng.shuffle(bounded)
-    out: list[dict] = []
-    for name, entity in bounded:
-        if len(out) >= n:
-            break
+
+    def per_entity(pair: tuple[str, dict]) -> dict | None:
+        name, entity = pair
         edocs = _entity_doc_texts(entity, docs_by_id, max_docs=8)
         if len(edocs) < 2:
-            continue
+            return None
         listing = "\n\n".join(
             f"[DOC {i}] id={d['doc_id']}\n{_excerpt(d['text'], 1500)}"
             for i, d in enumerate(edocs)
@@ -128,7 +127,7 @@ def gen_aggregation(
         try:
             resp = llm.chat_json(prompt)
         except LLMError:
-            continue
+            return None
         items = [
             {"item": str(i["item"]).strip(), "doc_ids": list(i.get("doc_ids") or [])}
             for i in resp.get("items", [])
@@ -140,23 +139,23 @@ def gen_aggregation(
         items = [i for i in items if i["doc_ids"]]
         support = {d for i in items for d in i["doc_ids"]}
         if not resp.get("question") or len(items) < 2 or len(support) < 2:
-            continue
-        out.append(
-            _mk_task(
-                config,
-                "aggregation",
-                sorted(support),
-                question=resp["question"].strip(),
-                items=items,
-                provenance={
-                    "generator_model": config.cheap_model,
-                    "pipeline_version": __version__,
-                    "bounding_entity": name,
-                    "candidate_doc_ids": entity["doc_ids"],
-                },
-            )
+            return None
+        return _mk_task(
+            config,
+            "aggregation",
+            sorted(support),
+            question=resp["question"].strip(),
+            items=items,
+            provenance={
+                "generator_model": config.cheap_model,
+                "pipeline_version": __version__,
+                "bounding_entity": name,
+                "candidate_doc_ids": entity["doc_ids"],
+            },
         )
-    return out[:n]
+
+    results = parallel_map(per_entity, bounded[: n * 2], config.max_workers)
+    return [t for t in results if t][:n]
 
 
 def gen_timeline(
@@ -166,13 +165,12 @@ def gen_timeline(
     docs_by_id = {d["doc_id"]: d for d in docs}
     multi = [(name, e) for name, e in entities.items() if len(e["doc_ids"]) >= 2]
     rng.shuffle(multi)
-    out: list[dict] = []
-    for name, entity in multi:
-        if len(out) >= n:
-            break
+
+    def per_entity(pair: tuple[str, dict]) -> dict | None:
+        _name, entity = pair
         edocs = _entity_doc_texts(entity, docs_by_id, max_docs=4)
         if len(edocs) < 2:
-            continue
+            return None
         listing = "\n\n".join(
             f"[DOC {i}] id={d['doc_id']}\n{_excerpt(d['text'], 1500)}"
             for i, d in enumerate(edocs)
@@ -189,19 +187,19 @@ def gen_timeline(
         try:
             resp = llm.chat_json(prompt)
         except LLMError:
-            continue
+            return None
         if not (resp.get("question") and resp.get("answer")):
-            continue
-        out.append(
-            _mk_task(
-                config,
-                "timeline",
-                [d["doc_id"] for d in edocs],
-                question=str(resp["question"]).strip(),
-                answer=str(resp["answer"]).strip(),
-            )
+            return None
+        return _mk_task(
+            config,
+            "timeline",
+            [d["doc_id"] for d in edocs],
+            question=str(resp["question"]).strip(),
+            answer=str(resp["answer"]).strip(),
         )
-    return out[:n]
+
+    results = parallel_map(per_entity, multi[: n * 2], config.max_workers)
+    return [t for t in results if t][:n]
 
 
 def gen_unanswerable(
@@ -215,11 +213,9 @@ def gen_unanswerable(
     rng = random.Random(config.seed + 3)
     clean = [d for d in docs if d["quality"] == "clean"]
     rng.shuffle(clean)
-    out: list[dict] = []
     docs_by_id = {d["doc_id"]: d for d in docs}
-    for doc in clean:
-        if len(out) >= n:
-            break
+
+    def per_doc(doc: dict) -> dict | None:
         prompt = (
             "[UNANSWERABLE] Read the document below, then invent ONE question in "
             "the same domain that sounds like it could be answered by this document "
@@ -232,7 +228,7 @@ def gen_unanswerable(
             resp = llm.chat_json(prompt)
             question = str(resp.get("question") or "").strip()
             if not question:
-                continue
+                return None
             top = bm25.search(question, 5)
             context = "\n\n".join(
                 f"[DOC id={doc_id}]\n{_excerpt(docs_by_id[doc_id]['text'], 1500)}"
@@ -245,11 +241,13 @@ def gen_unanswerable(
                 f"\n\nQuestion: {question}\n\n{context}"
             )
         except LLMError:
-            continue
+            return None
         if check.get("answerable") is not False:
-            continue
-        out.append(_mk_task(config, "unanswerable", [], question=question))
-    return out[:n]
+            return None
+        return _mk_task(config, "unanswerable", [], question=question)
+
+    results = parallel_map(per_doc, clean[: n * 2], config.max_workers)
+    return [t for t in results if t][:n]
 
 
 # -- stage entry point --------------------------------------------------------------
