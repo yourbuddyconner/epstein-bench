@@ -1,159 +1,127 @@
-# Epstein Bench: The Files Don’t Lie, But Your RAG Might
-
-<p align="center">
-  <a href="https://github.com/tensonaut/EPSTEIN_FILES_20K"><img src="https://img.shields.io/badge/Epstein%20Files-Public-red?style=flat-square" alt="Epstein Files"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License"></a>
-  <img src="https://img.shields.io/badge/Python-3.11+-yellow?style=flat-square" alt="Python">
-  <a href="https://arxiv.org/abs/2405.07437"><img src="https://img.shields.io/badge/RAG-Certified-green?style=flat-square" alt="RAG Certified"></a>
-  <img src="https://img.shields.io/badge/funded%20by%20yc-not%20yet-orange?style=flat-square" alt="YC Status">
-</p>
+# Epstein Bench
 
 <p align="center">
   <img src="mascot.png" alt="Epstein Bench Mascot" width="220" />
 </p>
 
-Epstein Bench is a RAG benchmark built upon the **Epstein Files**—a collection of publicly released documents regarding the Jeffrey Epstein associates. Similar to how the **Enron Email Dataset** became a standard for network analysis and NLP in the early 2000s, this corpus provides a highly complex, noisy, and entity-rich environment for stress-testing modern Retrieval-Augmented Generation systems.
+A RAG benchmark over the **Epstein Files** — the full public release
+(~4.1M files; the ~1M+ text-bearing documents form the retrieval corpus):
+OCR'd, noisy, entity-rich. Wikipedia-derived benchmarks test
+retrieval over clean encyclopedic text; this one tests what enterprise RAG
+actually faces: messy scans, duplicated emails, boilerplate, and facts
+scattered across documents.
 
-This project implements the **Auepora Evaluation Framework** ([arXiv:2405.07437](https://arxiv.org/abs/2405.07437)), a rigorous methodology for decomposing RAG performance into specific targets, datasets, and metrics.
+**The benchmark is a dataset, a file contract, and a scorer — not a framework.**
+Your system never imports this code.
 
----
+## The contract
 
-## Table of Contents
+Read `dataset/v1.0/<split>/questions.jsonl`:
 
-- [Epstein Bench: The Files Don’t Lie, But Your RAG Might](#epstein-bench-the-files-dont-lie-but-your-rag-might)
-  - [Table of Contents](#table-of-contents)
-  - [Philosophy \& Methodology](#philosophy--methodology)
-    - [1. The Framework: Auepora](#1-the-framework-auepora)
-    - [2. The Benchmark: Epstein Bench](#2-the-benchmark-epstein-bench)
-  - [Installation](#installation)
-  - [Quick Start](#quick-start)
-  - [Core Concepts](#core-concepts)
-  - [Documentation](#documentation)
-  - [Project Structure](#project-structure)
-  - [Citation](#citation)
+```json
+{"task_id": "...", "question": "...", "type": "single_hop|aggregation|timeline|unanswerable"}
+```
 
----
+Emit `predictions.jsonl`:
 
-## Philosophy & Methodology
+```json
+{"task_id": "...", "answer": "...", "citations": ["doc_id"], "retrieved": ["doc_id", "..."]}
+```
 
-This project distinguishes between the **evaluation framework** (The Science) and the **benchmark data** (The Challenge).
+- `answer` — free text; for unanswerable tasks the correct behavior is an explicit refusal
+- `citations` — document ids your system claims support the answer
+- `retrieved` — your ranked retrieval list (max 20), for retrieval diagnostics
 
-### 1. The Framework: Auepora
-Based on *"Evaluation of Retrieval-Augmented Generation: A Survey"* by Yu et al. (2024), the Auepora framework provides the taxonomy for our evaluation. It decouples RAG performance into:
-- **Target Space:** Explicit definitions of *what* we are measuring (e.g., `RETRIEVAL_RELEVANCE`, `GENERATION_FAITHFULNESS`).
-- **Dataset Space:** The required annotations (e.g., ground-truth documents vs. reference answers).
-- **Metric Space:** The mathematical scoring functions (e.g., Recall@K, ROUGE-L, LLM Judges).
-
-### 2. The Benchmark: Epstein Bench
-While the framework can be applied to any data, **Epstein Bench** specifically targets the **Epstein Files**. This corpus was chosen because it mirrors real-world enterprise challenges better than sanitized academic datasets (like SQuAD or MS MARCO):
-
-- **Extreme Noise:** Contains scanned PDFs, handwritten notes, legal depositions, and messy OCR.
-- **Complex Graph:** Requires multi-hop reasoning across thousands of entities (people, organizations, locations) with hidden connections.
-- **Needle-in-a-Haystack:** Relevant information is often buried in hundreds of pages of irrelevant legalese.
-
-Just as the Enron corpus became the gold standard for email and network analysis, Epstein Bench aims to be the stress-test for "in-the-wild" RAG systems. It forces systems to grapple with the messiness of real legal discovery rather than perfectly formatted Wikipedia articles.
-
----
-
-## Installation
-
-This project uses Anaconda for dependency management.
-
-1.  **Clone and Setup:**
-    ```bash
-    git clone https://github.com/yourusername/epstein-bench.git
-    cd epstein-bench
-    conda create -n epstein-bench python=3.11
-    conda activate epstein-bench
-    pip install -r requirements.txt
-    ```
-
-2.  **Environment Variables:**
-    ```bash
-    cp env.example .env
-    # Edit .env and add OPENAI_API_KEY, etc.
-    ```
-
----
-
-## Quick Start
-
-To see the framework in action, run the baseline RAG example:
+Score it:
 
 ```bash
-python -m src.auepora_eval.examples.baseline_rag --dataset epstein_bench_tasks.jsonl --top_k 5 --use_llm
+python -m epstein_bench score predictions.jsonl --split full
 ```
 
-*Note: If you don't have `epstein_bench_tasks.jsonl`, see the [Usage Guide](docs/usage.md) to generate one.*
+## Headline metric: cited answer correctness
 
----
+An answer scores only if it matches the reference (pinned LLM judge, published
+prompt) **and** at least one cited document genuinely supports it. Per type:
+binary cited correctness (single_hop, timeline), item-level P/R/F1 with
+citation requirement (aggregation), refusal accuracy (unanswerable).
+Retrieval diagnostics: recall@5/20, nDCG@10 against pooled gold sets.
 
-## Core Concepts
+## Why trust the ground truth
 
-An **Evaluation Plan** binds Targets, Datasets, and Metrics together.
+Every task in a release has survived a four-stage verification gauntlet —
+standalone interpretability, independent re-answering from the gold docs,
+closed-book/distractor necessity checks, and strong-model adjudication —
+plus TREC-style pooled relevance judgments across three diverse retrievers,
+with a stability re-check. Verification pass rates and known limitations are
+published in [`dataset/DATASET_CARD.md`](dataset/DATASET_CARD.md), and every
+task carries full provenance. Methodology details:
+[`docs/methodology.md`](docs/methodology.md).
 
-| Target Category | Description | Common Metrics |
-|----------------|-------------|----------------|
-| **Retrieval Relevance** | Did we find the right docs? | Recall@K, Precision@K |
-| **Retrieval Accuracy** | Is the ranking correct? | MRR, NDCG |
-| **Gen Correctness** | Is the answer right? | ROUGE, BLEU, BERTScore |
-| **Gen Faithfulness** | Is it grounded in context? | LLM Judge (Faithfulness) |
-| **Robustness** | Can it handle noise? | Performance degradation metrics |
+## Quick start
 
----
-
-## Documentation
-
-For detailed instructions on how to use the library, implement your own RAG system, or generate synthetic data, please refer to the **[Usage & Implementation Guide](docs/usage.md)**.
-
-Key documentation files:
-- [Usage & Implementation Guide](docs/usage.md)
-- [Engineering Spec](docs/spec.md)
-- [Metrics Definitions](docs/metrics.md)
-- [Task Generation Logic](docs/task-generation.md)
-
----
-
-## Project Structure
-
-```text
-src/
-├── auepora_eval/           # Core Evaluation Library
-│   ├── core/               # Types, Interfaces, Runner
-│   ├── metrics/            # Metric implementations
-│   ├── taskgen/            # Synthetic data generation
-│   ├── io/                 # Data loading/saving
-│   └── examples/           # Example scripts
-└── epstein_bench/          # Project-specific configurations
-    ├── plan.py             # Metric plan builders
-    └── llm_critic.py       # LLM Judge implementations
+```bash
+conda create -n epstein-bench python=3.11 && conda activate epstein-bench
+pip install -e ".[dev]"
+cp env.example .env   # add OPENAI_API_KEY (needed for scoring's LLM judge)
 ```
 
----
+Run a reference baseline on the dev split:
+
+```bash
+python -m epstein_bench corpus                 # one-time: build corpus artifacts
+python baselines/run_baseline.py --system hybrid --split dev --out preds.jsonl
+python -m epstein_bench score preds.jsonl --split dev
+```
+
+Baselines: `bm25`, `dense`, `hybrid`, and `closed_book` (no retrieval — public
+evidence the tasks require it).
+
+## Submitting to the leaderboard
+
+1. Run your system on `dataset/v1.0/full/questions.jsonl`.
+2. `python -m epstein_bench submit predictions.jsonl --name "My System" --split full`
+3. Open a PR adding the generated `submissions/<name>/` directory.
+
+CI recomputes all scores from your predictions — submitted scores are never
+trusted. The `dev` split is for iteration and is not leaderboard-eligible.
+
+## Regenerating the dataset
+
+The pipeline is seeded, config-pinned, and resumable (all LLM calls are
+disk-cached):
+
+```bash
+python -m epstein_bench corpus
+python -m epstein_bench generate --target 1000
+python -m epstein_bench verify
+python -m epstein_bench pool
+python -m epstein_bench finalize
+```
+
+## Repository layout
+
+```
+dataset/            versioned task splits + DATASET_CARD.md
+src/epstein_bench/  the pipeline: corpus, generate, verify, pool, score, submit
+baselines/          reference systems (bm25 / dense / hybrid / closed_book)
+docs/               methodology + leaderboard site
+tests/              unit + end-to-end smoke tests (stub LLM, no API key needed)
+```
+
+## Ethics
+
+The corpus consists of documents released by government bodies and courts
+(`aurora2424/Epstein-Files`). Tasks are generated only from already-public
+text; no new personal information is synthesized. The benchmark's purpose is
+retrieval research on realistic noisy corpora.
 
 ## Citation
 
-If you use Epstein Bench or the Auepora-based evaluation components, please cite:
-
-- The Auepora evaluation framework survey: [arXiv:2405.07437](https://arxiv.org/abs/2405.07437)
-
 ```bibtex
-@article{yu2024evaluation,
-  title   = {Evaluation of Retrieval-Augmented Generation: A Survey},
-  author  = {Hao Yu and Aoran Gan and Kai Zhang and Shiwei Tong and Qi Liu and Zhaofeng Liu},
-  journal = {arXiv preprint arXiv:2405.07437},
-  year    = {2024},
-  url     = {https://arxiv.org/abs/2405.07437}
-}
-```
-
-- This repository:
-
-```bibtex
-@software{epstein_bench_2025,
-  title  = {Epstein Bench: The Files Don’t Lie, But Your RAG Might},
+@software{epstein_bench_2026,
+  title  = {Epstein Bench: a verified RAG benchmark over the public Epstein Files},
   author = {Conner Swann},
-  year   = {2025},
+  year   = {2026},
   url    = {https://github.com/yourbuddyconner/epstein-bench}
 }
 ```

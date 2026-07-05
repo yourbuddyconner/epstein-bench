@@ -1,0 +1,38 @@
+name: validate-submission
+
+# Leaderboard PRs add a directory under submissions/ containing
+# predictions.jsonl + metadata.json. This workflow recomputes all scores from
+# the predictions — submitted score files are never trusted.
+
+on:
+  pull_request:
+    paths:
+      - "submissions/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e .
+      - name: Find changed submission bundles
+        id: bundles
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          dirs=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- submissions/ \
+            | xargs -r -n1 dirname | sort -u)
+          echo "dirs=$dirs" >> "$GITHUB_OUTPUT"
+      - name: Validate and rescore
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -e
+          for dir in ${{ steps.bundles.outputs.dirs }}; do
+            echo "== validating $dir =="
+            python -m epstein_bench validate "$dir"
+            cat "$dir/scores.json"
+          done
+        working-directory: .

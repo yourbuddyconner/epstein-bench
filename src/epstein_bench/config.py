@@ -1,0 +1,100 @@
+"""Pinned configuration for the benchmark pipeline.
+
+Everything that affects dataset content or scores lives here so a release is
+reproducible from config + seed alone. Judge model and prompt versions are
+part of the dataset contract: changing them is a new benchmark version.
+"""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+@dataclass
+class Config:
+    # --- corpus ---
+    # Full public Epstein Files release (~4.1M rows incl. media; only the
+    # projected text columns below are ever downloaded).
+    hf_dataset: str = "aurora2424/Epstein-Files"
+    hf_text_column: str = "text_content"
+    hf_id_column: str = "doc_id"
+    hf_columns: tuple[str, ...] = (
+        "doc_id",
+        "file_name",
+        "file_type",
+        "online_url",
+        "text_content",
+    )
+    doc_limit: int | None = None  # cap on text-bearing docs consumed (dev runs)
+
+    chunk_tokens: int = 512
+    chunk_overlap: int = 50
+
+    # quality screen thresholds (fractions of characters/words)
+    screen_min_chars: int = 200
+    screen_max_garbage_ratio: float = 0.15  # non-ascii-printable chars
+    screen_min_dictionary_ratio: float = 0.55  # words found in wordlist
+    screen_borderline_band: float = 0.10  # +/- band around thresholds -> LLM check
+
+    # entity alias index
+    entity_min_count: int = 3  # min corpus frequency to index a name
+
+    # --- models (pinned) ---
+    cheap_model: str = "gpt-4o-mini-2024-07-18"
+    strong_model: str = "gpt-4o-2024-08-06"
+    judge_model: str = "gpt-4o-mini-2024-07-18"  # scoring judge; part of the release
+    embed_model: str = "text-embedding-3-small"
+    temperature: float = 0.0
+    seed: int = 20260705
+
+    # --- generation targets ---
+    target_tasks: int = 1000
+    oversample_factor: float = 3.0
+    type_mix: dict[str, float] = field(
+        default_factory=lambda: {
+            "single_hop": 0.50,
+            "aggregation": 0.20,
+            "timeline": 0.15,
+            "unanswerable": 0.15,
+        }
+    )
+
+    # --- verification ---
+    answerability_f1_floor: float = 0.10
+    aggregation_recovery_floor: float = 0.80  # fraction of items stage 2 must recover
+
+    # --- pooling ---
+    pool_top_k: int = 20  # per retriever, doc-level
+    pool_judge_batch: int = 8  # docs judged per LLM call
+    stability_sample_rate: float = 0.10  # fraction re-judged by strong model
+
+    # --- scoring ---
+    recall_ks: tuple[int, ...] = (5, 20)
+    ndcg_k: int = 10
+    max_retrieved: int = 20
+
+    # --- paths ---
+    build_dir: Path = REPO_ROOT / "build"
+    dataset_dir: Path = REPO_ROOT / "dataset"
+    cache_dir: Path = REPO_ROOT / "build" / "llm_cache"
+
+    # --- runtime ---
+    stub_llm: bool = field(
+        default_factory=lambda: os.environ.get("EPSTEIN_BENCH_STUB_LLM") == "1"
+    )
+    openai_api_key: str | None = field(
+        default_factory=lambda: os.environ.get("OPENAI_API_KEY")
+    )
+    max_llm_retries: int = 5
+
+    def ensure_dirs(self) -> None:
+        for d in (self.build_dir, self.dataset_dir, self.cache_dir):
+            d.mkdir(parents=True, exist_ok=True)
