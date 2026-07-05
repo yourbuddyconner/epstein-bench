@@ -1,0 +1,21 @@
+{
+  "version": "v1.0",
+  "splits": {
+    "full": {
+      "n_tasks": 13,
+      "by_type": {
+        "single_hop": 12,
+        "unanswerable": 1
+      },
+      "questions_sha256": "862f951cb70562285342b37d0c12acff711c643e8a48bfbb172bf8cf41652cf1"
+    },
+    "dev": {
+      "n_tasks": 13,
+      "by_type": {
+        "single_hop": 12,
+        "unanswerable": 1
+      },
+      "questions_sha256": "1cbc93993eab6077c278c9e15b9498b34d7b252ca059279b82a01f773bc9f7a9"
+    }
+  }
+}

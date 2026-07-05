@@ -99,8 +99,13 @@ class Gauntlet:
             "[STANDALONE] A question for a document-corpus benchmark must be "
             "interpretable on its own: it names concrete people/organizations "
             "(no bare initials, no 'the document/this email'), and is not about "
-            "generic boilerplate (disclaimers, signatures). Does this question "
-            'qualify? Respond with JSON {"standalone": true|false, "reason": str}.'
+            "generic boilerplate (disclaimers, signatures). Also FAIL questions "
+            "that presuppose a unique unnamed artifact — 'the email from X', "
+            "'the letter', 'the meeting' — unless the question itself pins it "
+            "down with distinguishing details (subject, date range, recipient); "
+            "a corpus can contain many emails from the same person. Does this "
+            'question qualify? Respond with JSON {"standalone": true|false, '
+            '"reason": str}.'
             f"\n\nQuestion: {task['question']}"
         )
         return bool(resp.get("standalone"))
@@ -180,7 +185,7 @@ class Gauntlet:
             body = (
                 f"Question: {task['question']}\nReference answer: {reference}\n\n"
                 "Evidence:\n"
-                + _doc_context(task["source_doc_ids"], self.docs_by_id, limit=1500)
+                + _doc_context(task["source_doc_ids"], self.docs_by_id, limit=2500)
             )
         resp = self.llm.chat_json(
             "[ADJUDICATE] You are the final quality gate for a public RAG "

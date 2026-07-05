@@ -213,7 +213,7 @@ def stub_response(prompt: str) -> str:
         return json.dumps({"match": True})
     if tag == "ADJUDICATE":
         return json.dumps({"pass": True, "category": "ok"})
-    if tag == "POOLJUDGE":
+    if tag in ("POOLJUDGE", "POOLRESCUE"):
         return json.dumps({"verdicts": ["supports"] * 16})
     if tag == "SCOREJUDGE":
         return json.dumps({"correct": True, "is_refusal": False})

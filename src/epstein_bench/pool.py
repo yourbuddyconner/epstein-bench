@@ -48,8 +48,14 @@ def judge_pool(
     llm: LLM,
     config: Config,
     model: str | None = None,
+    tag: str = "POOLJUDGE",
 ) -> dict[str, str]:
-    """Return {doc_id: 'supports'|'partial'|'irrelevant'}."""
+    """Return {doc_id: 'supports'|'partial'|'irrelevant'}.
+
+    Excerpt length matches the answerability stage (2500 chars) so the two
+    judges see the same evidence; 'supports' is deliberately phrased to match
+    answerability semantics — could a careful reader answer from this doc?
+    """
     verdicts: dict[str, str] = {}
     reference = _reference(task)
     for start in range(0, len(pooled), config.pool_judge_batch):
@@ -57,13 +63,15 @@ def judge_pool(
         if not batch:
             continue
         listing = "\n\n".join(
-            f"[DOC {i}] id={d}\n{docs_by_id[d]['text'][:1500]}"
+            f"[DOC {i}] id={d}\n{docs_by_id[d]['text'][:2500]}"
             for i, d in enumerate(batch)
         )
         resp = llm.chat_json(
-            "[POOLJUDGE] For each document below, judge whether it supports the "
-            "reference answer to the question: 'supports' (states the answer or an "
-            "item of it), 'partial' (related but insufficient), or 'irrelevant'. "
+            f"[{tag}] For each document below, judge: could a careful reader give "
+            "the reference answer to the question using that document? 'supports' "
+            "(the document states the answer, or an item of it, directly or in "
+            "clearly equivalent wording), 'partial' (related but a reader could "
+            "not recover the answer from it alone), or 'irrelevant'. "
             f'Respond with JSON {{"verdicts": [str x {len(batch)}]}} in document order.'
             f"\n\nQuestion: {task['question']}\nReference answer: {reference}\n\n{listing}",
             model=model,
@@ -93,10 +101,26 @@ def pool_tasks(config: Config, llm: LLM) -> dict[str, int]:
             pooled = build_pool(task, retrievers, config)
             verdicts = judge_pool(task, pooled, docs_by_id, llm, config)
             gold = sorted(d for d, v in verdicts.items() if v == "supports")
-            # a task whose own source docs aren't judged supportive is suspect
             if not any(d in gold for d in task["source_doc_ids"]):
-                dropped.append({"task_id": task["task_id"], "reason": "source_not_supportive"})
-                continue
+                # The answerability stage already confirmed these docs answer
+                # the question, so a cheap-judge miss here is usually a false
+                # negative. Escalate to the strong model before dropping.
+                rescue = judge_pool(
+                    task,
+                    task["source_doc_ids"],
+                    docs_by_id,
+                    llm,
+                    config,
+                    model=config.strong_model,
+                    tag="POOLRESCUE",
+                )
+                rescued = sorted(d for d, v in rescue.items() if v == "supports")
+                if not rescued:
+                    dropped.append(
+                        {"task_id": task["task_id"], "reason": "source_not_supportive"}
+                    )
+                    continue
+                gold = sorted(set(gold) | set(rescued))
             # stability re-check on a sample
             if rng.random() < config.stability_sample_rate:
                 strong = judge_pool(

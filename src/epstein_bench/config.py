@@ -57,7 +57,8 @@ class Config:
 
     # --- generation targets ---
     target_tasks: int = 1000
-    oversample_factor: float = 3.0
+    # end-to-end yield measured ~8-20% in shakedown runs; 5x keeps headroom
+    oversample_factor: float = 5.0
     type_mix: dict[str, float] = field(
         default_factory=lambda: {
             "single_hop": 0.50,
