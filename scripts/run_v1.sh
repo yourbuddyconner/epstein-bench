@@ -1,8 +1,9 @@
 #!/bin/bash
 # Full v1.0 generation run. Resumable: every stage's LLM calls are disk-cached.
-set -e
+# NB: set -e only after conda setup — conda.sh trips set -e internally.
 source /opt/anaconda3/etc/profile.d/conda.sh 2>/dev/null || source ~/miniconda3/etc/profile.d/conda.sh 2>/dev/null || source ~/anaconda3/etc/profile.d/conda.sh 2>/dev/null
 conda activate epstein-bench
+set -e
 cd "$(dirname "$0")/.."
 echo "=== CORPUS $(date) ==="
 python -m epstein_bench corpus --limit 20000
