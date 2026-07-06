@@ -246,4 +246,6 @@ def stub_response(prompt: str) -> str:
         return json.dumps({"matched_items": [True], "extra_items": 0})
     if tag == "BASELINE":
         return json.dumps({"answer": "January 10, 2015", "citations": []})
+    if tag == "PARAMETRIC":
+        return json.dumps({"answer": "January 10, 2015", "citations": []})
     return json.dumps({})

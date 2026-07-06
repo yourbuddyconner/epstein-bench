@@ -55,8 +55,8 @@
     <table id="board">
       <thead>
         <tr>
-          <th>system</th><th>overall</th>
-          <th>single_hop</th><th>aggregation</th><th>timeline</th><th>unanswerable</th>
+          <th>system</th><th>overall</th><th>uncited</th>
+          <th>single_hop</th><th>aggregation</th><th>timeline</th><th>dossier</th><th>unanswerable</th>
           <th>recall@5</th><th>recall@20</th><th>ndcg@10</th>
         </tr>
       </thead>
@@ -81,7 +81,9 @@
       const tr = document.createElement("tr");
       const cells = [
         e.system_name || "?", fmt(e.overall_cited_correctness),
-        fmt(t.single_hop), fmt(t.aggregation), fmt(t.timeline), fmt(t.unanswerable),
+        fmt(e.overall_uncited_correctness),
+        fmt(t.single_hop), fmt(t.aggregation), fmt(t.timeline), fmt(t.dossier),
+        fmt(t.unanswerable),
         fmt(r["recall@5"]), fmt(r["recall@20"]), fmt(r["ndcg@10"]),
       ];
       cells.forEach((val, i) => {

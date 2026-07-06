@@ -46,8 +46,18 @@ Run: `python -m epstein_bench score predictions.jsonl --split full`
 - **unanswerable** — 1.0 iff the judge classifies the answer as a
   refusal/abstention. A confident wrong answer scores 0 (that's the
   hallucination probe).
-- **overall_cited_correctness** — unweighted macro-average over the four
-  per-type scores. This is the leaderboard sort key.
+- **overall_cited_correctness** — unweighted macro-average over the per-type
+  scores. This is the leaderboard sort key.
+- **overall_uncited_correctness** (diagnostic) — the same judgments with the
+  citation gate removed. For retrieval systems it isolates grounding failures
+  (correct answer, wrong/no citation). For the `parametric` baseline — which
+  answers purely from model weights, no corpus access — it measures how much
+  of the Epstein files a model already knows from training. Note the
+  benchmark is decontaminated against the *generation-time* model only (the
+  necessity stage rejects tasks that model can answer closed-book), so any
+  other model's parametric score is a clean signal of its own training
+  exposure — and a per-model contamination probe as newer models train on
+  the released files.
 - **retrieval diagnostics** — recall@5, recall@20, nDCG@10 of `retrieved`
   against pooled gold docs (answerable tasks only). Secondary columns; not
   part of the headline.

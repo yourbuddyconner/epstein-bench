@@ -48,13 +48,25 @@ def _pred(task_id="t1", **over):
 
 def test_cited_correctness_requires_supporting_citation(config, llm):
     tasks = [_single_hop_task()]
-    # correct answer, citation NOT in gold set -> 0
+    # correct answer, citation NOT in gold set -> cited 0, uncited 1
     report = score_predictions(config, llm, tasks, [_pred(citations=["d9"])])
     assert report["per_type"]["single_hop"] == 0.0
+    assert report["per_type_uncited"]["single_hop"] == 1.0
+    assert report["overall_uncited_correctness"] == 1.0
     # correct answer with supporting citation -> 1
     report = score_predictions(config, llm, tasks, [_pred()])
     assert report["per_type"]["single_hop"] == 1.0
     assert report["overall_cited_correctness"] == 1.0
+
+
+def test_uncited_measures_parametric_knowledge(config, llm):
+    """A citation-free correct answer (closed-book/parametric system) scores
+    0 on the headline but full credit on uncited correctness."""
+    report = score_predictions(
+        config, llm, [_single_hop_task()], [_pred(citations=[], retrieved=[])]
+    )
+    assert report["per_type"]["single_hop"] == 0.0
+    assert report["per_type_uncited"]["single_hop"] == 1.0
 
 
 def test_wrong_answer_scores_zero(config, llm):

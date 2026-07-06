@@ -62,10 +62,33 @@ def answer_closed_book(llm: LLM, question: str) -> str:
     return str(resp.get("answer")) if resp.get("answer") else REFUSAL
 
 
+def answer_parametric(llm: LLM, question: str) -> str:
+    """Best-effort recall from training data (parametric-knowledge probe).
+
+    Unlike closed_book (the retrieval-necessity control), this mode actively
+    encourages the model to answer from what it absorbed in training — the
+    publicly released Epstein files are on the open web, so a model may
+    genuinely know. Scored via uncited correctness; the cited headline will
+    be ~0 by construction (no citations exist)."""
+    prompt = (
+        "[PARAMETRIC] This question is about the publicly released Epstein "
+        "files, which you may have seen during training. Answer from your own "
+        "stored knowledge — recall as specifically as you can, and give your "
+        "best answer even if you are not fully certain. Only respond "
+        '{"answer": null} if you have no relevant knowledge at all. '
+        'Respond with JSON {"answer": str|null, "citations": []}.'
+        f"\n\nQuestion: {question}"
+    )
+    resp = llm.chat_json(prompt)
+    return str(resp.get("answer")) if resp.get("answer") else REFUSAL
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--system", required=True, choices=["bm25", "dense", "hybrid", "closed_book"]
+        "--system",
+        required=True,
+        choices=["bm25", "dense", "hybrid", "closed_book", "parametric"],
     )
     parser.add_argument("--split", default="dev", choices=["dev", "full"])
     parser.add_argument("--out", required=True)
@@ -81,7 +104,7 @@ def main() -> int:
 
     retriever = None
     docs_by_id: dict[str, dict] = {}
-    if args.system != "closed_book":
+    if args.system not in ("closed_book", "parametric"):
         chunks = load_chunks(config)
         docs_by_id = {d["doc_id"]: d for d in load_docs(config)}
         retriever = build_retrievers(config, chunks, llm)[args.system]
@@ -90,7 +113,12 @@ def main() -> int:
         retrieved: list[str] = []
         try:
             if retriever is None:
-                answer, citations = answer_closed_book(llm, q["question"]), []
+                no_context = (
+                    answer_parametric
+                    if args.system == "parametric"
+                    else answer_closed_book
+                )
+                answer, citations = no_context(llm, q["question"]), []
             else:
                 ranked = retriever.search(q["question"], TOP_K)
                 retrieved = [doc_id for doc_id, _ in ranked]

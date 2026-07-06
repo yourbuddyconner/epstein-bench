@@ -80,15 +80,16 @@ def score_predictions(
             f"predictions missing {len(missing)} task(s), e.g. {missing[:3]}"
         )
 
-    def judge_task(task: dict) -> tuple[str, float, bool]:
+    def judge_task(task: dict) -> tuple[str, float, float, bool]:
         pred = preds_by_id[task["task_id"]]
         answer = str(pred.get("answer") or "")
         citations = [str(c) for c in (pred.get("citations") or [])][: config.max_retrieved]
         gold = task.get("gold_docs") or []
         try:
-            return task["type"], _score_one(llm, config, task, answer, citations, gold), False
+            cited, uncited = _score_one(llm, config, task, answer, citations, gold)
+            return task["type"], cited, uncited, False
         except LLMError:
-            return task["type"], 0.0, True  # fail closed: unscorable earns nothing
+            return task["type"], 0.0, 0.0, True  # fail closed: unscorable earns nothing
 
     per_type_scores: dict[str, list[float]] = {}
     recalls: dict[int, list[float]] = {k: [] for k in config.recall_ks}
@@ -104,17 +105,24 @@ def score_predictions(
             ndcgs.append(ndcg_at_k(retrieved, gold, config.ndcg_k))
 
     judged = parallel_map(judge_task, tasks, config.max_workers)
-    errors = sum(1 for _, _, err in judged if err)
-    for type_, score, _err in judged:
-        per_type_scores.setdefault(type_, []).append(score)
+    errors = sum(1 for _, _, _, err in judged if err)
+    uncited_scores: dict[str, list[float]] = {}
+    for type_, cited, uncited, _err in judged:
+        per_type_scores.setdefault(type_, []).append(cited)
+        uncited_scores.setdefault(type_, []).append(uncited)
 
     def avg(xs: list[float]) -> float:
         return sum(xs) / len(xs) if xs else 0.0
 
     per_type = {t: avg(v) for t, v in per_type_scores.items()}
+    per_type_uncited = {t: avg(v) for t, v in uncited_scores.items()}
     report = {
         "overall_cited_correctness": avg(list(per_type.values())),
         "per_type": per_type,
+        # correctness ignoring the citation gate — for closed-book systems this
+        # measures parametric knowledge of the corpus (training contamination)
+        "overall_uncited_correctness": avg(list(per_type_uncited.values())),
+        "per_type_uncited": per_type_uncited,
         "retrieval": {
             **{f"recall@{k}": avg(v) for k, v in recalls.items()},
             f"ndcg@{config.ndcg_k}": avg(ndcgs),
@@ -127,6 +135,16 @@ def score_predictions(
     return report
 
 
+def _item_f1(matched_count: int, extra: int, n_gold: int) -> float:
+    recall = matched_count / n_gold if n_gold else 0.0
+    precision = (
+        matched_count / (matched_count + extra) if (matched_count + extra) else 0.0
+    )
+    if precision + recall == 0:
+        return 0.0
+    return 2 * precision * recall / (precision + recall)
+
+
 def _score_one(
     llm: LLM,
     config: Config,
@@ -134,35 +152,42 @@ def _score_one(
     answer: str,
     citations: list[str],
     gold: list[str],
-) -> float:
+) -> tuple[float, float]:
+    """Return (cited, uncited) scores.
+
+    Cited is the headline (grounding required). Uncited ignores the citation
+    gate — for closed-book/parametric systems it measures how much of the
+    corpus the model already knows from training.
+    """
     if task["type"] == "unanswerable":
         verdict = _judge_answer(llm, config, task, answer or "(empty)")
-        return 1.0 if verdict.get("is_refusal") else 0.0
+        score = 1.0 if verdict.get("is_refusal") else 0.0
+        return score, score
 
     if not answer:
-        return 0.0
+        return 0.0, 0.0
 
     if task["type"] in ("aggregation", "dossier"):
         verdict = _judge_aggregation(llm, config, task, answer)
         matched = list(verdict.get("matched_items") or [])
         cited_matched = 0
+        uncited_matched = 0
         for i, item in enumerate(task["items"]):
             if i < len(matched) and matched[i]:
+                uncited_matched += 1
                 supported = set(item["doc_ids"]) | set(gold)
                 if any(c in supported for c in citations):
                     cited_matched += 1
         extra = max(0, int(verdict.get("extra_items") or 0))
         n_gold = len(task["items"])
-        recall = cited_matched / n_gold if n_gold else 0.0
-        precision = (
-            cited_matched / (cited_matched + extra) if (cited_matched + extra) else 0.0
+        return (
+            _item_f1(cited_matched, extra, n_gold),
+            _item_f1(uncited_matched, extra, n_gold),
         )
-        if precision + recall == 0:
-            return 0.0
-        return 2 * precision * recall / (precision + recall)
 
     # single_hop / timeline
     verdict = _judge_answer(llm, config, task, answer)
     if verdict.get("is_refusal") or not verdict.get("correct"):
-        return 0.0
-    return 1.0 if any(c in set(gold) for c in citations) else 0.0
+        return 0.0, 0.0
+    cited = 1.0 if any(c in set(gold) for c in citations) else 0.0
+    return cited, 1.0

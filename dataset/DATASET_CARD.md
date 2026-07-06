@@ -103,6 +103,10 @@ across versions are not comparable.
   hybrid 0.575, dense 0.493, closed_book 0.243 — closed-book scores 0.000
   on every retrieval-requiring type, evidencing retrieval necessity;
   its overall score is entirely refusal accuracy on unanswerable tasks.
+- Since v1.1 the scorer also reports **uncited correctness** and baselines
+  include a `parametric` mode (answer purely from model weights) — a
+  per-model probe of training exposure to the released files. The
+  retrieval-necessity control (`closed_book`) is unchanged.
 - **Human spot-check:** *pending* — 100-task sample generated
   (`scripts/make_spotcheck.py`, seed 20260705); observed error rate will be
   recorded here and BAD tasks retracted in v1.1.
