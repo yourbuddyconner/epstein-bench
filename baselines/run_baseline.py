@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from epstein_bench import DATASET_VERSION  # noqa: E402
 from epstein_bench.config import Config  # noqa: E402
 from epstein_bench.corpus import load_chunks, load_docs  # noqa: E402
-from epstein_bench.io_utils import read_jsonl, write_jsonl  # noqa: E402
+from epstein_bench.io_utils import parallel_map, read_jsonl, write_jsonl  # noqa: E402
 from epstein_bench.llm import LLM, LLMError  # noqa: E402
 from epstein_bench.retrievers import build_retrievers  # noqa: E402
 
@@ -86,8 +86,7 @@ def main() -> int:
         docs_by_id = {d["doc_id"]: d for d in load_docs(config)}
         retriever = build_retrievers(config, chunks, llm)[args.system]
 
-    predictions = []
-    for q in questions:
+    def answer_one(q: dict) -> dict:
         retrieved: list[str] = []
         try:
             if retriever is None:
@@ -102,14 +101,14 @@ def main() -> int:
         except LLMError as e:
             print(f"warn: {q['task_id']} failed ({e}); recording refusal", file=sys.stderr)
             answer, citations = REFUSAL, []
-        predictions.append(
-            {
-                "task_id": q["task_id"],
-                "answer": answer,
-                "citations": citations,
-                "retrieved": retrieved,
-            }
-        )
+        return {
+            "task_id": q["task_id"],
+            "answer": answer,
+            "citations": citations,
+            "retrieved": retrieved,
+        }
+
+    predictions = parallel_map(answer_one, questions, config.max_workers)
 
     n = write_jsonl(args.out, predictions)
     print(json.dumps({"system": args.system, "split": args.split, "predictions": n}))

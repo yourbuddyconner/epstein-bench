@@ -19,7 +19,7 @@ from __future__ import annotations
 import math
 
 from .config import Config
-from .io_utils import read_jsonl
+from .io_utils import parallel_map, read_jsonl
 from .llm import LLM, LLMError
 
 
@@ -80,29 +80,33 @@ def score_predictions(
             f"predictions missing {len(missing)} task(s), e.g. {missing[:3]}"
         )
 
-    per_type_scores: dict[str, list[float]] = {}
-    recalls: dict[int, list[float]] = {k: [] for k in config.recall_ks}
-    ndcgs: list[float] = []
-    errors = 0
-
-    for task in tasks:
+    def judge_task(task: dict) -> tuple[str, float, bool]:
         pred = preds_by_id[task["task_id"]]
         answer = str(pred.get("answer") or "")
         citations = [str(c) for c in (pred.get("citations") or [])][: config.max_retrieved]
-        retrieved = [str(r) for r in (pred.get("retrieved") or [])][: config.max_retrieved]
         gold = task.get("gold_docs") or []
+        try:
+            return task["type"], _score_one(llm, config, task, answer, citations, gold), False
+        except LLMError:
+            return task["type"], 0.0, True  # fail closed: unscorable earns nothing
 
+    per_type_scores: dict[str, list[float]] = {}
+    recalls: dict[int, list[float]] = {k: [] for k in config.recall_ks}
+    ndcgs: list[float] = []
+
+    for task in tasks:
         if task["type"] != "unanswerable":
+            pred = preds_by_id[task["task_id"]]
+            retrieved = [str(r) for r in (pred.get("retrieved") or [])][: config.max_retrieved]
+            gold = task.get("gold_docs") or []
             for k in config.recall_ks:
                 recalls[k].append(recall_at_k(retrieved, gold, k))
             ndcgs.append(ndcg_at_k(retrieved, gold, config.ndcg_k))
 
-        try:
-            score = _score_one(llm, config, task, answer, citations, gold)
-        except LLMError:
-            errors += 1
-            score = 0.0  # fail closed: unscorable predictions earn nothing
-        per_type_scores.setdefault(task["type"], []).append(score)
+    judged = parallel_map(judge_task, tasks, config.max_workers)
+    errors = sum(1 for _, _, err in judged if err)
+    for type_, score, _err in judged:
+        per_type_scores.setdefault(type_, []).append(score)
 
     def avg(xs: list[float]) -> float:
         return sum(xs) / len(xs) if xs else 0.0
