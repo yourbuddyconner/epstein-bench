@@ -119,6 +119,9 @@ def _to_doc_ranking(
 
 def build_retrievers(config: Config, chunks: list[dict], llm: LLM) -> dict[str, object]:
     bm25 = BM25Retriever(chunks)
-    dense = DenseRetriever(chunks, llm, config.build_dir / "chunk_embeddings.npy")
+    # cache keyed by chunk count so a corpus rebuild invalidates it
+    dense = DenseRetriever(
+        chunks, llm, config.build_dir / f"chunk_embeddings_{len(chunks)}.npy"
+    )
     hybrid = HybridRetriever([bm25, dense])
     return {"bm25": bm25, "dense": dense, "hybrid": hybrid}

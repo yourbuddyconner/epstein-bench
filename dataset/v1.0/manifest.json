@@ -2,20 +2,22 @@
   "version": "v1.0",
   "splits": {
     "full": {
-      "n_tasks": 13,
+      "n_tasks": 973,
       "by_type": {
-        "single_hop": 12,
-        "unanswerable": 1
+        "single_hop": 854,
+        "aggregation": 38,
+        "unanswerable": 34,
+        "timeline": 47
       },
-      "questions_sha256": "862f951cb70562285342b37d0c12acff711c643e8a48bfbb172bf8cf41652cf1"
+      "questions_sha256": "89019762f63f0f416b7c0024ad510ac1723949292e71caa5a8c0443766f7b717"
     },
     "dev": {
-      "n_tasks": 13,
+      "n_tasks": 88,
       "by_type": {
-        "single_hop": 12,
-        "unanswerable": 1
+        "single_hop": 54,
+        "unanswerable": 34
       },
-      "questions_sha256": "1cbc93993eab6077c278c9e15b9498b34d7b252ca059279b82a01f773bc9f7a9"
+      "questions_sha256": "0d664386720606ddcc66b470acc830e945f8f3605c152df31152a7e2c5db8368"
     }
   }
 }

@@ -1,13 +1,88 @@
-{"task_id": "37f290fc-d656-45c2-9388-f5e28631b6a6", "type": "single_hop", "question": "What time will Jeffrey Epstein meet Karina Shuliak?"}
-{"task_id": "017575d1-7868-437b-a196-4bf8483eaf31", "type": "single_hop", "question": "What company is Richard Kahn associated with?"}
-{"task_id": "19e616d6-28d3-4439-a214-b240f0a41646", "type": "single_hop", "question": "What is the reference number for the order confirmed by Customercare from Surrounding.com?"}
-{"task_id": "bce0a93e-6655-4075-baad-e236e80f3d1b", "type": "single_hop", "question": "What is the current outstanding balance on Holly Jackson's account as stated by Amanda Harrison?"}
-{"task_id": "55943059-a88e-40a5-9057-6ca811e13b2f", "type": "single_hop", "question": "On what date did Molly Ladd confirm the completion of the transfer?"}
-{"task_id": "8ab27195-f7cc-47d0-832f-47640a29a14e", "type": "single_hop", "question": "What time did Molly Ladd send her email confirming the transfer?"}
-{"task_id": "a4804551-1d65-4f7f-b22a-b4d8dd25e98c", "type": "single_hop", "question": "What is Jeffrey Epstein's profession and where does he have a part-time residence?"}
-{"task_id": "e93d93a1-832e-4625-9916-f30cb6cb07e0", "type": "single_hop", "question": "When did the victim's stepmother report the alleged molestation to the Palm Beach police department?"}
-{"task_id": "6ddb7b5e-ffce-4f88-b385-3b89dcfd33f8", "type": "single_hop", "question": "Where will Jeffrey Epstein meet Karina Shuliak?"}
-{"task_id": "16d3f4cd-e5b0-45c9-a2ff-486ad978a50e", "type": "single_hop", "question": "What was the amount and date of the payment received by Amanda Harrison from Holly Jackson?"}
-{"task_id": "67b7508f-e405-4961-a1d1-19b7f44df3bd", "type": "single_hop", "question": "What is the professional title and organization of Erika A. Kellerhals?"}
-{"task_id": "8067f6a8-b082-45a7-9d4d-454d87ade99f", "type": "single_hop", "question": "What is the investigation fee charged by Commonwealth Bank for the trace request?"}
-{"task_id": "93997a3b-8d1c-4b36-8ef2-97a9fa12122e", "type": "unanswerable", "question": "What was the reason for the cancellation of the meeting scheduled with Valdson on May 1, 2010?"}
+{"task_id": "0c2f0a4d-fab4-4143-b4bc-7f9002d2630d", "type": "single_hop", "question": "What is the date of the alarm set for the meeting with Pete Briger?"}
+{"task_id": "ecaa0bd9-f5b4-435d-8bac-124a62eab840", "type": "single_hop", "question": "On what date did Cecile de Jongh send her email?"}
+{"task_id": "193ea907-8c62-4300-b492-01306b2b96c5", "type": "single_hop", "question": "What is the status of the Zorro Ranch trip mentioned by Larry Visoski?"}
+{"task_id": "c8171001-6518-40bd-a5d5-c40bcab5cddf", "type": "single_hop", "question": "What is the date and time of Jeffrey E.'s email to Faith Kates?"}
+{"task_id": "d0a6928d-36c9-4c3f-bb24-e7451205e333", "type": "single_hop", "question": "What time does Karyna Shuliak's flight depart from New York La Guardia?"}
+{"task_id": "3a1223bf-ac82-4298-ac28-92222f22d85d", "type": "single_hop", "question": "What did Jeffrey Epstein say regarding his intentions towards the recipient?"}
+{"task_id": "b268672e-5351-4d07-9d35-ee25a6b42980", "type": "single_hop", "question": "What date did Jeffrey Epstein send an email to Boris Nikolic?"}
+{"task_id": "d6561c67-186f-4a9d-b69a-11542f3abdb3", "type": "single_hop", "question": "When did Yoni Koren say he would arrive in New York?"}
+{"task_id": "dd7365a6-a1e2-4011-8d61-434ea7319b15", "type": "single_hop", "question": "What did Jeffrey E. quote Bruce as saying about medications?"}
+{"task_id": "f4f3d804-24b6-4814-b55d-dead8cbe8120", "type": "single_hop", "question": "What amount did Richard Kahn ask about for repayment?"}
+{"task_id": "978530e4-1864-4eac-b8ad-376783d1a294", "type": "single_hop", "question": "What did Joseph Igala say about the Native Grass that Rossana Vaccarino had?"}
+{"task_id": "0f42604d-ee36-4afb-a5f9-f1228a4bdd7c", "type": "single_hop", "question": "On what date did Amanda Skarbnik inquire about Peggy Siegal's connection with Mr. Epstein?"}
+{"task_id": "636bc0ef-76e0-4191-ab08-38aaab04a603", "type": "single_hop", "question": "What did Jeffrey Epstein ask Fabrice Aidan in his email sent on January 12, 2011?"}
+{"task_id": "83296f84-eabf-4d0b-b86a-aed6af3a65fd", "type": "single_hop", "question": "What year is the aircraft owned by Jim Leonard?"}
+{"task_id": "d87eaf96-b9e9-4651-9303-bef159f3cf99", "type": "single_hop", "question": "What did ICaryna Shuliak say regarding the contents of the kit?"}
+{"task_id": "d2aed84d-120a-4282-aaa7-d9cc9a6f7e78", "type": "single_hop", "question": "What did Rossana Vaccarino say about the Grand Total price for the plants?"}
+{"task_id": "b8751dd3-957c-4363-9d1b-3b1cc9c37b06", "type": "single_hop", "question": "What is the rumor associated with the aircraft owned by Joe Carfagna?"}
+{"task_id": "d2416d1d-e137-4de8-b865-1c158941aa6c", "type": "single_hop", "question": "What did Barry Zelin report about the Ferrari show at the Breakers?"}
+{"task_id": "1db4c031-9701-4a55-b881-0f344309f8db", "type": "single_hop", "question": "What did Lesley Groff say about Larry Summers' importance to Jeffrey Epstein?"}
+{"task_id": "b7213c61-3820-4516-ae73-991ea809c463", "type": "single_hop", "question": "What did Jeffrey Epstein ask Lesley Groff regarding Phantom of the Opera tickets?"}
+{"task_id": "91022314-7bf7-49ee-b540-f8ce0a3978ad", "type": "single_hop", "question": "What did Jeffrey Epstein inquire about Brock Pierce's location?"}
+{"task_id": "30506cd2-38f8-4cde-bf8f-ffb4609d628c", "type": "single_hop", "question": "What is the departure date for the flight from New York-Kennedy to Tokyo-Narita?"}
+{"task_id": "cbd7c6d9-3634-4c61-afd3-88c4b6d87ec0", "type": "single_hop", "question": "Who is the assistant to Jeffrey Epstein?"}
+{"task_id": "879570b1-99ec-4179-9e39-259e17f91688", "type": "single_hop", "question": "How much did Jeffrey E. pay for rent for December and January?"}
+{"task_id": "ce69e1d8-62da-4a13-9a10-c3cf3f51eddd", "type": "single_hop", "question": "On what date did Lesley Groff send the email regarding Phantom of the Opera tickets?"}
+{"task_id": "76f95d0e-2757-4259-8094-3b9e0a06b1c7", "type": "single_hop", "question": "On what date was the estimate prepared by Calrity AV?"}
+{"task_id": "d01d8fe4-bb2f-4ffa-bf9f-075d557bc945", "type": "single_hop", "question": "Where does Ashley Taylor work?"}
+{"task_id": "8155dbe6-271e-4193-9b76-93b9858b1cdd", "type": "single_hop", "question": "Where was Nicholas Ribis while communicating with Richard Kahn?"}
+{"task_id": "7cd01b5f-124a-4899-b567-9b464df004e8", "type": "single_hop", "question": "What is the address of the Peggy Siegal Company?"}
+{"task_id": "9bbcf3a3-b811-4230-ae29-559ecc19ed94", "type": "single_hop", "question": "What is Justin D. Nelson's position at J.P. Morgan Private Bank?"}
+{"task_id": "a0f1d598-fc61-4410-bfb1-a401581fa7ab", "type": "single_hop", "question": "What is the date and time when Fabrice Aidan sent the email regarding the UN meeting?"}
+{"task_id": "a1d094ab-e28c-4a63-9a44-bc23397c1cef", "type": "single_hop", "question": "What did Ariane de Rothschild say about attending the Milken conference?"}
+{"task_id": "97988c9f-94bc-49bd-a06b-3bff90e4fecd", "type": "single_hop", "question": "Where was Jeffrey Epstein located on February 3, 2010?"}
+{"task_id": "94a62897-9bf7-42a0-8b85-c91284da4809", "type": "single_hop", "question": "What is the date when Jeffrey E. sent the email to Reid Hoffman?"}
+{"task_id": "c2136da1-ca41-408f-98d5-62ee4466e268", "type": "single_hop", "question": "What company does Richard Kahn work for?"}
+{"task_id": "d819de8c-1a20-4501-a14a-840226ce250a", "type": "single_hop", "question": "What were the total assets of the Black family as of December 31, 2015?"}
+{"task_id": "3146354b-e1c0-47ea-b797-5e02b30e7eab", "type": "single_hop", "question": "What advice was given regarding the victim in the Epstein case about dealing with media allegations?"}
+{"task_id": "2ad57523-96a1-480e-b048-f3af7e3cfb6b", "type": "single_hop", "question": "What is the customer service phone number provided by 55 Downing Street?"}
+{"task_id": "bae3cc62-9721-47e6-93ec-4faf8bf8556c", "type": "single_hop", "question": "What did Kira Kira promise Jeffrey E. if he decided to take someone under his wing?"}
+{"task_id": "8d12f57a-a6ee-4309-b016-f46cf85470bb", "type": "single_hop", "question": "What is the name of the company where Amanda Skarbnik works as an assistant?"}
+{"task_id": "6c0d2066-85e1-4e3e-96de-7fe2d77b560d", "type": "single_hop", "question": "What is the date of the email sent by Ariane de Rothschild?"}
+{"task_id": "b1035021-8de3-4eba-a183-4523394d347f", "type": "single_hop", "question": "What was the date and time of the email sent by Jeffrey Epstein to Jes Staley?"}
+{"task_id": "01ad07cc-61f8-4344-ae42-7dcab690e82e", "type": "single_hop", "question": "Which airline is Karyna Shuliak flying with?"}
+{"task_id": "892016e6-85bf-4939-a310-57f0d3256b75", "type": "single_hop", "question": "What is Faith Kates's position related to Mt Sinai?"}
+{"task_id": "1592226c-861d-4274-a305-ce37ecdbdbdb", "type": "single_hop", "question": "What is the date of Karyna Shuliak's flight?"}
+{"task_id": "9ee2c7aa-d6eb-4ff0-96c7-9c797bcfc46f", "type": "single_hop", "question": "Who asked Ariane de Rothschild if she was going to the Milken conference?"}
+{"task_id": "03422e2f-caf8-439e-b3de-05f676f9ced8", "type": "single_hop", "question": "Which airline is associated with the ticket purchased through American Express Travel?"}
+{"task_id": "e34799b3-6526-4c44-b466-cfd1954a7ed1", "type": "single_hop", "question": "What is the date and time of the email sent by Michael Wolff to Jeffrey Epstein?"}
+{"task_id": "8aed332c-7032-4c04-9411-5c47c35daf3c", "type": "single_hop", "question": "What did Lesley Groff say about receiving her computer?"}
+{"task_id": "d2d9bb8e-b365-463e-b2a6-c16fc5d5dfa0", "type": "single_hop", "question": "What did Mark Tramo ask Jeffrey Epstein to send him?"}
+{"task_id": "971d0da7-a774-47ca-b952-6b0f380c40e1", "type": "single_hop", "question": "What did Barry Zelin say about his travel plans on February 3, 2010?"}
+{"task_id": "584d1527-4c6f-4fdc-9f7e-519bef01a3a6", "type": "single_hop", "question": "What dates did Brock Pierce say he would be in New York?"}
+{"task_id": "ddab49d5-004b-48e4-8ffb-0c93df60e46f", "type": "single_hop", "question": "What is the total cost of the project prepared by Calrity AV?"}
+{"task_id": "6304af87-25da-4a38-9ed9-dc475d4ef0f5", "type": "single_hop", "question": "What was the reason Yoni Koren needed to come to New York?"}
+{"task_id": "e1f4d3d5-41b5-453e-986c-3b6a196e9879", "type": "unanswerable", "question": "What were the travel plans of Sarah Johnson for the week of June 20-28, 2019, in London?"}
+{"task_id": "c4da07d4-cb32-473d-a86d-f4f79e0e3a81", "type": "unanswerable", "question": "What were the details of the appointment that Ghislaine Maxwell had with Dr. Moskowitz on May 1, 2015?"}
+{"task_id": "486a80bf-bc42-4087-a3c6-b17f0f03a637", "type": "unanswerable", "question": "What was the subject of the email sent by Ghislaine Maxwell to Jeffrey Epstein on July 15, 2012?"}
+{"task_id": "5e427f35-8cfd-4e1f-a611-046631fa9275", "type": "unanswerable", "question": "What was the schedule for Elon Musk's meetings in Los Angeles during the week of December 1, 2014?"}
+{"task_id": "b4a17a7a-0002-4719-b187-136474a88770", "type": "unanswerable", "question": "What was the specific time and date of the meeting proposed by Jeffrey E. with Olivier Colom in New York in 2015?"}
+{"task_id": "9fe0dd12-8785-4504-a6f5-640b8c776470", "type": "unanswerable", "question": "Was Jeffrey available for a meeting with Maria Gonzalez on Tuesday, September 18, 2018?"}
+{"task_id": "605d0eaa-5b3c-4eac-874c-0ac99a27ff24", "type": "unanswerable", "question": "What were the TOEFL results for Maria Gonzalez in 2016?"}
+{"task_id": "155e3dc1-190a-432e-95c2-7adfd186f31c", "type": "unanswerable", "question": "What was the subject of the email sent by Ghislaine Maxwell to Jeffrey Epstein on June 15, 2013?"}
+{"task_id": "a4964049-b31e-4305-b9b6-76e6e06dfa07", "type": "unanswerable", "question": "What time was the flight scheduled from New York to London on May 9, 2016?"}
+{"task_id": "a4d20a2b-7fdf-4618-b854-33aca8d22f9c", "type": "unanswerable", "question": "What was the outcome of the meeting between Jeffrey Epstein and Alan Dershowitz in 2013 regarding legal strategies?"}
+{"task_id": "5700bc88-2fdf-4680-928c-b82b2b210eeb", "type": "unanswerable", "question": "What was the subject of the email sent by Sarah Johnson to Olivier Colom on March 15, 2016?"}
+{"task_id": "1e5ceb36-64d1-42ee-9703-29d45c8ed780", "type": "unanswerable", "question": "What were the specific tasks that Maria Gonzalez was scheduled to complete at the house on December 1, 2014?"}
+{"task_id": "1b1f8804-6bec-4cd2-bc3d-4056e6140f09", "type": "unanswerable", "question": "What were the specific grading plans for the Five Palms project in 2014?"}
+{"task_id": "5998b9d8-b110-4d3e-8ba9-5b0319099d60", "type": "unanswerable", "question": "What was the phone number of the contact person at the New York office during the summer of 2007?"}
+{"task_id": "b79e6c62-c2c8-456a-a7ca-95c8527ea07d", "type": "unanswerable", "question": "What were the flight details for Karyna's trip to Los Angeles on March 15, 2019?"}
+{"task_id": "408a749a-fffe-457b-b2a4-0744e8833f98", "type": "unanswerable", "question": "Did you receive any updates from Maria Gonzalez regarding the project in San Francisco?"}
+{"task_id": "0070a213-0a7c-475c-bf6e-6e369a3bf58e", "type": "unanswerable", "question": "What were the specific dates for the NY Annual Address Verification Form in 2018?"}
+{"task_id": "e91d2847-5927-48b6-86e3-096032ac235f", "type": "unanswerable", "question": "What was the phone number of John Smith when he met with Blanka in Paris on June 1, 2017?"}
+{"task_id": "4ac6c65f-3d5e-401d-b92f-3f3389be3b58", "type": "unanswerable", "question": "What were the specific instructions given by Sarah Thompson regarding the paperwork for Dr. Emily Carter's appointment on March 1st, 2019?"}
+{"task_id": "45537382-c4c7-4e79-9383-bdb978f8a7de", "type": "unanswerable", "question": "What was the agenda for the meeting scheduled with Leon D. Black, Brad Smith, and Sarah Johnson on February 8, 2016?"}
+{"task_id": "0b09dde4-5797-47d2-8ea4-82f6aa67ba10", "type": "unanswerable", "question": "What was the schedule for the meeting between Sarah T. and Michael B. on July 15, 2017?"}
+{"task_id": "50d2b286-0c8a-42e0-b021-c04b79b6e5ba", "type": "unanswerable", "question": "What were the plans of Bill Gates for a meeting in New York on October 16, 2014?"}
+{"task_id": "39ffbed7-4b4e-4a09-8db7-7107d3b03f25", "type": "unanswerable", "question": "What time did Mr. Johnson request to be picked up from the airport on March 15, 2015?"}
+{"task_id": "76d58767-3e50-436e-9400-66e2676e665a", "type": "unanswerable", "question": "What was the agenda for the meeting between Cecile de Jongh and Michael Smith on April 7th, 2014?"}
+{"task_id": "913be549-c2aa-403d-8834-bcc18c9c9a26", "type": "unanswerable", "question": "What were the selling prices of the properties owned by Ola Nixie in the St. Tropez area in 2013?"}
+{"task_id": "a095f405-bbbd-41b9-9a1a-f65fb130e0c9", "type": "unanswerable", "question": "What specific wellness programs were offered at the 'Serenity Retreat' spa in 2022?"}
+{"task_id": "fada5018-6349-4ebe-b957-a85fffcc4f2e", "type": "unanswerable", "question": "What was the proposed dinner time for Leon Botstein and Barnaby Marsh in New York City on November 25, 2012?"}
+{"task_id": "63948025-6662-408a-ad94-b45af4eb19aa", "type": "unanswerable", "question": "What restaurant did Bill Clinton choose for dinner with his friends in New York City on October 19, 2009?"}
+{"task_id": "67d143ac-045f-418a-aaf1-75d1aeeedbc3", "type": "unanswerable", "question": "What were the specific penalty numbers discussed in the communication between A. de Rothschild-2 and Jeffrey E. in 2016?"}
+{"task_id": "ed03896b-0147-4aab-b135-5492582166ee", "type": "unanswerable", "question": "What were the flight details for Maria Schmidt's trip from Berlin to New York in September 2020?"}
+{"task_id": "c948a13b-1cc5-4ab0-94d9-191719b74881", "type": "unanswerable", "question": "What was the subject of the email sent by Ghislaine Maxwell to Jeffrey Epstein on January 5, 2013?"}
+{"task_id": "4f341c9b-20a2-4ead-9b99-fbde01db3cb4", "type": "unanswerable", "question": "Did you ever receive the FBAR draft from Sarah Johnson regarding the 2016 financial disclosures?"}
+{"task_id": "9f6d037a-4be3-4e8d-b592-aecd24965a33", "type": "unanswerable", "question": "What were the travel plans of Ghislaine Maxwell for the summer of 2011?"}
+{"task_id": "620f937e-36d0-4c1c-a7a1-02105bcd4443", "type": "unanswerable", "question": "What time did Alexei Ivanov plan to meet Leonid Peshkin in Lyon on April 4, 2018?"}
