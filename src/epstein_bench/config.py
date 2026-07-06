@@ -49,7 +49,7 @@ class Config:
 
     # --- wide scan + entity-complete selection (v1.1) ---
     scan_shards: int | None = None  # parquet shards to scan (None = all)
-    scan_workers: int = 8  # parallel shard readers
+    scan_workers: int = 16  # parallel shard readers (network-bound)
     mention_min_count: int = 5  # min docs for a name to enter the mention index
     notability_candidates: int = 200  # top names (by doc count) given the LLM check
     n_target_entities: int = 40  # notable entities whose docs are ALL included
