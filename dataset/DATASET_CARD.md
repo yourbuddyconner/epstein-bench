@@ -1,8 +1,8 @@
 # Epstein Bench Dataset Card
 
-**Current release:** none yet — `v1.0` is pending its first generation run.
-This card documents the methodology; the *Release statistics* section is
-filled in by each release and must be updated whenever a version ships.
+**Current release:** `v1.0` (2026-07-05). This card documents the
+methodology; the *Release statistics* section is updated whenever a version
+ships.
 
 ## Source corpus
 
@@ -72,11 +72,30 @@ composition is versioned with each release.
 Changing the scoring judge or its prompt is a new benchmark version; scores
 across versions are not comparable.
 
-## Release statistics (to fill per release)
+## Release statistics
 
-- v1.0: task counts by type/split, gauntlet pass rates by stage, pool sizes,
-  human spot-check sample size and observed error rate. *Pending first
-  generation run.*
+### v1.0 (2026-07-05)
+
+- **Corpus:** first 20,000 text-bearing documents of `aurora2424/Epstein-Files`;
+  quality screen: 15,637 clean / 823 degraded / 3,540 garbage
+  (1,067 borderline docs resolved by LLM readability check); 28,032 chunks;
+  5,655-entity alias index.
+- **Tasks:** 973 (`full`): 854 single_hop / 47 timeline / 38 aggregation /
+  34 unanswerable. `dev`: 88. The mix is single-hop-heavy relative to the
+  50/20/15/15 generation quotas because multi-document candidates survive
+  verification at much lower rates.
+- **Gauntlet:** 1,038 of 5,000 candidates passed (20.8%). Rejections:
+  1,528 standalone, 1,448 answerability, 751 adjudication, 234 necessity,
+  1 error.
+- **Pooling:** 973 of 1,038 kept; 61 dropped as unstable under strong-model
+  re-judging, 4 as source-not-supportive.
+- **Reference baselines** (overall cited correctness): bm25 0.607,
+  hybrid 0.575, dense 0.493, closed_book 0.243 — closed-book scores 0.000
+  on every retrieval-requiring type, evidencing retrieval necessity;
+  its overall score is entirely refusal accuracy on unanswerable tasks.
+- **Human spot-check:** *pending* — 100-task sample generated
+  (`scripts/make_spotcheck.py`, seed 20260705); observed error rate will be
+  recorded here and BAD tasks retracted in v1.1.
 
 ## Known limitations
 

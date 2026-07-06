@@ -1,0 +1,21 @@
+{
+  "overall_cited_correctness": 0.6066763809476875,
+  "per_type": {
+    "single_hop": 0.5819672131147541,
+    "aggregation": 0.5550011392116655,
+    "unanswerable": 0.9705882352941176,
+    "timeline": 0.3191489361702128
+  },
+  "retrieval": {
+    "recall@5": 0.40202132580254224,
+    "recall@20": 0.6599740258495521,
+    "ndcg@10": 0.4868742926792167
+  },
+  "n_tasks": 973,
+  "judge_model": "gpt-4o-mini-2024-07-18",
+  "judge_prompt_version": "v1",
+  "judge_errors": 0,
+  "system_name": "bm25 (reference)",
+  "split": "full",
+  "dataset_version": "v1.0"
+}
