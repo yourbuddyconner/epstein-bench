@@ -190,8 +190,22 @@ def stub_response(prompt: str) -> str:
                         "fact": "Alice Example emailed Bob Sample on 2015-01-10.",
                         "question": "On what date did Alice Example email Bob Sample?",
                         "answer": "January 10, 2015",
+                        "salience": 4,
                     }
                 ]
+            }
+        )
+    if tag == "NOTABLE":
+        return json.dumps({"notable": True})
+    if tag == "DOSSIER":
+        return json.dumps(
+            {
+                "question": "What is the documented timeline of Alice Example's meetings with Bob Sample?",
+                "items": [
+                    {"item": "2015-01-10 — emailed Bob Sample about the house meeting", "doc_ids": []},
+                    {"item": "2015-01-11 — emailed Bob Sample again", "doc_ids": []},
+                    {"item": "2015-01-12 — scheduled a committee meeting", "doc_ids": []},
+                ],
             }
         )
     if tag == "AGGREGATION":

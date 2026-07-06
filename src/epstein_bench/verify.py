@@ -116,7 +116,7 @@ class Gauntlet:
 
     def stage_answerability(self, task: dict) -> bool:
         context = _doc_context(task["source_doc_ids"], self.docs_by_id)
-        if task["type"] == "aggregation":
+        if task["type"] in ("aggregation", "dossier"):
             pred = self._attempt_answer(
                 task["question"] + " (List every item you can find.)", context
             )
@@ -161,7 +161,7 @@ class Gauntlet:
             if pred is not None and self._matches(pred, reference):
                 return False
         # multi-doc types: no single gold doc may suffice
-        if task["type"] in ("aggregation", "timeline") and len(task["source_doc_ids"]) > 1:
+        if task["type"] in ("aggregation", "timeline", "dossier") and len(task["source_doc_ids"]) > 1:
             for doc_id in task["source_doc_ids"]:
                 pred = self._attempt_answer(
                     task["question"],

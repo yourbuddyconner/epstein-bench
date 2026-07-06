@@ -19,7 +19,7 @@ Your system never imports this code.
 Read `dataset/v1.0/<split>/questions.jsonl`:
 
 ```json
-{"task_id": "...", "question": "...", "type": "single_hop|aggregation|timeline|unanswerable"}
+{"task_id": "...", "question": "...", "type": "single_hop|aggregation|timeline|dossier|unanswerable"}
 ```
 
 Emit `predictions.jsonl`:

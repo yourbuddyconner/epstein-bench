@@ -24,7 +24,17 @@ ships.
 | `single_hop` | short answer + supporting docs | cited answer correctness (binary) |
 | `aggregation` | item list, per-item supporting docs | item-level P/R/F1, citation-gated |
 | `timeline` | short answer + supporting docs (≥2 required) | cited answer correctness (binary) |
+| `dossier` | dated event list for a notable person, per-item docs | item-level P/R/F1, citation-gated |
 | `unanswerable` | none (refusal expected) | refusal accuracy |
+
+Since v1.1, corpus selection is **entity-complete**: a wide scan indexes
+entity mentions across the source dataset, an LLM notability check picks
+target people (public figures only; entities appearing in more than
+`max_entity_docs` documents are excluded as impractically pervasive), and the
+corpus is all documents mentioning any target plus a seeded random backbone.
+Single-hop facts are additionally **salience-filtered** (newsworthiness ≥3/5:
+notable people, money flows, meetings/travel, legal exposure — never
+speculation; facts must be document-stated).
 
 Generation is fact-first: atomic facts are extracted from clean documents and
 questions are written against the fact, in investigator phrasing. Aggregation

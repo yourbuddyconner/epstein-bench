@@ -47,6 +47,17 @@ class Config:
     # entity alias index
     entity_min_count: int = 3  # min corpus frequency to index a name
 
+    # --- wide scan + entity-complete selection (v1.1) ---
+    scan_shards: int | None = None  # parquet shards to scan (None = all)
+    scan_workers: int = 8  # parallel shard readers
+    mention_min_count: int = 5  # min docs for a name to enter the mention index
+    notability_candidates: int = 200  # top names (by doc count) given the LLM check
+    n_target_entities: int = 40  # notable entities whose docs are ALL included
+    max_entity_docs: int = 2000  # entities above this are too pervasive to be
+    # entity-complete targets (e.g. Epstein himself); they stay in the corpus
+    # via other targets' docs + backbone but get no dossier
+    backbone_docs: int = 30000  # random non-target docs kept as haystack
+
     # --- models (pinned) ---
     cheap_model: str = "gpt-4o-mini-2024-07-18"
     strong_model: str = "gpt-4o-2024-08-06"
@@ -61,12 +72,15 @@ class Config:
     oversample_factor: float = 5.0
     type_mix: dict[str, float] = field(
         default_factory=lambda: {
-            "single_hop": 0.50,
-            "aggregation": 0.20,
-            "timeline": 0.15,
+            "single_hop": 0.40,
+            "dossier": 0.20,
+            "aggregation": 0.15,
+            "timeline": 0.10,
             "unanswerable": 0.15,
         }
     )
+    # facts below this newsworthiness rating (1-5) are not made into tasks
+    min_salience: int = 3
 
     # --- verification ---
     answerability_f1_floor: float = 0.10

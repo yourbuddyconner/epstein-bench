@@ -30,6 +30,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="epstein_bench")
     sub = parser.add_subparsers(dest="command", required=True)
 
+    p = sub.add_parser("scan", help="wide scan: cache text + entity mentions per shard")
+    p.add_argument("--shards", type=int, help="number of parquet shards (default all)")
+
+    sub.add_parser(
+        "select",
+        help="entity-complete corpus from the scan cache (targets + backbone)",
+    )
+
     p = sub.add_parser("corpus", help="load, screen, chunk, and index the corpus")
     p.add_argument("--limit", type=int, help="cap number of documents (dev runs)")
 
@@ -60,7 +68,17 @@ def main(argv: list[str] | None = None) -> int:
     config = _config_from_args(args)
     llm = LLM(config)
 
-    if args.command == "corpus":
+    if args.command == "scan":
+        from .scan import scan_corpus
+
+        if getattr(args, "shards", None):
+            config.scan_shards = args.shards
+        stats = scan_corpus(config)
+    elif args.command == "select":
+        from .scan import select_corpus
+
+        stats = select_corpus(config, llm)
+    elif args.command == "corpus":
         from .corpus import build_corpus
 
         stats = build_corpus(config, llm)

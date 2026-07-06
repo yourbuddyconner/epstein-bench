@@ -142,7 +142,7 @@ def _score_one(
     if not answer:
         return 0.0
 
-    if task["type"] == "aggregation":
+    if task["type"] in ("aggregation", "dossier"):
         verdict = _judge_aggregation(llm, config, task, answer)
         matched = list(verdict.get("matched_items") or [])
         cited_matched = 0

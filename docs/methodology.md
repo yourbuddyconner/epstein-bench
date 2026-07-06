@@ -13,7 +13,7 @@ Systems under test consume `questions.jsonl` and emit `predictions.jsonl`.
 | field | type | meaning |
 |---|---|---|
 | `task_id` | str | opaque id, echo it back |
-| `type` | str | `single_hop` \| `aggregation` \| `timeline` \| `unanswerable` |
+| `type` | str | `single_hop` \| `aggregation` \| `timeline` \| `dossier` \| `unanswerable` |
 | `question` | str | the question |
 
 **predictions.jsonl** — one prediction per line, every task answered:
@@ -37,9 +37,12 @@ Run: `python -m epstein_bench score predictions.jsonl --split full`
 - **single_hop / timeline** — 1.0 iff the LLM judge (pinned model, prompt v1)
   says the answer states the same fact as the reference AND ≥1 cited doc is
   in the pooled gold set; else 0.0.
-- **aggregation** — judge marks which gold items the answer includes and
-  counts extra items. An included item *counts only if* a cited doc is in
-  that item's supporting set (or the task's gold set). Score = item-level F1.
+- **aggregation / dossier** — judge marks which gold items the answer
+  includes and counts extra items. An included item *counts only if* a cited
+  doc is in that item's supporting set (or the task's gold set). Score =
+  item-level F1. Dossier tasks are person-centric timelines over notable
+  target entities; the corpus is entity-complete for those targets (every
+  document mentioning them is included), so the gold timeline is honest.
 - **unanswerable** — 1.0 iff the judge classifies the answer as a
   refusal/abstention. A confident wrong answer scores 0 (that's the
   hallucination probe).

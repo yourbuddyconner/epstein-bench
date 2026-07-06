@@ -59,8 +59,14 @@ def gen_single_hop(config: Config, llm: LLM, docs: list[dict], n: int) -> list[d
             "concrete people/organizations (never 'the document', 'this email', or "
             "bare initials); the answer must be a short span (a name, date, amount, "
             "or quoted phrase) stated verbatim-or-near-verbatim in the document; "
-            "skip boilerplate (disclaimers, signatures, mastheads). Respond with "
-            'JSON {"facts": [{"fact": str, "question": str, "answer": str}]}.'
+            "skip boilerplate (disclaimers, signatures, mastheads). Also rate each "
+            "fact's newsworthiness 1-5: 5 = notable people interacting, unusual "
+            "money flows, travel/meetings, legal exposure — the facts a journalist "
+            "would report; 1 = administrative trivia (ticket numbers, account "
+            "boilerplate, routine scheduling of non-notable staff). The rating "
+            "judges importance, never speculation — the fact must still be stated "
+            "by the document. Respond with JSON "
+            '{"facts": [{"fact": str, "question": str, "answer": str, "salience": int}]}.'
             "\n\n---\n" + _excerpt(doc["text"])
         )
         try:
@@ -74,9 +80,16 @@ def gen_single_hop(config: Config, llm: LLM, docs: list[dict], n: int) -> list[d
                 [doc["doc_id"]],
                 question=f["question"].strip(),
                 answer=str(f["answer"]).strip(),
+                provenance={
+                    "generator_model": config.cheap_model,
+                    "pipeline_version": __version__,
+                    "salience": int(f.get("salience") or 0),
+                },
             )
             for f in resp.get("facts", [])
-            if f.get("question") and f.get("answer")
+            if f.get("question")
+            and f.get("answer")
+            and int(f.get("salience") or 0) >= config.min_salience
         ]
 
     # ~1-3 facts per doc; n docs is comfortably enough for n tasks
@@ -250,6 +263,84 @@ def gen_unanswerable(
     return [t for t in results if t][:n]
 
 
+def gen_dossier(
+    config: Config, llm: LLM, docs: list[dict], targets: dict, n: int
+) -> list[dict]:
+    """Person-timeline tasks over notable target entities.
+
+    Gold is an item list [(dated event, supporting docs)] — scored like
+    aggregation (item-level P/R with citation requirements). Requires the
+    entity-complete corpus from scan/select so the timeline is honest.
+    """
+    rng = random.Random(config.seed + 9)
+    docs_by_id = {d["doc_id"]: d for d in docs}
+    ordered = list(targets.items())
+    rng.shuffle(ordered)
+
+    def per_target(pair: tuple[str, dict]) -> dict | None:
+        name, info = pair
+        alias = (info.get("aliases") or [name])[0]
+        edocs = [
+            docs_by_id[d]
+            for d in info["doc_ids"]
+            if d in docs_by_id and docs_by_id[d]["quality"] == "clean"
+        ][:10]
+        if len(edocs) < 3:
+            return None
+        listing = "\n\n".join(
+            f"[DOC {i}] id={d['doc_id']}\n{_excerpt(d['text'], 1800)}"
+            for i, d in enumerate(edocs)
+        )
+        prompt = (
+            f'[DOSSIER] The documents below all mention "{alias}". Write ONE '
+            "timeline question an investigative journalist would ask about this "
+            "person's documented activities or interactions (e.g. 'What is the "
+            "documented timeline of {alias}'s contact with Jeffrey Epstein?'), "
+            "naming the person explicitly. Then answer it as a dated event list: "
+            "each item is 'YYYY-MM-DD (or best-available date) — concrete event "
+            "stated by a document', with the ids of the documents stating it. "
+            "Only events the documents state — no inference of motive or "
+            "wrongdoing. Require at least 3 items across at least 2 documents; "
+            'if the documents cannot support that, respond {"question": null}. '
+            'Respond with JSON {"question": str|null, '
+            '"items": [{"item": str, "doc_ids": [str]}]}.'
+            "\n\n" + listing
+        )
+        try:
+            resp = llm.chat_json(prompt)
+        except LLMError:
+            return None
+        if not resp.get("question"):
+            return None
+        valid_ids = {d["doc_id"] for d in edocs}
+        items = []
+        for it in resp.get("items", []):
+            if not it.get("item"):
+                continue
+            ids = [d for d in (it.get("doc_ids") or []) if d in valid_ids]
+            if ids:
+                items.append({"item": str(it["item"]).strip(), "doc_ids": ids})
+        support = {d for i in items for d in i["doc_ids"]}
+        if len(items) < 3 or len(support) < 2:
+            return None
+        return _mk_task(
+            config,
+            "dossier",
+            sorted(support),
+            question=str(resp["question"]).strip(),
+            items=items,
+            provenance={
+                "generator_model": config.cheap_model,
+                "pipeline_version": __version__,
+                "target_entity": name,
+                "candidate_doc_ids": info["doc_ids"],
+            },
+        )
+
+    results = parallel_map(per_target, ordered[: n * 2], config.max_workers)
+    return [t for t in results if t][:n]
+
+
 # -- stage entry point --------------------------------------------------------------
 
 
@@ -269,6 +360,15 @@ def generate_candidates(config: Config, llm: LLM) -> dict[str, int]:
     candidates += gen_aggregation(config, llm, docs, entities, quotas["aggregation"])
     candidates += gen_timeline(config, llm, docs, entities, quotas["timeline"])
     candidates += gen_unanswerable(config, llm, docs, bm25, quotas["unanswerable"])
+    if quotas.get("dossier"):
+        from .scan import load_targets
+
+        try:
+            targets = load_targets(config)
+        except FileNotFoundError:
+            targets = {}  # direct-corpus mode (no scan/select): skip dossiers
+        if targets:
+            candidates += gen_dossier(config, llm, docs, targets, quotas["dossier"])
 
     write_jsonl(config.build_dir / "candidates.jsonl", candidates)
     counts: dict[str, int] = {}
