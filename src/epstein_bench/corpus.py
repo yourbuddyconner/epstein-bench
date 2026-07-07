@@ -129,12 +129,18 @@ def chunk_text(text: str, chunk_tokens: int, overlap: int) -> list[str]:
 
 # -- entity alias index -----------------------------------------------------------
 
-_NAME_RE = re.compile(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b")
+# Intra-line whitespace only: `[^\S\r\n]` is "whitespace that is not a line
+# break". Using bare `\s` here let the pattern span OCR'd email-header line
+# wraps ("From: Jeffrey\r\nEpstein\r\nAccount:"), gluing a person's name to
+# the next line's first word and fragmenting one entity into many.
+_NAME_RE = re.compile(r"\b([A-Z][a-z]+(?:[^\S\r\n]+[A-Z][a-z]+){1,3})\b")
 _NAME_STOPWORDS = frozenset(
-    "The This That From Sent To Subject Dear Best Thank Thanks Please New York "
-    "United States House Oversight Palm Beach Monday Tuesday Wednesday Thursday "
-    "Friday Saturday Sunday January February March April May June July August "
-    "September October November December".split()
+    "The This That From Sent To Cc Bcc Re Fwd Subject Dear Best Thank Thanks "
+    "Please Regards Sincerely Hi Hello Attachment Attachments Account Date "
+    "Time Confidential Privileged Good Morning Afternoon Evening Message "
+    "New York United States House Oversight Palm Beach Monday Tuesday "
+    "Wednesday Thursday Friday Saturday Sunday January February March April "
+    "May June July August September October November December".split()
 )
 
 
@@ -149,7 +155,10 @@ def extract_names(text: str) -> list[str]:
         parts = m.group(1).split()
         if parts[0] in _NAME_STOPWORDS or parts[-1] in _NAME_STOPWORDS:
             continue
-        out.append(m.group(1))
+        # drop any internal header/boilerplate tokens that survived a wrap
+        if any(p in _NAME_STOPWORDS for p in parts):
+            continue
+        out.append(" ".join(parts))  # collapse stray internal whitespace
     return out
 
 

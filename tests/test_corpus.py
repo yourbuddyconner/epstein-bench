@@ -35,6 +35,26 @@ def test_chunk_text_long_doc_windows_overlap():
     assert chunks[0].split()[-1] in chunks[1].split()
 
 
+def test_extract_names_does_not_cross_line_breaks():
+    from epstein_bench.corpus import extract_names
+
+    # OCR'd email header wrap must not glue a name to the next line's word
+    # (the v1.1 bug that fragmented "Jeffrey Epstein" into Account/Hi/Date).
+    text = "From: Jeffrey\r\nEpstein\r\nAccount: please review"
+    names = extract_names(text)
+    assert all("Account" not in n for n in names)
+    assert all("\n" not in n and "\r" not in n for n in names)
+    # inline mentions on one line are still captured normally
+    assert "Jeffrey Epstein" in extract_names("call from Jeffrey Epstein today")
+
+
+def test_extract_names_drops_header_tokens():
+    from epstein_bench.corpus import extract_names
+
+    assert extract_names("Bill Gates Attachments") == []  # trailing header word
+    assert "Bill Gates" in extract_names("met with Bill Gates yesterday")
+
+
 def test_entity_index_requires_min_count():
     docs = [
         {"doc_id": f"d{i}", "quality": "clean", "text": "Alice Example wrote again."}

@@ -96,15 +96,31 @@ def _iter_scan_docs(config: Config) -> Iterator[dict]:
         yield from read_jsonl(part)
 
 
+def _looks_like_person_name(name: str) -> bool:
+    """Cheap pre-filter for OCR garbage before spending an LLM call."""
+    parts = name.split()
+    if not (2 <= len(parts) <= 3):
+        return False
+    # every token must be a plausible name word: alphabetic, 2+ chars, and not
+    # an all-consonant blob (OCR noise like "Tuc", "Est", "Stem" for "Stern")
+    for p in parts:
+        if len(p) < 2 or not p.isalpha():
+            return False
+    return True
+
+
 def _check_notability(llm: LLM, name: str, aliases: list[str], n_docs: int) -> bool:
+    display = aliases[0] if aliases else name
     try:
         resp = llm.chat_json(
-            "[NOTABLE] Is this a specific, publicly notable PERSON — someone "
-            "named in public reporting, public office, business leadership, or "
-            "court records (not a company, place, boilerplate phrase, or a "
-            "private individual with no public profile)? Respond with JSON "
+            "[NOTABLE] Is the name below a specific, publicly notable PERSON — a "
+            "real individual identifiable in public reporting, public office, "
+            "business/academia leadership, or court records? Answer false for "
+            "companies, places, email-header fragments, OCR garbage, generic "
+            "titles, or private individuals with no public profile. The name "
+            "must read as a clean human name. Respond with JSON "
             '{"notable": true|false}.'
-            f"\n\nName: {aliases[0] if aliases else name} (appears in {n_docs} documents)"
+            f"\n\nName: {display}  (appears in {n_docs} documents)"
         )
         return bool(resp.get("notable"))
     except LLMError:
@@ -113,14 +129,15 @@ def _check_notability(llm: LLM, name: str, aliases: list[str], n_docs: int) -> b
 
 def select_corpus(config: Config, llm: LLM) -> dict:
     """Build the retrieval corpus from the scan cache, entity-complete."""
-    # aggregate mentions
+    # aggregate mentions — re-extract names from the cached TEXT rather than
+    # trusting doc["names"], so extraction fixes apply without re-scanning.
     doc_count: Counter[str] = Counter()
     aliases: dict[str, set[str]] = defaultdict(set)
     doc_ids: dict[str, list[str]] = defaultdict(list)
     total_docs = 0
     for doc in _iter_scan_docs(config):
         total_docs += 1
-        for cased in doc["names"]:
+        for cased in set(extract_names(doc["text"])):
             norm = _normalize_name(cased)
             doc_count[norm] += 1
             aliases[norm].add(cased)
@@ -131,8 +148,9 @@ def select_corpus(config: Config, llm: LLM) -> dict:
     # notability check on the most-mentioned names
     candidates = [
         (name, n)
-        for name, n in doc_count.most_common(config.notability_candidates * 3)
+        for name, n in doc_count.most_common(config.notability_candidates * 5)
         if config.mention_min_count <= n <= config.max_entity_docs
+        and _looks_like_person_name(name)  # normalized key is clean + lowercased
     ][: config.notability_candidates]
     verdicts = parallel_map(
         lambda c: _check_notability(llm, c[0], sorted(aliases[c[0]]), c[1]),
