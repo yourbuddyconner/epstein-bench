@@ -22,6 +22,27 @@ class LLMError(RuntimeError):
     """Raised after retries are exhausted; callers must fail closed."""
 
 
+class _EmbedSizeError(RuntimeError):
+    """Internal: an embeddings request exceeded a token limit (bisect + retry)."""
+
+
+def _is_size_error(e: Exception) -> bool:
+    """True for the embeddings token-limit 400 (per-request or per-item).
+
+    Matched by message so it works regardless of the openai SDK version's
+    exception classes. Both observed forms are covered:
+      - "maximum request size is 300000 tokens per request"
+      - {'code': 'max_tokens_per_request', ...}
+    """
+    m = str(e).lower()
+    return (
+        "max_tokens_per_request" in m
+        or "maximum request size" in m
+        or ("token" in m and "per request" in m)
+        or ("maximum context length" in m)  # per-item overflow
+    )
+
+
 def _cache_key(model: str, prompt: str, system: str) -> str:
     h = hashlib.sha256()
     h.update(model.encode())
@@ -104,45 +125,66 @@ class LLM:
         raise LLMError(f"chat failed after retries: {last_err}")
 
     # -- embeddings -----------------------------------------------------------
+    #
+    # The embeddings endpoint enforces a per-request token ceiling AND a
+    # per-item token ceiling. OCR text tokenizes unpredictably (BPE explodes on
+    # gibberish), so we do NOT try to predict token counts. Instead we pack
+    # batches by a conservative char budget and treat the API as the source of
+    # truth: any size-limit 400 triggers a recursive bisect (split the batch;
+    # for a lone oversized item, halve its characters). This cannot crash on a
+    # token limit for any input.
 
-    # embedding requests are capped by a per-request token limit, not row count;
-    # batch by estimated tokens (~4 chars/token) well under the API ceiling.
-    _EMBED_TOKEN_BUDGET = 200_000
-    _EMBED_MAX_ROWS = 2048
-    _EMBED_MAX_CHARS = 8000  # per-text truncation (~2k tokens)
+    _EMBED_MAX_CHARS = 8000  # per-item hard cap before the first attempt
+    _EMBED_BATCH_CHARS = 250_000  # pack target: safe even at ~1 token/char
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         if self.config.stub_llm:
             return [_stub_embedding(t) for t in texts]
-        client = self._get_client()
+        self._get_client()  # fail fast if no key
         prepared = [t[: self._EMBED_MAX_CHARS] or " " for t in texts]
         out: list[list[float]] = []
-        i, n = 0, len(prepared)
-        while i < n:
-            batch: list[str] = []
-            tokens = 0
-            while i < n and len(batch) < self._EMBED_MAX_ROWS:
-                est = len(prepared[i]) // 4 + 1
-                if batch and tokens + est > self._EMBED_TOKEN_BUDGET:
-                    break
-                batch.append(prepared[i])
-                tokens += est
-                i += 1
-            last_err: Exception | None = None
-            for attempt in range(self.config.max_llm_retries):
-                try:
-                    resp = client.embeddings.create(
-                        model=self.config.embed_model, input=batch
-                    )
-                    out.extend(d.embedding for d in resp.data)
-                    last_err = None
-                    break
-                except Exception as e:  # noqa: BLE001
-                    last_err = e
-                    time.sleep(min(2**attempt, 30))
-            if last_err is not None:
-                raise LLMError(f"embed failed after retries: {last_err}")
+        batch: list[str] = []
+        chars = 0
+        for t in prepared:
+            if batch and chars + len(t) > self._EMBED_BATCH_CHARS:
+                out.extend(self._embed_adaptive(batch))
+                batch, chars = [], 0
+            batch.append(t)
+            chars += len(t)
+        if batch:
+            out.extend(self._embed_adaptive(batch))
         return out
+
+    def _embed_adaptive(self, batch: list[str]) -> list[list[float]]:
+        """Embed a batch; on a size-limit 400, bisect and retry recursively."""
+        try:
+            return self._embed_call(batch)
+        except _EmbedSizeError:
+            if len(batch) == 1:
+                # a single item is over the per-item token limit: halve chars.
+                # A short string cannot trigger a size error, so this terminates.
+                half = max(1, len(batch[0]) // 2)
+                return self._embed_adaptive([batch[0][:half]])
+            mid = len(batch) // 2
+            return self._embed_adaptive(batch[:mid]) + self._embed_adaptive(batch[mid:])
+
+    def _embed_call(self, batch: list[str]) -> list[list[float]]:
+        """One embeddings request. Retries transient errors; raises
+        _EmbedSizeError on a token-limit 400 so the caller can bisect."""
+        client = self._get_client()
+        last_err: Exception | None = None
+        for attempt in range(self.config.max_llm_retries):
+            try:
+                resp = client.embeddings.create(
+                    model=self.config.embed_model, input=batch
+                )
+                return [d.embedding for d in resp.data]
+            except Exception as e:  # noqa: BLE001
+                if _is_size_error(e):
+                    raise _EmbedSizeError(str(e)) from e
+                last_err = e
+                time.sleep(min(2**attempt, 30))
+        raise LLMError(f"embed failed after retries: {last_err}")
 
     # -- plumbing -------------------------------------------------------------
 
