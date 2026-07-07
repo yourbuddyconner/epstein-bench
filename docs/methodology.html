@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Epstein Bench — Methodology</title>
+<style>
+  :root { --bg:#faf9f6; --fg:#1a1a1a; --muted:#6b6b6b; --line:#e2ddd4;
+          --accent:#8b2c2c; --card:#ffffff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16150f; --fg:#ece9e2; --muted:#9a968c; --line:#33312a;
+            --accent:#d47b6a; --card:#1e1d16; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:16px/1.65 Georgia,'Times New Roman',serif; }
+  nav { border-bottom:1px solid var(--line); position:sticky; top:0;
+        background:color-mix(in srgb, var(--bg) 92%, transparent);
+        backdrop-filter:blur(6px); z-index:10; }
+  nav .inner { max-width:60rem; margin:0 auto; padding:.9rem 1.25rem;
+        display:flex; gap:1.4rem; align-items:baseline; flex-wrap:wrap; }
+  nav .brand { font-weight:700; letter-spacing:-.01em; margin-right:.4rem; }
+  nav a { color:var(--fg); text-decoration:none; font-size:.95rem; }
+  nav a.active { color:var(--accent); }
+  nav a:hover { color:var(--accent); }
+  nav .spacer { flex:1; }
+  main { max-width:60rem; margin:0 auto; padding:2.5rem 1.25rem 5rem; }
+  h1 { font-size:2.2rem; margin:0 0 .3rem; letter-spacing:-.01em; }
+  h2 { font-size:1.35rem; margin:2.4rem 0 .7rem; }
+  h3 { font-size:1.08rem; margin:1.8rem 0 .5rem; }
+  h4 { font-size:.98rem; margin:1.4rem 0 .4rem; color:var(--muted); }
+  .sub { color:var(--muted); margin:0 0 2rem; font-size:1.05rem; }
+  a { color:var(--accent); }
+  p, li { max-width:44rem; }
+  ul, ol { padding-left:1.4rem; }
+  li { margin:.25rem 0; }
+  blockquote { margin:1rem 0; padding:.4rem 0 .4rem 1rem;
+        border-left:3px solid var(--line); color:var(--muted); }
+  hr { border:none; border-top:1px solid var(--line); margin:2rem 0; }
+  .tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:8px;
+        background:var(--card); margin:1rem 0; }
+  table { border-collapse:collapse; width:100%;
+        font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem; }
+  th, td { padding:.55rem .8rem; text-align:left; border-bottom:1px solid var(--line);
+        vertical-align:top; }
+  th { color:var(--muted); font-weight:600; white-space:nowrap; }
+  tr:last-child td { border-bottom:none; }
+  code { font-size:.85em; background:var(--card); border:1px solid var(--line);
+        padding:.08em .35em; border-radius:4px; }
+  pre { background:var(--card); border:1px solid var(--line); border-radius:8px;
+        padding:.9rem 1rem; overflow-x:auto; }
+  pre code { background:none; border:none; padding:0; font-size:.82rem; }
+  .note { color:var(--muted); font-size:.9rem; }
+  td.headline { font-weight:700; }
+  .empty { padding:2.5rem 1rem; text-align:center; color:var(--muted); font-style:italic; }
+</style>
+</head>
+<body>
+<nav><div class="inner"><span class="brand">Epstein Bench</span><a href="index.html">Leaderboard</a><a href="methodology.html" class="active">Methodology</a><a href="dataset.html">Dataset Card</a><span class="spacer"></span><a href="https://github.com/yourbuddyconner/epstein-bench">GitHub</a></div></nav>
+<main>
+<h1>Methodology</h1>
+<p>This page specifies the benchmark precisely enough to re-derive every number. The design rationale lives in <a href="superpowers/specs/2026-07-05-benchmark-rebuild-design.md"><code>docs/superpowers/specs/2026-07-05-benchmark-rebuild-design.md</code></a>.</p>
+<h2>The file contract</h2>
+<p>Systems under test consume <code>questions.jsonl</code> and emit <code>predictions.jsonl</code>.</p>
+<p><strong>questions.jsonl</strong> — one task per line:</p>
+<div class="tablewrap"><table><thead><tr><th>field</th><th>type</th><th>meaning</th></tr></thead><tbody><tr><td><code>task_id</code></td><td>str</td><td>opaque id, echo it back</td></tr><tr><td><code>type</code></td><td>str</td><td><code>single_hop</code> | <code>aggregation</code> | <code>timeline</code> | <code>dossier</code> | <code>unanswerable</code></td></tr><tr><td><code>question</code></td><td>str</td><td>the question</td></tr></tbody></table></div>
+<p><strong>predictions.jsonl</strong> — one prediction per line, every task answered:</p>
+<div class="tablewrap"><table><thead><tr><th>field</th><th>type</th><th>meaning</th></tr></thead><tbody><tr><td><code>task_id</code></td><td>str</td><td>must match a released task</td></tr><tr><td><code>answer</code></td><td>str</td><td>free text; explicit refusal when you believe the corpus lacks the answer</td></tr><tr><td><code>citations</code></td><td>[str]</td><td>document ids you claim support the answer</td></tr><tr><td><code>retrieved</code></td><td>[str]</td><td>your ranked retrieval list, ≤ 20 ids</td></tr></tbody></table></div>
+<p>Document ids are the <code>doc_id</code> values of <code>aurora2424/Epstein-Files</code> records (text-bearing rows only). Systems are not told a task&#x27;s type beyond the field itself; note that hiding the <code>type</code> field from your pipeline is fair play and closer to production conditions.</p>
+<h2>Scoring</h2>
+<p>Run: <code>python -m epstein_bench score predictions.jsonl --split full</code></p>
+<ul><li><strong>single_hop / timeline</strong> — 1.0 iff the LLM judge (pinned model, prompt v1)</li></ul>
+<p>says the answer states the same fact as the reference AND ≥1 cited doc is in the pooled gold set; else 0.0.</p>
+<ul><li><strong>aggregation / dossier</strong> — judge marks which gold items the answer</li></ul>
+<p>includes and counts extra items. An included item <em>counts only if</em> a cited doc is in that item&#x27;s supporting set (or the task&#x27;s gold set). Score = item-level F1. Dossier tasks are person-centric timelines over notable target entities; the corpus is entity-complete for those targets (every document mentioning them is included), so the gold timeline is honest.</p>
+<ul><li><strong>unanswerable</strong> — 1.0 iff the judge classifies the answer as a</li></ul>
+<p>refusal/abstention. A confident wrong answer scores 0 (that&#x27;s the hallucination probe).</p>
+<ul><li><strong>overall_cited_correctness</strong> — unweighted macro-average over the per-type</li></ul>
+<p>scores. This is the leaderboard sort key.</p>
+<ul><li><strong>overall_uncited_correctness</strong> (diagnostic) — the same judgments with the</li></ul>
+<p>citation gate removed. For retrieval systems it isolates grounding failures (correct answer, wrong/no citation). For the <code>parametric</code> baseline — which answers purely from model weights, no corpus access — it measures how much of the Epstein files a model already knows from training. Note the benchmark is decontaminated against the <em>generation-time</em> model only (the necessity stage rejects tasks that model can answer closed-book), so any other model&#x27;s parametric score is a clean signal of its own training exposure — and a per-model contamination probe as newer models train on the released files.</p>
+<ul><li><strong>retrieval diagnostics</strong> — recall@5, recall@20, nDCG@10 of <code>retrieved</code></li></ul>
+<p>against pooled gold docs (answerable tasks only). Secondary columns; not part of the headline.</p>
+<p>Judge failures during scoring count the affected task as 0 (fail closed) and are reported in <code>judge_errors</code>.</p>
+<h2>Splits</h2>
+<ul><li><code>dev</code> — small fixed subset (source docs drawn from a seeded ~1K-doc subset,</li></ul>
+<p>plus unanswerable top-ups). For iteration. Not leaderboard-eligible.</p>
+<ul><li><code>full</code> — the leaderboard split; retrieval is always over the full corpus.</li></ul>
+<p><code>dataset/&lt;version&gt;/manifest.json</code> records counts and the sha256 of each <code>questions.jsonl</code>; submissions pin that hash.</p>
+<h2>Submissions</h2>
+<p><code>python -m epstein_bench submit preds.jsonl --name &quot;My System&quot; --split full</code> creates <code>submissions/&lt;slug&gt;/</code> with your predictions and metadata. Open a PR adding it. CI (<code>.github/workflows/validate-submission.yml</code>):</p>
+<ol><li>checks bundle structure, dataset version, and questions-file hash;</li><li>verifies every task is answered;</li><li><strong>recomputes all scores from the predictions</strong> and writes <code>scores.json</code>.</li></ol>
+<p>Self-reported scores are never used.</p>
+<h2>Reproducing the dataset</h2>
+<p><code>corpus → generate → verify → pool → finalize</code>, all seeded and config-pinned (<code>src/epstein_bench/config.py</code>). LLM calls are disk-cached under <code>build/llm_cache/</code>, so interrupted runs resume without re-spending. See the <a href="../dataset/DATASET_CARD.md">dataset card</a> for the verification gauntlet and pooling design, including known limitations.</p>
+</main>
+</body>
+</html>

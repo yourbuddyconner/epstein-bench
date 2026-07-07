@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Epstein Bench — Dataset Card</title>
+<style>
+  :root { --bg:#faf9f6; --fg:#1a1a1a; --muted:#6b6b6b; --line:#e2ddd4;
+          --accent:#8b2c2c; --card:#ffffff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16150f; --fg:#ece9e2; --muted:#9a968c; --line:#33312a;
+            --accent:#d47b6a; --card:#1e1d16; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:16px/1.65 Georgia,'Times New Roman',serif; }
+  nav { border-bottom:1px solid var(--line); position:sticky; top:0;
+        background:color-mix(in srgb, var(--bg) 92%, transparent);
+        backdrop-filter:blur(6px); z-index:10; }
+  nav .inner { max-width:60rem; margin:0 auto; padding:.9rem 1.25rem;
+        display:flex; gap:1.4rem; align-items:baseline; flex-wrap:wrap; }
+  nav .brand { font-weight:700; letter-spacing:-.01em; margin-right:.4rem; }
+  nav a { color:var(--fg); text-decoration:none; font-size:.95rem; }
+  nav a.active { color:var(--accent); }
+  nav a:hover { color:var(--accent); }
+  nav .spacer { flex:1; }
+  main { max-width:60rem; margin:0 auto; padding:2.5rem 1.25rem 5rem; }
+  h1 { font-size:2.2rem; margin:0 0 .3rem; letter-spacing:-.01em; }
+  h2 { font-size:1.35rem; margin:2.4rem 0 .7rem; }
+  h3 { font-size:1.08rem; margin:1.8rem 0 .5rem; }
+  h4 { font-size:.98rem; margin:1.4rem 0 .4rem; color:var(--muted); }
+  .sub { color:var(--muted); margin:0 0 2rem; font-size:1.05rem; }
+  a { color:var(--accent); }
+  p, li { max-width:44rem; }
+  ul, ol { padding-left:1.4rem; }
+  li { margin:.25rem 0; }
+  blockquote { margin:1rem 0; padding:.4rem 0 .4rem 1rem;
+        border-left:3px solid var(--line); color:var(--muted); }
+  hr { border:none; border-top:1px solid var(--line); margin:2rem 0; }
+  .tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:8px;
+        background:var(--card); margin:1rem 0; }
+  table { border-collapse:collapse; width:100%;
+        font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem; }
+  th, td { padding:.55rem .8rem; text-align:left; border-bottom:1px solid var(--line);
+        vertical-align:top; }
+  th { color:var(--muted); font-weight:600; white-space:nowrap; }
+  tr:last-child td { border-bottom:none; }
+  code { font-size:.85em; background:var(--card); border:1px solid var(--line);
+        padding:.08em .35em; border-radius:4px; }
+  pre { background:var(--card); border:1px solid var(--line); border-radius:8px;
+        padding:.9rem 1rem; overflow-x:auto; }
+  pre code { background:none; border:none; padding:0; font-size:.82rem; }
+  .note { color:var(--muted); font-size:.9rem; }
+  td.headline { font-weight:700; }
+  .empty { padding:2.5rem 1rem; text-align:center; color:var(--muted); font-style:italic; }
+</style>
+</head>
+<body>
+<nav><div class="inner"><span class="brand">Epstein Bench</span><a href="index.html">Leaderboard</a><a href="methodology.html">Methodology</a><a href="dataset.html" class="active">Dataset Card</a><span class="spacer"></span><a href="https://github.com/yourbuddyconner/epstein-bench">GitHub</a></div></nav>
+<main>
+<h1>Epstein Bench Dataset Card</h1>
+<p><strong>Current release:</strong> <code>v1.0</code> (2026-07-05). This card documents the methodology; the <em>Release statistics</em> section is updated whenever a version ships.</p>
+<h2>Source corpus</h2>
+<ul><li><code>aurora2424/Epstein-Files</code> (Hugging Face): the full public Epstein Files</li></ul>
+<p>release — ~4.1M rows (340GB including raw media bytes). Only the text columns are consumed, via parquet column projection; rows without <code>text_content</code> (images, audio, video) are skipped. Emails, depositions, flight logs, scanned letters. The media columns (<code>image</code>, <code>audio</code>, <code>video</code>, <code>online_url</code>) open the door to multimodal task families later; v1 is text-only.</p>
+<ul><li>Documents are quality-screened into <code>clean</code> / <code>degraded</code> / <code>garbage</code>.</li></ul>
+<p>Tasks are generated <strong>only from clean text</strong>; degraded documents remain in the retrieval corpus as natural distractors; garbage is excluded entirely.</p>
+<h2>Task types</h2>
+<div class="tablewrap"><table><thead><tr><th>type</th><th>gold</th><th>scored as</th></tr></thead><tbody><tr><td><code>single_hop</code></td><td>short answer + supporting docs</td><td>cited answer correctness (binary)</td></tr><tr><td><code>aggregation</code></td><td>item list, per-item supporting docs</td><td>item-level P/R/F1, citation-gated</td></tr><tr><td><code>timeline</code></td><td>short answer + supporting docs (≥2 required)</td><td>cited answer correctness (binary)</td></tr><tr><td><code>dossier</code></td><td>dated event list for a notable person, per-item docs</td><td>item-level P/R/F1, citation-gated</td></tr><tr><td><code>unanswerable</code></td><td>none (refusal expected)</td><td>refusal accuracy</td></tr></tbody></table></div>
+<p>Since v1.1, corpus selection is <strong>entity-complete</strong>: a wide scan indexes entity mentions across the source dataset, an LLM notability check picks target people (public figures only; entities appearing in more than <code>max_entity_docs</code> documents are excluded as impractically pervasive), and the corpus is all documents mentioning any target plus a seeded random backbone. Single-hop facts are additionally <strong>salience-filtered</strong> (newsworthiness ≥3/5: notable people, money flows, meetings/travel, legal exposure — never speculation; facts must be document-stated).</p>
+<p>Generation is fact-first: atomic facts are extracted from clean documents and questions are written against the fact, in investigator phrasing. Aggregation questions are <strong>bounded</strong> — scoped to an entity whose candidate documents are enumerable via an alias index — because unbounded &quot;list all X&quot; gold sets cannot be verified at corpus scale.</p>
+<h2>Verification</h2>
+<p>Every shipped task passed all of:</p>
+<ol><li><strong>Standalone</strong> — interpretable without the source document (concrete</li></ol>
+<p>entities, no deixis, no boilerplate targets).</p>
+<ol><li><strong>Answerability</strong> — an independent prompt, shown the gold documents,</li></ol>
+<p>recovers the reference answer (semantic match + token-F1 floor; ≥80% item recovery for aggregation).</p>
+<ol><li><strong>Necessity</strong> — closed-book and random-distractor attempts fail; for</li></ol>
+<p>multi-document types, no single gold document suffices.</p>
+<ol><li><strong>Adjudication</strong> — a stronger model passes/fails with a category.</li></ol>
+<p>Unanswerable tasks run stages 1 and 4, plus a generation-time absence check (top BM25 hits confirmed non-answering). All rejections are logged with the failing stage (<code>build/rejected.jsonl</code>).</p>
+<h2>Retrieval ground truth (pooled)</h2>
+<p>Gold document sets come from TREC-style pooling: the union of top-20 results from three diverse retrievers (BM25, dense embeddings, hybrid RRF) plus the source documents, each judged supports/partial/irrelevant. Gold = all &#x27;supports&#x27; documents. A sample is re-judged by the strong model; tasks with supports↔irrelevant flips are dropped as unstable.</p>
+<p><strong>Limitation:</strong> pooled relevance sets are not exhaustive. A document outside the pool that happens to state the answer will be scored as non-gold. Pool composition is versioned with each release.</p>
+<h2>Models (pinned per release)</h2>
+<div class="tablewrap"><table><thead><tr><th>role</th><th>model</th></tr></thead><tbody><tr><td>generation + gauntlet stages 1–3 + pool judging</td><td><code>gpt-4o-mini-2024-07-18</code></td></tr><tr><td>adjudication + pool stability re-check</td><td><code>gpt-4o-2024-08-06</code></td></tr><tr><td>scoring judge (prompt v1)</td><td><code>gpt-4o-mini-2024-07-18</code></td></tr></tbody></table></div>
+<p>Changing the scoring judge or its prompt is a new benchmark version; scores across versions are not comparable.</p>
+<h2>Release statistics</h2>
+<h3>v1.0 (2026-07-05)</h3>
+<ul><li><strong>Corpus:</strong> first 20,000 text-bearing documents of <code>aurora2424/Epstein-Files</code>;</li></ul>
+<p>quality screen: 15,637 clean / 823 degraded / 3,540 garbage (1,067 borderline docs resolved by LLM readability check); 28,032 chunks; 5,655-entity alias index.</p>
+<ul><li><strong>Tasks:</strong> 973 (<code>full</code>): 854 single_hop / 47 timeline / 38 aggregation /</li></ul>
+<p>34 unanswerable. <code>dev</code>: 88. The mix is single-hop-heavy relative to the 50/20/15/15 generation quotas because multi-document candidates survive verification at much lower rates.</p>
+<ul><li><strong>Gauntlet:</strong> 1,038 of 5,000 candidates passed (20.8%). Rejections:</li></ul>
+<p>1,528 standalone, 1,448 answerability, 751 adjudication, 234 necessity, 1 error.</p>
+<ul><li><strong>Pooling:</strong> 973 of 1,038 kept; 61 dropped as unstable under strong-model</li></ul>
+<p>re-judging, 4 as source-not-supportive.</p>
+<ul><li><strong>Reference baselines</strong> (overall cited correctness): bm25 0.607,</li></ul>
+<p>hybrid 0.575, dense 0.493, closed_book 0.243 — closed-book scores 0.000 on every retrieval-requiring type, evidencing retrieval necessity; its overall score is entirely refusal accuracy on unanswerable tasks.</p>
+<ul><li>Since v1.1 the scorer also reports <strong>uncited correctness</strong> and baselines</li></ul>
+<p>include a <code>parametric</code> mode (answer purely from model weights) — a per-model probe of training exposure to the released files. The retrieval-necessity control (<code>closed_book</code>) is unchanged.</p>
+<ul><li><strong>Human spot-check:</strong> <em>pending</em> — 100-task sample generated</li></ul>
+<p>(<code>scripts/make_spotcheck.py</code>, seed 20260705); observed error rate will be recorded here and BAD tasks retracted in v1.1.</p>
+<h2>Known limitations</h2>
+<ul><li>Questions are synthetic (LLM-written), human-spot-checked rather than fully</li></ul>
+<p>human-authored.</p>
+<ul><li>Pooled (non-exhaustive) relevance judgments; see above.</li><li>OCR noise in degraded documents is uncorrected by design — it is part of</li></ul>
+<p>the haystack, never part of the answer key.</p>
+<ul><li>The alias index driving aggregation/timeline bounding is heuristic;</li></ul>
+<p>entities with unusual name forms may be under-covered.</p>
+<h2>Ethics</h2>
+<p>All source documents are public records. Tasks are generated exclusively from already-public text; no new personal information is synthesized or inferred. Retracted or erroneous tasks are removed in point releases (<code>v1.x</code>), never silently edited.</p>
+</main>
+</body>
+</html>
