@@ -105,13 +105,29 @@ class LLM:
 
     # -- embeddings -----------------------------------------------------------
 
+    # embedding requests are capped by a per-request token limit, not row count;
+    # batch by estimated tokens (~4 chars/token) well under the API ceiling.
+    _EMBED_TOKEN_BUDGET = 200_000
+    _EMBED_MAX_ROWS = 2048
+    _EMBED_MAX_CHARS = 8000  # per-text truncation (~2k tokens)
+
     def embed(self, texts: list[str]) -> list[list[float]]:
         if self.config.stub_llm:
             return [_stub_embedding(t) for t in texts]
         client = self._get_client()
+        prepared = [t[: self._EMBED_MAX_CHARS] or " " for t in texts]
         out: list[list[float]] = []
-        for start in range(0, len(texts), 256):
-            batch = [t[:8000] or " " for t in texts[start : start + 256]]
+        i, n = 0, len(prepared)
+        while i < n:
+            batch: list[str] = []
+            tokens = 0
+            while i < n and len(batch) < self._EMBED_MAX_ROWS:
+                est = len(prepared[i]) // 4 + 1
+                if batch and tokens + est > self._EMBED_TOKEN_BUDGET:
+                    break
+                batch.append(prepared[i])
+                tokens += est
+                i += 1
             last_err: Exception | None = None
             for attempt in range(self.config.max_llm_retries):
                 try:
@@ -244,6 +260,8 @@ def stub_response(prompt: str) -> str:
         return json.dumps({"answerable": False})
     if tag == "AGGJUDGE":
         return json.dumps({"matched_items": [True], "extra_items": 0})
+    if tag == "RECOVER":
+        return json.dumps({"present": [True] * 16})
     if tag == "BASELINE":
         return json.dumps({"answer": "January 10, 2015", "citations": []})
     if tag == "PARAMETRIC":

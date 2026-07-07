@@ -114,18 +114,31 @@ class Gauntlet:
         )
         return bool(resp.get("standalone"))
 
+    def _count_recovered_items(self, items: list[str], prediction: str) -> int:
+        """LLM-judged item recovery. Substring matching fails for list/timeline
+        items (e.g. dated events) that are never reproduced verbatim."""
+        resp = self.llm.chat_json(
+            "[RECOVER] A reviewer answered a list/timeline question using the "
+            "source documents. For each expected item, is it present in the "
+            "reviewer's answer — same fact or dated event, even if the wording "
+            "or date format differs? Respond with JSON "
+            f'{{"present": [true|false x {len(items)}]}} in the given order.'
+            f"\n\nExpected items: {items}\n\nReviewer answer: {prediction}"
+        )
+        present = list(resp.get("present") or [])
+        return sum(1 for i in range(len(items)) if i < len(present) and present[i])
+
     def stage_answerability(self, task: dict) -> bool:
         context = _doc_context(task["source_doc_ids"], self.docs_by_id)
         if task["type"] in ("aggregation", "dossier"):
             pred = self._attempt_answer(
-                task["question"] + " (List every item you can find.)", context
+                task["question"] + " (List every item or dated event you can find.)",
+                context,
             )
             if pred is None:
                 return False
-            recovered = sum(
-                1
-                for item in task["items"]
-                if token_f1(pred, item["item"]) > 0 and item["item"].lower() in pred.lower()
+            recovered = self._count_recovered_items(
+                [i["item"] for i in task["items"]], pred
             )
             return recovered / len(task["items"]) >= self.config.aggregation_recovery_floor
         pred = self._attempt_answer(task["question"], context)
