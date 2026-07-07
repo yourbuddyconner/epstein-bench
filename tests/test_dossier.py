@@ -46,6 +46,52 @@ def _dossier_stub_with_real_ids(prompt: str) -> str:
     )
 
 
+def test_person_name_prefilter():
+    from epstein_bench.scan import _looks_like_person_name
+
+    assert _looks_like_person_name("bill gates")
+    assert not _looks_like_person_name("larry visoski larry")  # repeated token
+    assert not _looks_like_person_name("epstein")  # single token
+    assert not _looks_like_person_name("j p morgan chase")  # 4 tokens, too long
+    assert not _looks_like_person_name("john o5brien")  # non-alpha OCR token
+    # OCR blobs with valid-looking tokens (e.g. "on tuc") pass this cheap
+    # heuristic by design; the LLM person-kind gate rejects them.
+
+
+def test_hub_entities_excluded_under_any_spelling(config, llm):
+    """Epstein OCR variants must not become dossier targets."""
+    import json as _json
+
+    from epstein_bench import llm as _llm_mod
+    from epstein_bench.corpus import extract_names
+    from epstein_bench.io_utils import write_jsonl
+    from epstein_bench.scan import SCAN_DIR, load_targets
+
+    # scan cache where an Epstein OCR-variant is the most-mentioned name
+    part = config.build_dir / SCAN_DIR / "part_00000.jsonl"
+    rows = []
+    for i in range(6):
+        text = (
+            f"Jeffre Epstein met Bill Gates on January {10 + i}, 2015 to discuss "
+            "the foundation. Bill Gates and Jeffre Epstein spoke again."
+        )
+        rows.append(
+            {
+                "doc_id": f"D{i:03d}",
+                "text": text,
+                "names": sorted(set(extract_names(text))),
+                "meta": {},
+            }
+        )
+    write_jsonl(part, rows)
+    config.entity_min_count = 3
+    config.mention_min_count = 3
+    select_corpus(config, llm)
+    targets = load_targets(config)
+    assert all("epstein" not in name for name in targets)
+    assert "bill gates" in targets
+
+
 def test_select_builds_entity_complete_corpus(config, llm):
     _write_scan_parts(config)
     stats = select_corpus(config, llm)

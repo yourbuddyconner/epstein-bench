@@ -196,7 +196,7 @@ def stub_response(prompt: str) -> str:
             }
         )
     if tag == "NOTABLE":
-        return json.dumps({"notable": True})
+        return json.dumps({"kind": "person", "notable": True})
     if tag == "DOSSIER":
         return json.dumps(
             {

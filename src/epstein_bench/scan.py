@@ -101,28 +101,31 @@ def _looks_like_person_name(name: str) -> bool:
     parts = name.split()
     if not (2 <= len(parts) <= 3):
         return False
-    # every token must be a plausible name word: alphabetic, 2+ chars, and not
-    # an all-consonant blob (OCR noise like "Tuc", "Est", "Stem" for "Stern")
+    # every token must be a plausible name word: alphabetic, 2+ chars
     for p in parts:
         if len(p) < 2 or not p.isalpha():
             return False
+    # a repeated token means a malformed/duplicated capture ("Larry X Larry")
+    if len(set(parts)) != len(parts):
+        return False
     return True
 
 
 def _check_notability(llm: LLM, name: str, aliases: list[str], n_docs: int) -> bool:
+    """LLM gate that must confirm a real, publicly notable PERSON."""
     display = aliases[0] if aliases else name
     try:
         resp = llm.chat_json(
-            "[NOTABLE] Is the name below a specific, publicly notable PERSON — a "
-            "real individual identifiable in public reporting, public office, "
-            "business/academia leadership, or court records? Answer false for "
-            "companies, places, email-header fragments, OCR garbage, generic "
-            "titles, or private individuals with no public profile. The name "
-            "must read as a clean human name. Respond with JSON "
-            '{"notable": true|false}.'
+            "[NOTABLE] Classify the name below. `kind` is 'person' only for a "
+            "real human name; use 'place', 'org', or 'other' for airports, "
+            "cities, companies, email-header fragments, OCR garbage, or titles. "
+            "`notable` is true only if it is a specific individual identifiable "
+            "in public reporting, public office, business/academia leadership, "
+            "or court records. Respond with JSON "
+            '{"kind": "person|place|org|other", "notable": true|false}.'
             f"\n\nName: {display}  (appears in {n_docs} documents)"
         )
-        return bool(resp.get("notable"))
+        return resp.get("kind") == "person" and bool(resp.get("notable"))
     except LLMError:
         return False
 
@@ -146,11 +149,13 @@ def select_corpus(config: Config, llm: LLM) -> dict:
         raise RuntimeError("scan cache is empty — run `scan` first")
 
     # notability check on the most-mentioned names
+    excluded = tuple(s.lower() for s in config.exclude_entity_substrings)
     candidates = [
         (name, n)
         for name, n in doc_count.most_common(config.notability_candidates * 5)
         if config.mention_min_count <= n <= config.max_entity_docs
         and _looks_like_person_name(name)  # normalized key is clean + lowercased
+        and not any(sub in name for sub in excluded)  # hub-entity OCR variants
     ][: config.notability_candidates]
     verdicts = parallel_map(
         lambda c: _check_notability(llm, c[0], sorted(aliases[c[0]]), c[1]),

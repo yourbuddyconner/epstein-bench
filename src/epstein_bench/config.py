@@ -56,6 +56,9 @@ class Config:
     max_entity_docs: int = 2000  # entities above this are too pervasive to be
     # entity-complete targets (e.g. Epstein himself); they stay in the corpus
     # via other targets' docs + backbone but get no dossier
+    # hub entities excluded as dossier targets under ANY spelling (OCR variants
+    # of Epstein fragment his mentions and slip the doc cap otherwise)
+    exclude_entity_substrings: tuple[str, ...] = ("epstein", "maxwell")
     backbone_docs: int = 30000  # random non-target docs kept as haystack
 
     # --- models (pinned) ---
