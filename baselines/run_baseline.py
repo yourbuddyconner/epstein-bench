@@ -50,7 +50,9 @@ def build_system(config: Config, llm: LLM, system: str, model: str | None):
         # the agent reasons over retrieved evidence; hybrid RRF is the strongest
         # reference retriever to hand it
         retriever = build_retrievers(config, chunks, llm)["hybrid"]
-        client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY
+        # generous retries: the agent fans out concurrently and the higher tiers
+        # rate-limit; without this, a 429 gets swallowed as a spurious refusal
+        client = anthropic.Anthropic(max_retries=8)  # reads ANTHROPIC_API_KEY
         return AgenticRAG(client, model or config.agent_model, retriever, docs_by_id)
 
     raise ValueError(f"unknown system: {system}")
@@ -68,6 +70,10 @@ def main() -> int:
     parser.add_argument(
         "--model", help="model id for the agentic system (default config.agent_model)"
     )
+    parser.add_argument(
+        "--workers", type=int, help="parallel systems (default config.max_workers; "
+        "lower it for the agentic baseline to stay under provider rate limits)"
+    )
     args = parser.parse_args()
 
     config = Config()
@@ -75,7 +81,8 @@ def main() -> int:
     system = build_system(config, llm, args.system, args.model)
 
     questions_path = config.dataset_dir / DATASET_VERSION / args.split / "questions.jsonl"
-    n = run(system, questions_path, args.out, max_retrieved=config.max_retrieved, workers=config.max_workers)
+    workers = args.workers or config.max_workers
+    n = run(system, questions_path, args.out, max_retrieved=config.max_retrieved, workers=workers)
     print(json.dumps({"system": args.system, "split": args.split, "predictions": n}))
     return 0
 

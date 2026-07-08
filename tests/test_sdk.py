@@ -23,6 +23,18 @@ class _BoomSystem(System):
         raise RuntimeError("kaboom")
 
 
+class _FlakySystem(System):
+    """Fails on exactly one task_id, succeeds on the rest."""
+
+    def __init__(self, fail_id):
+        self.fail_id = fail_id
+
+    def predict(self, task: Task) -> Prediction:
+        if task.task_id == self.fail_id:
+            raise RuntimeError("blip")
+        return Prediction(answer=f"ok {task.task_id}", citations=["d1"], retrieved=["d1"])
+
+
 def _write_questions(tmp_path, rows):
     p = tmp_path / "questions.jsonl"
     p.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
@@ -44,13 +56,27 @@ def test_run_writes_conformant_capped_predictions(tmp_path):
     assert len(pred["retrieved"]) == 20
 
 
-def test_run_fails_closed_to_refusal(tmp_path):
-    q = _write_questions(tmp_path, [{"task_id": "t1", "question": "Q?"}])
+def test_run_aborts_on_systemic_failure(tmp_path):
+    # every task errors (e.g. exhausted credits) -> abort loudly, write nothing
+    q = _write_questions(
+        tmp_path, [{"task_id": f"t{i}", "question": "Q?"} for i in range(6)]
+    )
     out = tmp_path / "preds.jsonl"
-    run(_BoomSystem(), q, out, workers=1)
-    pred = json.loads(out.read_text().splitlines()[0])
-    assert pred["answer"] == REFUSAL
-    assert pred["citations"] == [] and pred["retrieved"] == []
+    with pytest.raises(RuntimeError, match="aborting run"):
+        run(_BoomSystem(), q, out, workers=1)
+    assert not out.exists()  # degraded file must not be written
+
+
+def test_run_tolerates_occasional_failure(tmp_path):
+    # one flaky task among ten -> recorded as a refusal, the run still completes
+    rows = [{"task_id": f"t{i}", "question": "Q?"} for i in range(10)]
+    q = _write_questions(tmp_path, rows)
+    out = tmp_path / "preds.jsonl"
+    n = run(_FlakySystem(fail_id="t7"), q, out, workers=1)
+    assert n == 10
+    preds = {json.loads(l)["task_id"]: json.loads(l) for l in out.read_text().splitlines()}
+    assert preds["t7"]["answer"] == REFUSAL and preds["t7"]["citations"] == []
+    assert preds["t3"]["answer"] == "ok t3"
 
 
 # -- AgenticRAG loop (fake Anthropic client) ------------------------------------

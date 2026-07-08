@@ -15,6 +15,7 @@ conformant predictions file. Reference implementations live in
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, runtime_checkable
@@ -78,18 +79,27 @@ def run(
     *,
     max_retrieved: int = 20,
     workers: int = 8,
+    abort_ratio: float = 0.5,
 ) -> int:
     """Run ``system`` over a questions file and write a conformant predictions
-    file. Fails closed: any per-task exception is recorded as a refusal rather
-    than crashing the run. ``citations`` and ``retrieved`` are capped to the
-    contract limit. Returns the number of predictions written."""
+    file. Returns the number of predictions written.
+
+    Error policy — occasional per-task blips are tolerated (recorded as a
+    refusal, the run continues), but a *systemic* failure (bad key, exhausted
+    credits, wrong model) is surfaced, not swallowed: a canary probe of the
+    first few tasks aborts immediately if they all error, and if more than
+    ``abort_ratio`` of tasks error the run raises instead of writing a degraded
+    file that would score as a pile of refusals. ``citations``/``retrieved``
+    are capped to the contract limit."""
     questions = list(read_jsonl(questions_path))
+    errors: dict[str, Exception] = {}
 
     def predict_one(q: dict) -> dict:
         task = Task(task_id=q["task_id"], question=q["question"], type=q.get("type"))
         try:
             pred = system.predict(task)
-        except Exception:  # noqa: BLE001 — a system error must not lose the run
+        except Exception as e:  # noqa: BLE001 — captured, judged in aggregate below
+            errors[task.task_id] = e
             pred = Prediction(answer=REFUSAL)
         row = {
             "task_id": task.task_id,
@@ -105,7 +115,31 @@ def run(
             row["cost_usd"] = pred.cost_usd
         return row
 
-    rows = parallel_map(predict_one, questions, workers)
+    # fail-fast canary: if the first few tasks ALL error, the system is broken
+    # (not flaky) — abort before spending on the rest and surface the real error.
+    probe_n = min(3, len(questions))
+    probe_rows = [predict_one(q) for q in questions[:probe_n]]
+    if probe_n and len(errors) == probe_n:
+        raise RuntimeError(
+            f"system failed on the first {probe_n} tasks — aborting run. "
+            f"Last error: {errors[questions[probe_n - 1]['task_id']]!r}"
+        )
+
+    rows = probe_rows + parallel_map(predict_one, questions[probe_n:], workers)
+
+    if errors and len(errors) >= max(1, int(len(questions) * abort_ratio)):
+        example = next(iter(errors.values()))
+        raise RuntimeError(
+            f"{len(errors)}/{len(questions)} tasks errored — refusing to write a "
+            f"degraded predictions file (it would score as spurious refusals). "
+            f"Fix the underlying error and re-run. Example: {example!r}"
+        )
+    if errors:
+        print(
+            f"[sdk.run] warning: {len(errors)}/{len(questions)} tasks errored, "
+            f"recorded as refusals; e.g. {next(iter(errors.values()))!r}",
+            file=sys.stderr,
+        )
     return write_jsonl(out_path, rows)
 
 

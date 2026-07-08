@@ -1,0 +1,50 @@
+{
+  "overall_cited_correctness": 0.37680229384360614,
+  "overall_cited_correctness_ci95": [
+    0.357761,
+    0.399565
+  ],
+  "overall_cited_correctness_micro": 0.15051234892275353,
+  "per_type": {
+    "aggregation": 0.05614250614250614,
+    "single_hop": 0.09356014580801944,
+    "timeline": 0.1111111111111111,
+    "dossier": 0.0,
+    "unanswerable": 1.0,
+    "false_premise": 1.0
+  },
+  "overall_uncited_correctness": 0.40065655725842036,
+  "overall_uncited_correctness_ci95": [
+    0.378365,
+    0.428444
+  ],
+  "overall_uncited_correctness_micro": 0.1728219436311922,
+  "per_type_uncited": {
+    "aggregation": 0.14765024765024765,
+    "single_hop": 0.10814094775212636,
+    "timeline": 0.14814814814814814,
+    "dossier": 0.0,
+    "unanswerable": 1.0,
+    "false_premise": 1.0
+  },
+  "citation_precision": 0.07472042218031523,
+  "citation_recall": 0.04311118161882348,
+  "retrieval": {
+    "recall@5": 0.0524778465136548,
+    "recall@20": 0.07112684464470463,
+    "ndcg@10": 0.06964907899856095
+  },
+  "n_tasks": 1038,
+  "judge_model": "gpt-5.5-2026-04-23",
+  "judge_prompt_version": "v1",
+  "judge_errors": 0,
+  "premise_id_rate": 0.0,
+  "premise_refused_n": 38,
+  "tokens_total": 3921816,
+  "tokens_per_task": 3778.2,
+  "cost_usd_total": 22.8314,
+  "cost_usd_per_task": 0.021996,
+  "system_name": "agentic-opus-4-8 (reference)",
+  "split": "full",
+  "dataset_version": "v1.0"
+}

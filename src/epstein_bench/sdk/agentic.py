@@ -14,7 +14,6 @@ reads ``ANTHROPIC_API_KEY``); pin ``model`` to e.g. ``claude-sonnet-5`` or
 
 from __future__ import annotations
 
-from ..llm import LLMError
 from . import REFUSAL, Prediction, Retriever, System, Task
 
 _SEARCH_TOOL = {
@@ -135,19 +134,18 @@ class AgenticRAG(System):
                 cost_usd=_cost_usd(self.model, usage["input_tokens"], usage["output_tokens"]),
             )
 
-        # a few turns beyond the search budget for reasoning + the final submit
+        # a few turns beyond the search budget for reasoning + the final submit.
+        # API errors are NOT swallowed here — they propagate to the run harness,
+        # which distinguishes an occasional blip from a systemic failure (bad key,
+        # exhausted credits, wrong model) and aborts loudly rather than emitting a
+        # predictions file full of spurious refusals.
         for _ in range(self.max_searches + 3):
-            try:
-                resp = self.client.messages.create(
-                    model=self.model,
-                    max_tokens=self.max_tokens,
-                    tools=[_SEARCH_TOOL, _SUBMIT_TOOL],
-                    messages=messages,
-                )
-            except LLMError:
-                break
-            except Exception:  # noqa: BLE001 — treat any client error as unscorable
-                break
+            resp = self.client.messages.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                tools=[_SEARCH_TOOL, _SUBMIT_TOOL],
+                messages=messages,
+            )
             u = getattr(resp, "usage", None)
             if u is not None:
                 usage["input_tokens"] += getattr(u, "input_tokens", 0) or 0
