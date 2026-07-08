@@ -4,15 +4,16 @@
   <img src="mascot.png" alt="Epstein Bench Mascot" width="220" />
 </p>
 
-**Can your AI find the one sentence that matters in 80,000 scanned, garbled,
-redaction-strewn government documents?**
+**Millions of scanned, garbled, redaction-strewn documents. Can your AI find the
+one sentence that answers the question?**
 
-Every other retrieval benchmark quizzes AI on clean Wikipedia. The real world
-looks nothing like that: OCR wreckage, near-duplicate emails, endless legalese,
-and the one fact you need buried on page 4,000. Epstein Bench is that world:
-1,000 questions built from the full public **Epstein Files**, answerable only by
-finding the right document and citing it. Live leaderboard and example questions
-at **[epsteinbench.com](https://epsteinbench.com)**.
+The public **Epstein Files** run to millions of released records. Every other
+retrieval benchmark quizzes AI on clean Wikipedia; the real world looks nothing
+like this: OCR wreckage, near-duplicate emails, endless legalese, and the one
+fact you need buried somewhere in the pile. Epstein Bench distills the release
+into a benchmark: a retrieval corpus of about 84,000 text documents and 1,000
+questions, answerable only by finding the right document and citing it. Live
+leaderboard and example questions at **[epsteinbench.com](https://epsteinbench.com)**.
 
 Sample tasks: *Who did Epstein ask to find him "the best codebreaker, NSA type"?*
 · *What did Steve Bannon email him about "real power"?* · *Reconstruct the

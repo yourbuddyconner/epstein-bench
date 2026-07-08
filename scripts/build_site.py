@@ -222,15 +222,16 @@ def page(title: str, active: str, body: str) -> str:
 
 LEADERBOARD_BODY = """
   <h1>Epstein Bench</h1>
-  <p class="lede">Can your AI find the one sentence that matters in more than
-  80,000 scanned, garbled, redaction-strewn government documents?</p>
+  <p class="lede">Millions of scanned, garbled, redaction-strewn documents. Can
+  your AI find the one sentence that answers the question?</p>
 
-  <p>Every other retrieval benchmark quizzes AI on clean Wikipedia. The real
-  world looks nothing like that: OCR wreckage, near-duplicate emails, endless
-  legalese, and the one fact you need buried on page 4,000. <strong>Epstein Bench
-  is that world.</strong> It's built from the full public Epstein Files: about
-  80,000 real documents released by courts and Congress, turned into 1,000
-  questions a system can only answer by finding the right page and citing it.</p>
+  <p>The public Epstein Files run to millions of released records. Every other
+  retrieval benchmark quizzes AI on clean Wikipedia; the real world looks nothing
+  like this: OCR wreckage, near-duplicate emails, endless legalese, and the one
+  fact you need buried somewhere in the pile. <strong>Epstein Bench is that
+  world.</strong> It distills the release into a benchmark: a retrieval corpus of
+  about 84,000 text documents drawn from the Files, and 1,000 questions a system
+  can only answer by finding the right document and citing it.</p>
 
   <p class="kicker">From the files</p>
   <p>Real, verified questions in the benchmark. Each answer is a single sentence
