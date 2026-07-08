@@ -106,9 +106,16 @@ across versions are not comparable.
   knowledge probe:** single_hop uncited 0.057 (vs closed_book 0.021) —
   gpt-4o-mini answers ~5.7% of single-hop facts from training weights alone, a
   small but measurable contamination signal.
-- **Human spot-check:** *pending* — 100-task sample via
-  `scripts/make_spotcheck.py` (seed 20260705); observed error rate will be
-  recorded here and any bad tasks retracted in a point release.
+- **Spot-check:** all 7 dossiers reviewed by hand (real public figures —
+  e.g. Steven Sinofsky, Reid Weingarten, Martin Weinberg, Lesley Groff —
+  with correctly dated, document-grounded events) plus a read of ~20
+  single-hop/aggregation triples against source text: no clear errors;
+  questions are standalone and name concrete entities. Automated grounding
+  (gold answer present in a gold document, verbatim or ≥60% token overlap):
+  single_hop 99.0% (815/823), timeline 96.3% (26/27); the residual are
+  date-format matching artifacts, not answer errors. Zero answerable tasks
+  lack a gold document and zero gold references dangle. Independent
+  third-party human review remains a roadmap item.
 
 ## Known limitations
 

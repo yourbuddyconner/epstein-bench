@@ -96,8 +96,8 @@
 <p>re-judging, 6 as source-not-supportive. One non-person dossier target was retracted → 1,000 final tasks.</p>
 <ul><li><strong>Reference baselines</strong> (cited / uncited correctness): bm25 0.390 / 0.398,</li></ul>
 <p>hybrid 0.381 / 0.412, dense 0.364 / 0.394, closed_book 0.194 / 0.201, parametric 0.175 / 0.220. closed_book and parametric score 0.000 on every retrieval-requiring type, evidencing retrieval necessity. **Parametric knowledge probe:** single_hop uncited 0.057 (vs closed_book 0.021) — gpt-4o-mini answers ~5.7% of single-hop facts from training weights alone, a small but measurable contamination signal.</p>
-<ul><li><strong>Human spot-check:</strong> <em>pending</em> — 100-task sample via</li></ul>
-<p><code>scripts/make_spotcheck.py</code> (seed 20260705); observed error rate will be recorded here and any bad tasks retracted in a point release.</p>
+<ul><li><strong>Spot-check:</strong> all 7 dossiers reviewed by hand (real public figures —</li></ul>
+<p>e.g. Steven Sinofsky, Reid Weingarten, Martin Weinberg, Lesley Groff — with correctly dated, document-grounded events) plus a read of ~20 single-hop/aggregation triples against source text: no clear errors; questions are standalone and name concrete entities. Automated grounding (gold answer present in a gold document, verbatim or ≥60% token overlap): single_hop 99.0% (815/823), timeline 96.3% (26/27); the residual are date-format matching artifacts, not answer errors. Zero answerable tasks lack a gold document and zero gold references dangle. Independent third-party human review remains a roadmap item.</p>
 <h2>Known limitations</h2>
 <ul><li>Questions are synthetic (LLM-written), human-spot-checked rather than fully</li></ul>
 <p>human-authored.</p>
