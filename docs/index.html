@@ -112,15 +112,19 @@
   dozens of files. Our best baseline scores near zero.
   <cite>the "dossier" task family</cite></p>
 
-  <h2>How it's scored, and why it's honest</h2>
-  <p>A system earns a point only when it gets the answer right <strong>and</strong>
-  cites the document that proves it. No confident bluffing: the thing language
-  models do worst is rewarded least. We also run a control that gets no documents
-  at all, only the question. It scores <strong>zero</strong> on every fact, which
-  proves these answers can't be guessed. That same control doubles as a
-  <strong>training-contamination probe</strong>: a measure of how much of the
-  Epstein Files a model already absorbed from its training data, a number that
-  will only climb as new models are trained on this public release.</p>
+  <h2>Cited answer correctness</h2>
+  <p>A prediction is counted correct only when it satisfies two conditions
+  jointly: a pinned LLM judge rules the answer equivalent to the reference, and
+  at least one cited document belongs to the pooled gold set. Correctness thus
+  requires grounding rather than fluency. An unsupported answer, however
+  plausible, receives no credit.</p>
+  <p>A no-retrieval control fixes the floor. Given the question alone, with no
+  access to the corpus, it scores <strong>0.000</strong> on every
+  retrieval-dependent task type, confirming that the questions cannot be answered
+  from surface priors. The same control serves as a training-contamination probe:
+  its uncited score estimates how much of the corpus a model reproduces from
+  parameters alone, a quantity expected to rise as successive models are trained
+  on this public release.</p>
   <p class="note">Full details in the <a href="methodology.html">methodology</a>
   and <a href="dataset.html">dataset card</a>. Every task survived a four-stage
   verification gauntlet before release.</p>
