@@ -26,6 +26,7 @@ ships.
 | `timeline` | short answer + supporting docs (≥2 required) | cited answer correctness (binary) |
 | `dossier` | dated event list for a notable person, per-item docs | item-level P/R/F1, citation-gated |
 | `unanswerable` | none (refusal expected) | refusal accuracy |
+| `false_premise` | none (rejection expected); `false_element` records the fabrication | rejection accuracy + premise-identification diagnostic |
 
 Corpus selection is **entity-complete**: a wide scan indexes entity mentions
 across the source dataset, an LLM notability check picks target people (public
@@ -59,6 +60,15 @@ Unanswerable tasks run stages 1 and 4, plus a generation-time absence check
 (top BM25 hits confirmed non-answering). All rejections are logged with the
 failing stage (`build/rejected.jsonl`).
 
+**False-premise tasks** are anchored on entity-complete targets (so "no document
+supports this" is bounded) and fabricate an interaction between the target and a
+prominent outside figure, rotated across a diverse pool. They skip stages 2–3
+and run a generation-time absence check plus a two-stage adjudication: a neutral
+support check that drops any premise the on-topic documents actually support
+(catching premises that merely perturb a detail of a real meeting), and a
+quality check for plausibility and that the wording does not reveal the premise
+is false.
+
 ## Retrieval ground truth (pooled)
 
 Gold document sets come from TREC-style pooling: the union of top-20 results
@@ -77,10 +87,12 @@ composition is versioned with each release.
 |---|---|
 | generation + gauntlet stages 1-3 + pool judging | `gpt-4o-mini-2024-07-18` |
 | adjudication + pool stability re-check | `gpt-4o-2024-08-06` |
-| scoring judge (prompt v1) | `gpt-4o-mini-2024-07-18` |
+| scoring judge (prompt v1) | `gpt-5.5-2026-04-23` |
 
-Changing the scoring judge or its prompt is a new benchmark version; scores
-across versions are not comparable.
+The scoring judge is a strong model because correctness judging approaches human
+agreement at that tier; generation and gauntlet filtering tolerate the cheaper
+model. Changing the scoring judge or its prompt is a new benchmark version;
+scores across versions are not comparable.
 
 ## Release statistics
 
@@ -91,21 +103,32 @@ across versions are not comparable.
   mentions; 40 notable target people were chosen (LLM notability check) and the
   retrieval corpus is every document mentioning a target plus a 30,000-doc
   random backbone, for a corpus of 83,810 documents and 159,564 chunks.
-- **Tasks:** 1,000 (`full`): 823 single_hop / 111 aggregation / 27 timeline /
-  7 dossier / 32 unanswerable. `dev`: 44. Multi-document types (timeline,
-  dossier) survive verification at low rates, so they remain a small share.
-- **Gauntlet:** 1,098 of 4,034 candidates passed (27%). Rejections:
-  1,528 standalone, 1,080 answerability, 786 adjudication, 229 necessity.
+- **Tasks:** 1,038 (`full`): 823 single_hop / 111 aggregation / 27 timeline /
+  7 dossier / 32 unanswerable / 38 false_premise. `dev`: 50. Multi-document
+  types (timeline, dossier) survive verification at low rates, so they remain a
+  small share.
+- **Gauntlet:** 1,098 of 4,034 candidates passed (27%) in the original run.
+  Rejections: 1,528 standalone, 1,080 answerability, 786 adjudication, 229
+  necessity. The 38 `false_premise` tasks were added from 39 candidates that
+  passed the two-stage adjudication (1 dropped as non-standalone; earlier
+  candidates dropped when the corpus supported the premise or the premise merely
+  perturbed a real meeting).
 - **Pooling:** 1,018 of 1,098 kept; 74 dropped as unstable under strong-model
   re-judging, 6 as source-not-supportive. One non-person dossier target was
-  retracted, leaving 1,000 final tasks.
-- **Reference baselines** (cited / uncited correctness): bm25 0.390 / 0.398,
-  hybrid 0.381 / 0.412, dense 0.364 / 0.394, closed_book 0.194 / 0.201,
-  parametric 0.175 / 0.220. closed_book and parametric score 0.000 on every
-  retrieval-requiring type, evidencing retrieval necessity. **Parametric
-  knowledge probe:** single_hop uncited 0.057 (vs closed_book 0.021):
-  gpt-4o-mini answers ~5.7% of single-hop facts from training weights alone, a
-  small but measurable contamination signal.
+  retracted, leaving 1,000 tasks, plus 38 `false_premise` (no pooling; empty
+  gold set), for 1,038 released.
+- **Reference baselines** (cited correctness, 95% CI, micro; scored by
+  `gpt-5.5-2026-04-23`): hybrid 0.494 [0.46, 0.54] / 0.489, bm25 0.492
+  [0.45, 0.53] / 0.482, dense 0.440 [0.40, 0.47] / 0.398, closed_book 0.328
+  [0.32, 0.33] / 0.066, parametric 0.304 [0.28, 0.32] / 0.062. Hybrid and bm25
+  are a statistical tie; dense trails. closed_book and parametric score 0.000 on
+  every retrieval-requiring type — their macro is entirely rejection accuracy,
+  which the micro (0.066 / 0.062) exposes. All baselines refuse `false_premise`
+  at 0.95–1.00 but their premise-identification rate is 0.000: grounded
+  rejection without diagnosis. **Parametric knowledge probe:** single_hop
+  uncited 0.041 (vs closed_book 0.016): the generation-time model answers ~4% of
+  single-hop facts from training weights alone, a small but measurable
+  contamination signal.
 - **Spot-check:** all 7 dossiers reviewed by hand (real public figures such as
   Steven Sinofsky, Reid Weingarten, Martin Weinberg, and Lesley Groff, with
   correctly dated, document-grounded events) plus a read of ~20
@@ -126,6 +149,11 @@ across versions are not comparable.
   the haystack, never part of the answer key.
 - The alias index driving aggregation/timeline bounding is heuristic;
   entities with unusual name forms may be under-covered.
+- `false_premise` saturates on the reference baselines (all refuse), so it does
+  not separate retrieval systems on the headline; its informative signal is the
+  premise-identification diagnostic (0.000 for every reference). Absence is
+  verified against the pooled and entity-complete document set, not proven for
+  the wider release.
 
 ## Ethics
 

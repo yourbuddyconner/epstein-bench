@@ -8,16 +8,20 @@ over clean, well-formed passages that bear little resemblance to production
 corpora. Epstein Bench evaluates RAG on a real, adversarial corpus: the full
 public Epstein Files, a set of court- and Congress-released records dominated by
 OCR noise, near-duplicate email threads, and legal boilerplate. The benchmark
-targets four competencies drawn from the RAG evaluation literature (noise
-robustness, faithful attribution, information integration, and negative
-rejection) and adds an attribution-gated correctness metric together with a
-training-contamination probe. Release v1.0 comprises 1,000 verified questions
-over a curated 83,810-document corpus. Reference systems reveal three findings:
-lexical retrieval (BM25) outperforms dense retrieval on heavily degraded text; a
-no-retrieval control scores 0.000 on every retrieval-dependent task type,
-establishing that the tasks are not solvable from parametric knowledge alone;
-and multi-document reconstruction (person timelines) remains near the floor for
-all baselines.
+targets five competencies drawn from the RAG evaluation literature (noise
+robustness, faithful attribution, information integration, negative rejection,
+and false-premise rejection) and adds an attribution-gated correctness metric,
+claim-level citation precision, bootstrap confidence intervals, and a
+training-contamination probe. Release v1.0 comprises 1,038 verified questions
+over a curated 83,810-document corpus, scored by a pinned strong-model judge.
+Reference systems reveal four findings: lexical and hybrid retrieval are a
+statistical tie at the top while dense retrieval trails on heavily degraded
+text; a no-retrieval control scores 0.000 on every retrieval-dependent task
+type, establishing that the tasks are not solvable from parametric knowledge
+alone; multi-document reconstruction (person timelines) remains near the floor
+for all baselines; and every baseline refuses fabricated-premise questions yet
+none identifies the specific falsehood, so grounded rejection is solved while
+premise diagnosis is open.
 
 ## 1. Motivation
 
@@ -50,6 +54,7 @@ Each competency maps to a concrete surface of the benchmark.
 | Faithful attribution | Scoring is attribution-gated: an answer earns credit only if it is correct *and* a cited document supports it (§8). |
 | Information integration | The `aggregation`, `timeline`, and `dossier` task types require synthesizing evidence across multiple documents; single-document context is provably insufficient (§6). |
 | Negative rejection | The `unanswerable` type poses plausible questions whose answers are absent from the corpus; the target behavior is abstention. |
+| False-premise rejection | The `false_premise` type poses questions that presuppose a fabricated interaction between a real, in-corpus person and a prominent outside figure; the target behavior is to reject the premise rather than answer the follow-up (§4). |
 
 ## 3. Corpus construction
 
@@ -90,11 +95,23 @@ reflects the substance of the corpus rather than administrative trivia.
 | `timeline` | Temporal ordering or span over 2+ documents | Answer + supporting docs | Information integration |
 | `dossier` | Documented timeline of one person's contacts | Dated event list, per-item docs | Information integration |
 | `unanswerable` | Plausible question with no corpus answer | Abstention expected | Negative rejection |
+| `false_premise` | Question presupposing a fabricated interaction between a real person and a prominent outside figure | Rejection expected; `false_element` records the fabrication | False-premise rejection |
 
 Aggregation is *bounded*: scoped to an entity whose candidate documents are
 enumerable through the alias index, because unbounded "list all X" gold sets
 cannot be verified at corpus scale. Dossier tasks exploit the entity-complete
 selection of §3, which is what makes a claimed person timeline verifiable.
+
+False-premise tasks reuse that same entity-complete property for the opposite
+purpose. A premise is anchored on a target person whose *entire* document set is
+in the corpus, then fabricates a specific interaction (a meeting, call, or deal)
+with a prominent public figure — rotated across a diverse pool so the type does
+not collapse onto one name — whom those documents never connect them to.
+Anchoring on an entity-complete target is what makes the negative claim ("no
+document supports this") bounded and checkable; anchoring elsewhere would make
+it unfalsifiable. The premise is a fabricated *relationship*, never a perturbed
+date or place of a real meeting, so a system that finds the real record cannot
+be unfairly penalized.
 
 ## 5. The evaluation contract
 
@@ -142,6 +159,17 @@ Unanswerable tasks run stages 1 and 4 plus a generation-time absence check
 against top lexical hits. In v1.0, 1,098 of 4,034 candidates (27%) survived the
 gauntlet.
 
+False-premise tasks also skip stages 2–3 (they carry no gold answer to recover)
+and instead pass a generation-time absence check plus a two-stage adjudication.
+The absence check retrieves the top lexical hits for the presupposing question
+and confirms they do not answer it. Adjudication then runs two focused
+strong-model judgments rather than one omnibus prompt, which proved unstable on
+exactly the cases that matter: a neutral *support* check that drops any premise
+the on-topic documents actually support (a premise built by perturbing only a
+detail of a real meeting survives the absence check but is caught here), and a
+*quality* check that the premise is concrete and plausible and that its wording
+does not signal that it is false.
+
 ## 7. Retrieval ground truth by pooling
 
 Relevance labels follow the TREC pooling methodology. For each task, the union
@@ -154,7 +182,10 @@ model drops tasks whose labels are unstable.
 Pooled relevance is not exhaustive: a document outside the pool that happens to
 state the answer is scored as non-gold. Pool composition is versioned with the
 release. In v1.0, 1,018 of 1,098 verified tasks survived pooling; one non-person
-dossier target was retracted, leaving 1,000 released tasks.
+dossier target was retracted, leaving 1,000 tasks, to which 38 verified
+`false_premise` tasks were added for the current release (1,038 total). The
+rejection types (`unanswerable`, `false_premise`) carry an empty gold set by
+construction and bypass pooling.
 
 ## 8. Metrics
 
@@ -167,11 +198,29 @@ adherence: fluency without grounding earns nothing. Per type:
 - `single_hop`, `timeline`: binary cited correctness.
 - `aggregation`, `dossier`: item-level F1, where an item counts only if matched
   *and* supported by a cited document.
-- `unanswerable`: abstention accuracy; a confident wrong answer is a
-  hallucination and scores zero.
+- `unanswerable`, `false_premise`: rejection accuracy; a confident answer that
+  accepts the (absent or fabricated) premise is a hallucination and scores zero.
 
-The overall score is the unweighted macro-average across types and is the
-leaderboard sort key.
+Only the first three cited documents count toward the correctness gate, so a
+system cannot dump its full retrieval list into `citations` to fish for a chance
+gold hit. The overall score is the unweighted macro-average across types and is
+the leaderboard sort key. We report it with a **bootstrap 95% confidence
+interval** (resampled within each type, 1,000 draws): with type counts as skewed
+as these (single_hop 823, dossier 7), a point estimate alone hides that two
+systems a hundredths apart are a statistical tie. We also report the
+task-weighted **micro** average alongside the macro, because the macro gives the
+small rejection types outsized weight and the two numbers diverge sharply for
+no-retrieval systems (§9).
+
+**Citation precision and recall (diagnostic).** Following ALCE, we report, over
+answerable tasks, the fraction of a system's cited documents that are gold
+(precision) and the fraction of gold documents it cited (recall). Correctness
+gates on grounding; these quantify its quality.
+
+**Premise-identification rate (diagnostic).** For `false_premise`, of the tasks
+a system refused, the fraction in which it named the specific fabricated fact
+rather than declining in general. This separates grounded refusal from actually
+catching the falsehood.
 
 **Uncited correctness (diagnostic).** The same judgments with the citation gate
 removed. For retrieval systems it isolates grounding failures (right answer,
@@ -182,42 +231,65 @@ knowledge of the corpus, that is, training contamination.
 list against the pooled gold set, on answerable tasks. Reported as secondary
 columns.
 
-The judge model and prompt are part of the release. Changing either constitutes
-a new benchmark version, and scores are not comparable across judge versions.
+The judge model and prompt are part of the release. Release v1.0 pins the
+scoring judge to a strong model (`gpt-5.5-2026-04-23`), whose correctness
+agreement approaches human on this task; the generation and gauntlet stages keep
+a cheaper model, since filtering tolerates one. Changing the judge or its prompt
+constitutes a new benchmark version, and scores are not comparable across judge
+versions.
 
 ## 9. Baselines and findings
 
 Five reference systems, scored through the same submission pipeline used for
 external entries.
 
-| system | cited | uncited | single_hop | aggregation | timeline | dossier | unanswerable | recall@5 | recall@20 |
-|---|---|---|---|---|---|---|---|---|---|
-| bm25 | 0.390 | 0.398 | 0.471 | 0.271 | 0.296 | 0.036 | 0.875 | 0.271 | 0.589 |
-| hybrid | 0.381 | 0.412 | 0.481 | 0.326 | 0.222 | 0.032 | 0.844 | 0.272 | 0.594 |
-| dense | 0.364 | 0.394 | 0.377 | 0.249 | 0.185 | 0.071 | 0.938 | 0.219 | 0.517 |
-| closed_book | 0.194 | 0.201 | 0.000 | 0.000 | 0.000 | 0.000 | 0.969 | 0.000 | 0.000 |
-| parametric | 0.175 | 0.220 | 0.000 | 0.000 | 0.000 | 0.000 | 0.875 | 0.000 | 0.000 |
+| system | cited | 95% CI | micro | single_hop | aggregation | timeline | dossier | unanswerable | false_premise | recall@5 | recall@20 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| hybrid | 0.494 | [0.46, 0.54] | 0.489 | 0.484 | 0.341 | 0.296 | 0.032 | 0.812 | 1.000 | 0.272 | 0.594 |
+| bm25 | 0.492 | [0.45, 0.53] | 0.482 | 0.478 | 0.297 | 0.333 | 0.000 | 0.844 | 1.000 | 0.271 | 0.589 |
+| dense | 0.440 | [0.40, 0.47] | 0.398 | 0.384 | 0.255 | 0.185 | 0.000 | 0.844 | 0.974 | 0.219 | 0.517 |
+| closed_book | 0.328 | [0.32, 0.33] | 0.066 | 0.000 | 0.000 | 0.000 | 0.000 | 0.969 | 1.000 | 0.000 | 0.000 |
+| parametric | 0.304 | [0.28, 0.32] | 0.062 | 0.000 | 0.000 | 0.000 | 0.000 | 0.875 | 0.947 | 0.000 | 0.000 |
 
-Three findings follow.
+Four findings follow.
 
-1. **Lexical retrieval beats dense on degraded text.** BM25 (0.390) exceeds
-   dense retrieval (0.364), and RRF hybridization does not recover the gap
-   (0.381). On corrupted OCR, sub-word lexical matching is more robust than
-   dense-vector similarity over embeddings of garbled tokens. This is a direct
-   noise-robustness result and inverts the usual ordering on clean benchmarks.
-2. **The tasks require retrieval.** The `closed_book` and `parametric` controls,
-   which receive no documents, score 0.000 on every retrieval-dependent type.
-   Their nonzero overall scores are entirely abstention accuracy on the
-   `unanswerable` type. The tasks cannot be solved from parametric priors.
-3. **Information integration is unsolved.** Dossier reconstruction, which
-   requires assembling a person's timeline across many documents, stays between
-   0.03 and 0.07 for every system. Multi-document synthesis on a noisy corpus is
-   the open frontier this benchmark exposes.
+1. **Lexical and hybrid retrieval tie; dense trails.** Hybrid (0.494, CI
+   [0.46, 0.54]) and BM25 (0.492, [0.45, 0.53]) are statistically
+   indistinguishable — their intervals almost entirely overlap — while dense
+   (0.440, [0.40, 0.47]) sits clearly below both, its interval not reaching
+   their point estimates. On corrupted OCR, sub-word lexical matching is more
+   robust than dense-vector similarity over embeddings of garbled tokens, and
+   RRF hybridization matches but does not clearly beat BM25. The confidence
+   intervals are what license reading this as "a tie at the top with dense
+   behind" rather than a spurious three-way rank order; the result inverts the
+   usual clean-benchmark ordering, where dense leads.
+2. **The tasks require retrieval, and the macro can hide it.** The `closed_book`
+   and `parametric` controls score 0.000 on every retrieval-dependent type;
+   their nonzero overall is entirely rejection accuracy on `unanswerable` and
+   `false_premise`. The macro-average flatters them (closed_book 0.328) because
+   it weights the two small rejection types equally with the 823-task
+   `single_hop` type; the task-weighted micro (closed_book 0.066, parametric
+   0.062) exposes the floor the macro conceals. This divergence is the clearest
+   argument for reporting both numbers.
+3. **Information integration is unsolved.** Dossier reconstruction stays between
+   0.000 and 0.032 for every system under the strong judge. Multi-document
+   synthesis on a noisy corpus is the open frontier this benchmark exposes.
+4. **Grounded rejection is solved; premise diagnosis is not.** Every baseline
+   refuses fabricated-premise questions at 0.95–1.00: a retrieval system grounds
+   in context that does not support the invented meeting and declines, and a
+   no-retrieval system declines for lack of any basis. But the
+   premise-identification rate is 0.000 across all five — none names the
+   specific fabrication. `false_premise` therefore currently measures grounded
+   rejection, which the references already achieve, and exposes premise
+   diagnosis as headroom for systems that reason about *why* a premise fails.
+   Because the type saturates, it lifts every macro uniformly and does not
+   separate the references; its discriminating value is the identification-rate
+   diagnostic, not the headline.
 
 **Contamination probe.** The `parametric` control is prompted to answer from its
-own weights. Its single-hop uncited score is 0.057, against 0.021 for the
+own weights. Its single-hop uncited score is 0.041, against 0.016 for the
 abstention-biased `closed_book` control: the generation-time model already
-reproduces roughly 5.7% of single-hop facts without retrieval. Because the
+reproduces roughly 4% of single-hop facts without retrieval. Because the
 benchmark is decontaminated only against that generation-time model (the
 necessity stage rejects tasks it can answer closed-book), any *other* model's
 parametric score is a clean measure of its own training exposure to the public
@@ -244,6 +316,12 @@ never used. The `dev` split is for iteration and is not leaderboard-eligible.
   of the answer key.
 - The alias index that bounds aggregation and dossier tasks is heuristic;
   entities with unusual name forms may be under-covered.
+- The `false_premise` type saturates on the reference baselines (all refuse),
+  so it does not currently separate retrieval systems on the headline; its
+  informative signal is the premise-identification diagnostic, which is 0.000
+  for every reference system. Absence is verified against the pooled and
+  entity-complete document set, not a proof of non-existence in the wider
+  release.
 - Decontamination holds only against the generation-time model. Contamination
   scores for other models are informative but not a guarantee of task novelty
   for those models.

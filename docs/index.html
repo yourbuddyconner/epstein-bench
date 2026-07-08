@@ -82,8 +82,10 @@
   like this: OCR wreckage, near-duplicate emails, endless legalese, and the one
   fact you need buried somewhere in the pile. <strong>Epstein Bench is that
   world.</strong> It distills the release into a benchmark: a retrieval corpus of
-  about 84,000 text documents drawn from the Files, and 1,000 questions a system
-  can only answer by finding the right document and citing it.</p>
+  about 84,000 text documents drawn from the Files, and 1,038 questions a system
+  can only answer by finding the right document and citing it &mdash; including
+  trap questions that presuppose a meeting that never happened, where the right
+  move is to reject the premise.</p>
 
   <p class="kicker">From the files</p>
   <p>Real, verified questions in the benchmark. Each answer is a single sentence
@@ -133,18 +135,24 @@
   <div class="tablewrap">
     <table id="board">
       <thead><tr>
-        <th>system</th><th>overall</th><th>uncited</th>
+        <th>system</th><th>overall</th><th>95% CI</th><th>micro</th><th>uncited</th>
         <th>single_hop</th><th>aggregation</th><th>timeline</th><th>dossier</th>
-        <th>unanswerable</th><th>recall@5</th><th>recall@20</th><th>ndcg@10</th>
+        <th>unanswerable</th><th>false_premise</th><th>cit.&nbsp;prec</th>
+        <th>recall@5</th><th>recall@20</th>
       </tr></thead>
       <tbody></tbody>
     </table>
     <div class="empty" id="empty" hidden>No verified submissions yet.</div>
   </div>
   <p class="note">Scores are recomputed by CI from raw predictions; self-reported
-  numbers are never used. <strong>uncited</strong> = correctness ignoring the
-  citation gate (for the <code>parametric</code> baseline, a probe of how much of
-  the corpus a model already knows from training). Submit via PR. See the
+  numbers are never used. <strong>overall</strong> is the macro-average with a
+  bootstrap <strong>95% CI</strong>; <strong>micro</strong> is the task-weighted
+  average (the two diverge for no-retrieval systems, which score only on the
+  rejection types). <strong>uncited</strong> = correctness ignoring the citation
+  gate (for the <code>parametric</code> baseline, a probe of how much of the
+  corpus a model already knows from training). <strong>false_premise</strong>
+  rewards rejecting a fabricated meeting; every baseline refuses, but none yet
+  names the specific falsehood. Submit via PR. See the
   <a href="https://github.com/yourbuddyconner/epstein-bench#submitting-to-the-leaderboard">README</a>.</p>
 
   <div class="disclaimer">These are public records released by U.S. courts and
@@ -155,6 +163,8 @@
 
 <script>
   const fmt = x => (typeof x === "number" ? x.toFixed(3) : "n/a");
+  const ci = a => (Array.isArray(a) && a.length === 2
+    ? "[" + a[0].toFixed(2) + ", " + a[1].toFixed(2) + "]" : "n/a");
   fetch("leaderboard.json").then(r => r.json()).then(data => {
     const rows = data.entries || [];
     if (!rows.length) { document.getElementById("empty").hidden = false; return; }
@@ -162,9 +172,10 @@
     for (const e of rows) {
       const t = e.per_type || {}, r = e.retrieval || {};
       const cells = [e.system_name || "?", fmt(e.overall_cited_correctness),
+        ci(e.overall_cited_correctness_ci95), fmt(e.overall_cited_correctness_micro),
         fmt(e.overall_uncited_correctness), fmt(t.single_hop), fmt(t.aggregation),
-        fmt(t.timeline), fmt(t.dossier), fmt(t.unanswerable),
-        fmt(r["recall@5"]), fmt(r["recall@20"]), fmt(r["ndcg@10"])];
+        fmt(t.timeline), fmt(t.dossier), fmt(t.unanswerable), fmt(t.false_premise),
+        fmt(e.citation_precision), fmt(r["recall@5"]), fmt(r["recall@20"])];
       const tr = document.createElement("tr");
       cells.forEach((v, i) => { const td = document.createElement("td");
         if (i === 1) td.className = "headline"; td.textContent = v; tr.appendChild(td); });

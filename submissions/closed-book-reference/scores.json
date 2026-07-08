@@ -1,29 +1,45 @@
 {
-  "overall_cited_correctness": 0.19375,
+  "overall_cited_correctness": 0.328125,
+  "overall_cited_correctness_ci95": [
+    0.317708,
+    0.333333
+  ],
+  "overall_cited_correctness_micro": 0.06647398843930635,
   "per_type": {
     "aggregation": 0.0,
     "single_hop": 0.0,
     "timeline": 0.0,
     "dossier": 0.0,
-    "unanswerable": 0.96875
+    "unanswerable": 0.96875,
+    "false_premise": 1.0
   },
-  "overall_uncited_correctness": 0.20096860030487007,
+  "overall_uncited_correctness": 0.3464340354718544,
+  "overall_uncited_correctness_ci95": [
+    0.328247,
+    0.367495
+  ],
+  "overall_uncited_correctness_micro": 0.08306190170352021,
   "per_type_uncited": {
-    "aggregation": 0.015436865436865437,
-    "single_hop": 0.020656136087484813,
-    "timeline": 0.0,
+    "aggregation": 0.019984269984269984,
+    "single_hop": 0.015795868772782502,
+    "timeline": 0.07407407407407407,
     "dossier": 0.0,
-    "unanswerable": 0.96875
+    "unanswerable": 0.96875,
+    "false_premise": 1.0
   },
+  "citation_precision": 0.0,
+  "citation_recall": 0.0,
   "retrieval": {
     "recall@5": 0.0,
     "recall@20": 0.0,
     "ndcg@10": 0.0
   },
-  "n_tasks": 1000,
-  "judge_model": "gpt-4o-mini-2024-07-18",
+  "n_tasks": 1038,
+  "judge_model": "gpt-5.5-2026-04-23",
   "judge_prompt_version": "v1",
   "judge_errors": 0,
+  "premise_id_rate": 0.0,
+  "premise_refused_n": 38,
   "system_name": "closed_book (reference)",
   "split": "full",
   "dataset_version": "v1.0"

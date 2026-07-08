@@ -2,23 +2,25 @@
   "version": "v1.0",
   "splits": {
     "full": {
-      "n_tasks": 1000,
+      "n_tasks": 1038,
       "by_type": {
         "aggregation": 111,
         "single_hop": 823,
         "timeline": 27,
         "dossier": 7,
-        "unanswerable": 32
+        "unanswerable": 32,
+        "false_premise": 38
       },
-      "questions_sha256": "1716f63b82ab5357bb7a226550058d803dca91cef9ecf1a5913f56e636988804"
+      "questions_sha256": "baeacb246318e6f51ec5d7dc2ce11074435e3a09d9454da2bc7956622b6921f9"
     },
     "dev": {
-      "n_tasks": 44,
+      "n_tasks": 50,
       "by_type": {
         "single_hop": 12,
-        "unanswerable": 32
+        "unanswerable": 32,
+        "false_premise": 6
       },
-      "questions_sha256": "b2a05c921877734cdcef9b72d850fceb39b6ffdae08b94fbf53facdd401d2618"
+      "questions_sha256": "8dded95ddca95c16beb0f1fcaa869656c1b14936cca971d1eaf17ce1c33085bd"
     }
   }
 }

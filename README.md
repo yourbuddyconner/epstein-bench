@@ -11,7 +11,7 @@ The public **Epstein Files** run to millions of released records. Every other
 retrieval benchmark quizzes AI on clean Wikipedia; the real world looks nothing
 like this: OCR wreckage, near-duplicate emails, endless legalese, and the one
 fact you need buried somewhere in the pile. Epstein Bench distills the release
-into a benchmark: a retrieval corpus of about 84,000 text documents and 1,000
+into a benchmark: a retrieval corpus of about 84,000 text documents and 1,038
 questions, answerable only by finding the right document and citing it. Live
 leaderboard and example questions at **[epsteinbench.com](https://epsteinbench.com)**.
 
@@ -32,7 +32,7 @@ imports this code. It reads `questions.jsonl` and writes `predictions.jsonl`.
 Read `dataset/v1.0/<split>/questions.jsonl`:
 
 ```json
-{"task_id": "...", "question": "...", "type": "single_hop|aggregation|timeline|dossier|unanswerable"}
+{"task_id": "...", "question": "...", "type": "single_hop|aggregation|timeline|dossier|unanswerable|false_premise"}
 ```
 
 Emit `predictions.jsonl`:
@@ -41,7 +41,7 @@ Emit `predictions.jsonl`:
 {"task_id": "...", "answer": "...", "citations": ["doc_id"], "retrieved": ["doc_id", "..."]}
 ```
 
-- `answer`: free text; for unanswerable tasks the correct behavior is an explicit refusal
+- `answer`: free text; for `unanswerable` and `false_premise` tasks the correct behavior is an explicit refusal (reject the premise, do not answer the follow-up)
 - `citations`: document ids your system claims support the answer
 - `retrieved`: your ranked retrieval list (max 20), for retrieval diagnostics
 
@@ -53,11 +53,15 @@ python -m epstein_bench score predictions.jsonl --split full
 
 ## Headline metric: cited answer correctness
 
-An answer scores only if it matches the reference (pinned LLM judge, published
-prompt) **and** at least one cited document genuinely supports it. Per type:
-binary cited correctness (single_hop, timeline), item-level P/R/F1 with
-citation requirement (aggregation), refusal accuracy (unanswerable).
-Retrieval diagnostics: recall@5/20, nDCG@10 against pooled gold sets.
+An answer scores only if it matches the reference (pinned strong-model judge,
+published prompt) **and** at least one cited document genuinely supports it (only
+the first few citations count, so dumping the retrieval list cannot game it).
+Per type: binary cited correctness (single_hop, timeline), item-level P/R/F1
+with citation requirement (aggregation, dossier), rejection accuracy
+(unanswerable, false_premise). The macro headline ships with a bootstrap 95%
+confidence interval and a task-weighted micro average. Diagnostics: citation
+precision/recall, false-premise identification rate, and retrieval recall@5/20,
+nDCG@10 against pooled gold sets.
 
 ## Why trust the ground truth
 
