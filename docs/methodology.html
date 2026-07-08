@@ -72,41 +72,86 @@
 <body>
 <nav><div class="inner"><span class="brand">Epstein Bench</span><a href="index.html">Leaderboard</a><a href="methodology.html" class="active">Methodology</a><a href="dataset.html">Dataset Card</a><span class="spacer"></span><a href="https://github.com/yourbuddyconner/epstein-bench">GitHub</a></div></nav>
 <main>
-<h1>Methodology</h1>
-<p>This page specifies the benchmark precisely enough to re-derive every number.</p>
-<h2>The file contract</h2>
-<p>Systems under test consume <code>questions.jsonl</code> and emit <code>predictions.jsonl</code>.</p>
+<h1>Epstein Bench: Methodology</h1>
+<h2>Abstract</h2>
+<p>Retrieval-augmented generation (RAG) is now the standard way to ground large language models in a document collection, but most public benchmarks evaluate it over clean, well-formed passages that bear little resemblance to production corpora. Epstein Bench evaluates RAG on a real, adversarial corpus: the full public Epstein Files, a set of court- and Congress-released records dominated by OCR noise, near-duplicate email threads, and legal boilerplate. The benchmark targets four competencies drawn from the RAG evaluation literature (noise robustness, faithful attribution, information integration, and negative rejection) and adds an attribution-gated correctness metric together with a training-contamination probe. Release v1.0 comprises 1,000 verified questions over a curated 83,810-document corpus. Reference systems reveal three findings: lexical retrieval (BM25) outperforms dense retrieval on heavily degraded text; a no-retrieval control scores 0.000 on every retrieval-dependent task type, establishing that the tasks are not solvable from parametric knowledge alone; and multi-document reconstruction (person timelines) remains near the floor for all baselines.</p>
+<h2>1. Motivation</h2>
+<p>Recent RAG benchmarks have formalized the abilities a retrieval-augmented system must exhibit. RGB (arXiv:2309.01431) isolates noise robustness, negative rejection, information integration, and counterfactual robustness. RAGBench (arXiv:2407.11005) decomposes generation quality into relevance, utilization, adherence (faithfulness), and completeness. Both construct their evaluation data from curated or synthetically clean sources: contemporary news, well-formed domain passages.</p>
+<p>Production retrieval rarely operates on clean text. Enterprise and investigative corpora arrive as scanned PDFs, inconsistent OCR, forwarded email chains, and duplicated attachments, with the answer to any given question buried in a small number of documents among hundreds of thousands. A benchmark that never presents this degradation cannot predict how a system will behave when it does.</p>
+<p>Epstein Bench holds the abilities fixed and changes the corpus. It measures the same competencies the literature has established, on a corpus whose noise is real rather than injected, and it scores answers only when they are attributable to a cited source document.</p>
+<h2>2. Abilities measured</h2>
+<p>Each competency maps to a concrete surface of the benchmark.</p>
+<div class="tablewrap"><table><thead><tr><th>Ability (literature)</th><th>Realized in Epstein Bench as</th></tr></thead><tbody><tr><td>Noise robustness</td><td>The corpus is uncorrected OCR of scanned emails, depositions, and financial records. Retrieval and reading must tolerate genuine document degradation, not synthetic perturbation.</td></tr><tr><td>Faithful attribution</td><td>Scoring is attribution-gated: an answer earns credit only if it is correct <em>and</em> a cited document supports it (§8).</td></tr><tr><td>Information integration</td><td>The <code>aggregation</code>, <code>timeline</code>, and <code>dossier</code> task types require synthesizing evidence across multiple documents; single-document context is provably insufficient (§6).</td></tr><tr><td>Negative rejection</td><td>The <code>unanswerable</code> type poses plausible questions whose answers are absent from the corpus; the target behavior is abstention.</td></tr></tbody></table></div>
+<h2>3. Corpus construction</h2>
+<p><strong>Source.</strong> The corpus derives from <code>aurora2424/Epstein-Files</code> on Hugging Face, roughly 4.1M released records (about 340 GB including media). Only text-bearing rows are used, read directly from the parquet shards with column projection to avoid downloading media bytes. A full scan of all 634 shards yields approximately 1.38M documents with extractable text.</p>
+<p><strong>Quality screening.</strong> Each document is classified <code>clean</code>, <code>degraded</code>, or <code>garbage</code> by a heuristic pass (character-level garbage ratio, dictionary-word ratio, length) with a cheap-model readability check on borderline cases. Tasks are generated only from <code>clean</code> text. <code>degraded</code> documents remain in the retrieval corpus as natural distractors. <code>garbage</code> is excluded.</p>
+<p><strong>Entity-complete selection.</strong> Constructing honest multi-document tasks about a person requires that the corpus contain <em>all</em> of that person&#x27;s documents; otherwise the gold evidence set is silently incomplete. We therefore index entity mentions across the full scan, select 40 notable target entities via a notability classifier (public figures only; entities exceeding a document-count ceiling are excluded as too pervasive to bound), and assemble the retrieval corpus from every document mentioning a target plus a seeded random backbone of 30,000 additional documents. Release v1.0 contains 83,810 documents segmented into 159,564 retrieval chunks.</p>
+<h2>4. Task taxonomy</h2>
+<p>Generation is fact-first: atomic, verifiable facts are extracted from clean documents, and each question is written against a fact in investigator phrasing. Single-hop facts are additionally salience-filtered (retained only above a newsworthiness threshold, and only when document-stated) so the benchmark reflects the substance of the corpus rather than administrative trivia.</p>
+<div class="tablewrap"><table><thead><tr><th>Type</th><th>Definition</th><th>Gold</th><th>Ability</th></tr></thead><tbody><tr><td><code>single_hop</code></td><td>Factoid answerable from one document</td><td>Short answer + supporting docs</td><td>Noise robustness, attribution</td></tr><tr><td><code>aggregation</code></td><td>Bounded list scoped to an entity</td><td>Item set, per-item supporting docs</td><td>Information integration</td></tr><tr><td><code>timeline</code></td><td>Temporal ordering or span over 2+ documents</td><td>Answer + supporting docs</td><td>Information integration</td></tr><tr><td><code>dossier</code></td><td>Documented timeline of one person&#x27;s contacts</td><td>Dated event list, per-item docs</td><td>Information integration</td></tr><tr><td><code>unanswerable</code></td><td>Plausible question with no corpus answer</td><td>Abstention expected</td><td>Negative rejection</td></tr></tbody></table></div>
+<p>Aggregation is <em>bounded</em>: scoped to an entity whose candidate documents are enumerable through the alias index, because unbounded &quot;list all X&quot; gold sets cannot be verified at corpus scale. Dossier tasks exploit the entity-complete selection of §3, which is what makes a claimed person timeline verifiable.</p>
+<h2>5. The evaluation contract</h2>
+<p>A system under test never imports benchmark code. It consumes <code>questions.jsonl</code> and emits <code>predictions.jsonl</code>.</p>
 <p><strong>questions.jsonl</strong>, one task per line:</p>
-<div class="tablewrap"><table><thead><tr><th>field</th><th>type</th><th>meaning</th></tr></thead><tbody><tr><td><code>task_id</code></td><td>str</td><td>opaque id, echo it back</td></tr><tr><td><code>type</code></td><td>str</td><td><code>single_hop</code> | <code>aggregation</code> | <code>timeline</code> | <code>dossier</code> | <code>unanswerable</code></td></tr><tr><td><code>question</code></td><td>str</td><td>the question</td></tr></tbody></table></div>
+<div class="tablewrap"><table><thead><tr><th>field</th><th>type</th><th>meaning</th></tr></thead><tbody><tr><td><code>task_id</code></td><td>str</td><td>opaque id, echoed back</td></tr><tr><td><code>type</code></td><td>str</td><td><code>single_hop</code> | <code>aggregation</code> | <code>timeline</code> | <code>dossier</code> | <code>unanswerable</code></td></tr><tr><td><code>question</code></td><td>str</td><td>the question</td></tr></tbody></table></div>
 <p><strong>predictions.jsonl</strong>, one prediction per line, every task answered:</p>
-<div class="tablewrap"><table><thead><tr><th>field</th><th>type</th><th>meaning</th></tr></thead><tbody><tr><td><code>task_id</code></td><td>str</td><td>must match a released task</td></tr><tr><td><code>answer</code></td><td>str</td><td>free text; explicit refusal when you believe the corpus lacks the answer</td></tr><tr><td><code>citations</code></td><td>[str]</td><td>document ids you claim support the answer</td></tr><tr><td><code>retrieved</code></td><td>[str]</td><td>your ranked retrieval list, ≤ 20 ids</td></tr></tbody></table></div>
-<p>Document ids are the <code>doc_id</code> values of <code>aurora2424/Epstein-Files</code> records (text-bearing rows only). Systems are not told a task&#x27;s type beyond the field itself; note that hiding the <code>type</code> field from your pipeline is fair play and closer to production conditions.</p>
-<h2>Scoring</h2>
-<p>Run: <code>python -m epstein_bench score predictions.jsonl --split full</code></p>
-<ul><li><strong>single_hop / timeline</strong>: 1.0 iff the LLM judge (pinned model, prompt v1)</li></ul>
-<p>says the answer states the same fact as the reference AND ≥1 cited doc is in the pooled gold set; else 0.0.</p>
-<ul><li><strong>aggregation / dossier</strong>: judge marks which gold items the answer</li></ul>
-<p>includes and counts extra items. An included item <em>counts only if</em> a cited doc is in that item&#x27;s supporting set (or the task&#x27;s gold set). Score = item-level F1. Dossier tasks are person-centric timelines over notable target entities; the corpus is entity-complete for those targets (every document mentioning them is included), so the gold timeline is honest.</p>
-<ul><li><strong>unanswerable</strong>: 1.0 iff the judge classifies the answer as a</li></ul>
-<p>refusal/abstention. A confident wrong answer scores 0 (that&#x27;s the hallucination probe).</p>
-<ul><li><strong>overall_cited_correctness</strong>: unweighted macro-average over the per-type</li></ul>
-<p>scores. This is the leaderboard sort key.</p>
-<ul><li><strong>overall_uncited_correctness</strong> (diagnostic), the same judgments with the</li></ul>
-<p>citation gate removed. For retrieval systems it isolates grounding failures (correct answer, wrong/no citation). For the <code>parametric</code> baseline, which answers purely from model weights, no corpus access, it measures how much of the Epstein files a model already knows from training. Note the benchmark is decontaminated against the <em>generation-time</em> model only (the necessity stage rejects tasks that model can answer closed-book), so any other model&#x27;s parametric score is a clean signal of its own training exposure, and a per-model contamination probe as newer models train on the released files.</p>
-<ul><li><strong>retrieval diagnostics</strong>: recall@5, recall@20, nDCG@10 of <code>retrieved</code></li></ul>
-<p>against pooled gold docs (answerable tasks only). Secondary columns; not part of the headline.</p>
-<p>Judge failures during scoring count the affected task as 0 (fail closed) and are reported in <code>judge_errors</code>.</p>
-<h2>Splits</h2>
-<ul><li><code>dev</code>: small fixed subset (source docs drawn from a seeded ~1K-doc subset,</li></ul>
-<p>plus unanswerable top-ups). For iteration. Not leaderboard-eligible.</p>
-<ul><li><code>full</code>: the leaderboard split; retrieval is always over the full corpus.</li></ul>
-<p><code>dataset/&lt;version&gt;/manifest.json</code> records counts and the sha256 of each <code>questions.jsonl</code>; submissions pin that hash.</p>
-<h2>Submissions</h2>
-<p><code>python -m epstein_bench submit preds.jsonl --name &quot;My System&quot; --split full</code> creates <code>submissions/&lt;slug&gt;/</code> with your predictions and metadata. Open a PR adding it. CI (<code>.github/workflows/validate-submission.yml</code>):</p>
-<ol><li>checks bundle structure, dataset version, and questions-file hash;</li><li>verifies every task is answered;</li><li><strong>recomputes all scores from the predictions</strong> and writes <code>scores.json</code>.</li></ol>
-<p>Self-reported scores are never used.</p>
-<h2>Reproducing the dataset</h2>
-<p><code>corpus → generate → verify → pool → finalize</code>, all seeded and config-pinned (<code>src/epstein_bench/config.py</code>). LLM calls are disk-cached under <code>build/llm_cache/</code>, so interrupted runs resume without re-spending. See the <a href="../dataset/DATASET_CARD.md">dataset card</a> for the verification gauntlet and pooling design, including known limitations.</p>
+<div class="tablewrap"><table><thead><tr><th>field</th><th>type</th><th>meaning</th></tr></thead><tbody><tr><td><code>task_id</code></td><td>str</td><td>must match a released task</td></tr><tr><td><code>answer</code></td><td>str</td><td>free text; explicit abstention when the corpus lacks the answer</td></tr><tr><td><code>citations</code></td><td>[str]</td><td>document ids the system claims support the answer</td></tr><tr><td><code>retrieved</code></td><td>[str]</td><td>ranked retrieval list, at most 20 ids</td></tr></tbody></table></div>
+<p>Document ids are the <code>doc_id</code> values of the source records. A system is not told a task&#x27;s type beyond the field itself; withholding the <code>type</code> field from the pipeline is permitted and closer to production conditions.</p>
+<h2>6. Verification</h2>
+<p>Every released task passes a four-stage gauntlet; a failure at any stage discards the task, and the failing stage is logged.</p>
+<ol><li><strong>Standalone.</strong> The question is interpretable without the source document:</li></ol>
+<p>concrete entities, no deixis, no boilerplate targets.</p>
+<ol><li><strong>Answerability.</strong> An independent prompt, shown the gold documents, recovers</li></ol>
+<p>the reference answer (semantic match under an LLM judge, with a token-overlap floor; for list types, an item-recovery threshold).</p>
+<ol><li><strong>Necessity.</strong> Closed-book and random-distractor attempts must fail. For</li></ol>
+<p>multi-document types, no single gold document may suffice, which enforces the information-integration property.</p>
+<ol><li><strong>Adjudication.</strong> A stronger model issues a final pass or fail with a</li></ol>
+<p>category.</p>
+<p>Unanswerable tasks run stages 1 and 4 plus a generation-time absence check against top lexical hits. In v1.0, 1,098 of 4,034 candidates (27%) survived the gauntlet.</p>
+<h2>7. Retrieval ground truth by pooling</h2>
+<p>Relevance labels follow the TREC pooling methodology. For each task, the union of the top-20 results from three diverse retrievers (BM25, dense embeddings, and reciprocal-rank-fusion hybrid), together with the source documents, forms a pool; a judge labels each pooled document supports / partial / irrelevant, and the gold set is the <code>supports</code> subset. A sampled re-judgment by the stronger model drops tasks whose labels are unstable.</p>
+<p>Pooled relevance is not exhaustive: a document outside the pool that happens to state the answer is scored as non-gold. Pool composition is versioned with the release. In v1.0, 1,018 of 1,098 verified tasks survived pooling; one non-person dossier target was retracted, leaving 1,000 released tasks.</p>
+<h2>8. Metrics</h2>
+<p><strong>Cited answer correctness (headline).</strong> A prediction is correct only when both conditions hold: a pinned LLM judge (fixed model and published prompt) rules the answer equivalent to the reference, and at least one cited document lies in the pooled gold set. This is an attribution-gated metric in the sense of RAGBench adherence: fluency without grounding earns nothing. Per type:</p>
+<ul><li><code>single_hop</code>, <code>timeline</code>: binary cited correctness.</li><li><code>aggregation</code>, <code>dossier</code>: item-level F1, where an item counts only if matched</li></ul>
+<p><em>and</em> supported by a cited document.</p>
+<ul><li><code>unanswerable</code>: abstention accuracy; a confident wrong answer is a</li></ul>
+<p>hallucination and scores zero.</p>
+<p>The overall score is the unweighted macro-average across types and is the leaderboard sort key.</p>
+<p><strong>Uncited correctness (diagnostic).</strong> The same judgments with the citation gate removed. For retrieval systems it isolates grounding failures (right answer, wrong or missing citation). For a no-context system it estimates parametric knowledge of the corpus, that is, training contamination.</p>
+<p><strong>Retrieval diagnostics.</strong> recall@5, recall@20, and nDCG@10 of the <code>retrieved</code> list against the pooled gold set, on answerable tasks. Reported as secondary columns.</p>
+<p>The judge model and prompt are part of the release. Changing either constitutes a new benchmark version, and scores are not comparable across judge versions.</p>
+<h2>9. Baselines and findings</h2>
+<p>Five reference systems, scored through the same submission pipeline used for external entries.</p>
+<div class="tablewrap"><table><thead><tr><th>system</th><th>cited</th><th>uncited</th><th>single_hop</th><th>aggregation</th><th>timeline</th><th>dossier</th><th>unanswerable</th><th>recall@5</th><th>recall@20</th></tr></thead><tbody><tr><td>bm25</td><td>0.390</td><td>0.398</td><td>0.471</td><td>0.271</td><td>0.296</td><td>0.036</td><td>0.875</td><td>0.271</td><td>0.589</td></tr><tr><td>hybrid</td><td>0.381</td><td>0.412</td><td>0.481</td><td>0.326</td><td>0.222</td><td>0.032</td><td>0.844</td><td>0.272</td><td>0.594</td></tr><tr><td>dense</td><td>0.364</td><td>0.394</td><td>0.377</td><td>0.249</td><td>0.185</td><td>0.071</td><td>0.938</td><td>0.219</td><td>0.517</td></tr><tr><td>closed_book</td><td>0.194</td><td>0.201</td><td>0.000</td><td>0.000</td><td>0.000</td><td>0.000</td><td>0.969</td><td>0.000</td><td>0.000</td></tr><tr><td>parametric</td><td>0.175</td><td>0.220</td><td>0.000</td><td>0.000</td><td>0.000</td><td>0.000</td><td>0.875</td><td>0.000</td><td>0.000</td></tr></tbody></table></div>
+<p>Three findings follow.</p>
+<ol><li><strong>Lexical retrieval beats dense on degraded text.</strong> BM25 (0.390) exceeds</li></ol>
+<p>dense retrieval (0.364), and RRF hybridization does not recover the gap (0.381). On corrupted OCR, sub-word lexical matching is more robust than dense-vector similarity over embeddings of garbled tokens. This is a direct noise-robustness result and inverts the usual ordering on clean benchmarks.</p>
+<ol><li><strong>The tasks require retrieval.</strong> The <code>closed_book</code> and <code>parametric</code> controls,</li></ol>
+<p>which receive no documents, score 0.000 on every retrieval-dependent type. Their nonzero overall scores are entirely abstention accuracy on the <code>unanswerable</code> type. The tasks cannot be solved from parametric priors.</p>
+<ol><li><strong>Information integration is unsolved.</strong> Dossier reconstruction, which</li></ol>
+<p>requires assembling a person&#x27;s timeline across many documents, stays between 0.03 and 0.07 for every system. Multi-document synthesis on a noisy corpus is the open frontier this benchmark exposes.</p>
+<p><strong>Contamination probe.</strong> The <code>parametric</code> control is prompted to answer from its own weights. Its single-hop uncited score is 0.057, against 0.021 for the abstention-biased <code>closed_book</code> control: the generation-time model already reproduces roughly 5.7% of single-hop facts without retrieval. Because the benchmark is decontaminated only against that generation-time model (the necessity stage rejects tasks it can answer closed-book), any <em>other</em> model&#x27;s parametric score is a clean measure of its own training exposure to the public release, and this quantity is expected to rise for models trained after the files entered the public web.</p>
+<h2>10. Reproducibility and submissions</h2>
+<p>The pipeline (<code>scan → select → generate → verify → pool → finalize</code>) is seeded and config-pinned. All LLM calls are disk-cached, so an interrupted run resumes without re-spending. A submission is built with <code>python -m epstein_bench submit</code>, which packages predictions, system metadata, and the dataset-version hash. A GitHub Action validates the bundle and <strong>recomputes all scores from the raw predictions</strong>; self-reported numbers are never used. The <code>dev</code> split is for iteration and is not leaderboard-eligible.</p>
+<h2>11. Limitations</h2>
+<ul><li>Questions are LLM-generated and machine-verified, with author spot-checking,</li></ul>
+<p>rather than fully human-authored. Independent third-party human review is a roadmap item.</p>
+<ul><li>Pooled relevance is non-exhaustive (§7).</li><li>OCR noise is uncorrected by design; it is part of the haystack but never part</li></ul>
+<p>of the answer key.</p>
+<ul><li>The alias index that bounds aggregation and dossier tasks is heuristic;</li></ul>
+<p>entities with unusual name forms may be under-covered.</p>
+<ul><li>Decontamination holds only against the generation-time model. Contamination</li></ul>
+<p>scores for other models are informative but not a guarantee of task novelty for those models.</p>
+<ul><li>Correctness depends on a pinned LLM judge; a different judge is a different</li></ul>
+<p>benchmark version.</p>
+<h2>References</h2>
+<ul><li>Benchmarking Large Language Models in Retrieval-Augmented Generation.</li></ul>
+<p>arXiv:2309.01431.</p>
+<ul><li>RAGBench: Explainable Benchmark for Retrieval-Augmented Generation Systems.</li></ul>
+<p>arXiv:2407.11005.</p>
+<ul><li>The pooling methodology for incomplete relevance judgments follows standard</li></ul>
+<p>TREC practice.</p>
 </main>
 </body>
 </html>
