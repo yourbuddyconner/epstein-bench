@@ -52,6 +52,21 @@
   .note { color:var(--muted); font-size:.9rem; }
   td.headline { font-weight:700; }
   .empty { padding:2.5rem 1rem; text-align:center; color:var(--muted); font-style:italic; }
+  .lede { font-size:1.25rem; line-height:1.5; max-width:40rem; margin:0 0 1.5rem; }
+  .kicker { text-transform:uppercase; letter-spacing:.12em; font-size:.72rem;
+        font-weight:700; color:var(--accent); font-family:ui-monospace,Menlo,monospace; }
+  .files { display:grid; gap:.75rem; margin:1.2rem 0 1.8rem; }
+  .file { border:1px solid var(--line); border-left:3px solid var(--accent);
+        border-radius:6px; background:var(--card); padding:.85rem 1rem; }
+  .file .q { font-weight:600; }
+  .file .a { color:var(--muted); font-size:.92rem; margin-top:.3rem; }
+  .file .a b { color:var(--fg); font-style:italic; font-weight:400; }
+  .pull { font-size:1.5rem; line-height:1.4; margin:1.6rem 0; padding-left:1.1rem;
+        border-left:3px solid var(--accent); max-width:40rem; }
+  .pull cite { display:block; font-size:.85rem; color:var(--muted); font-style:normal;
+        margin-top:.5rem; font-family:ui-monospace,Menlo,monospace; }
+  .disclaimer { border:1px solid var(--line); border-radius:8px; background:var(--card);
+        padding:1rem 1.2rem; margin:2.5rem 0 0; color:var(--muted); font-size:.9rem; }
 </style>
 </head>
 <body>
@@ -59,16 +74,56 @@
 <main>
 
   <h1>Epstein Bench</h1>
-  <p class="sub">A verified RAG benchmark over the full public Epstein Files
-  release — noisy, OCR'd, entity-rich.</p>
+  <p class="lede">Can your AI find the one sentence that matters in more than
+  80,000 scanned, garbled, redaction-strewn government documents?</p>
 
-  <p>Systems answer investigator-style questions over the public Epstein Files
-  corpus and must <em>cite the documents that support each answer</em>. The
-  headline metric is <strong>cited answer correctness</strong>: an answer counts
-  only when a pinned LLM judge accepts it <em>and</em> a cited document is in the
-  pooled gold set. Every task passed a four-stage verification gauntlet before
-  release. See the <a href="methodology.html">methodology</a> and
-  <a href="dataset.html">dataset card</a>.</p>
+  <p>Every other retrieval benchmark quizzes AI on clean Wikipedia. The real
+  world looks nothing like that — OCR wreckage, near-duplicate emails, endless
+  legalese, and the fact you need buried on page 4,000. <strong>Epstein Bench is
+  that world.</strong> It's built from the full public Epstein Files: ~80,000
+  real documents released by courts and Congress, turned into 1,000 questions
+  that a system can only answer by actually finding — and citing — the right
+  page.</p>
+
+  <p class="kicker">From the files</p>
+  <p>Real, verified questions in the benchmark. Each answer is a single sentence
+  hiding somewhere in the corpus:</p>
+  <div class="files">
+    <div class="file">
+      <div class="q">Who did Jeffrey Epstein ask to find him "the best codebreaker, NSA type"?</div>
+      <div class="a">Buried in an email to a veteran TV journalist. The system has to surface the exact thread. <b>Epstein: "Can you find me the best codebreaker nsa type."</b></div>
+    </div>
+    <div class="file">
+      <div class="q">What did Steve Bannon email Epstein about "real power"?</div>
+      <div class="a"><b>"we r on the cusp of real power"</b> — one line in a chain of correspondence between Epstein and the former White House strategist.</div>
+    </div>
+    <div class="file">
+      <div class="q">Who was on the guest list for Epstein's dinner on September 20, 2013?</div>
+      <div class="a">A calendar entry: <b>"DINNER W/ BILL GATES, TERJE, JAGBLAND, OTHERS."</b> The corpus is full of these — the trick is retrieving the right one.</div>
+    </div>
+    <div class="file">
+      <div class="q">Which account was tied to Ghislaine Maxwell at J.P. Morgan?</div>
+      <div class="a">The answer is a line item on a scanned bank statement — the kind of needle dense-vector search routinely fails to find on noisy OCR.</div>
+    </div>
+  </div>
+
+  <p class="pull">The hardest questions ask a system to reconstruct the entire
+  documented timeline of one person's contacts with Epstein — scattered across
+  dozens of files. Our best baseline scores near zero.
+  <cite>— the "dossier" task family</cite></p>
+
+  <h2>How it's scored, and why it's honest</h2>
+  <p>A system earns a point only when it gets the answer right <strong>and</strong>
+  cites the document that proves it. No confident bluffing — the thing language
+  models do worst is rewarded least. We also run a control that gets no documents
+  at all, only the question: it scores <strong>zero</strong> on every fact,
+  proving these answers can't be guessed. That same control doubles as a
+  <strong>training-contamination probe</strong> — a measure of how much of the
+  Epstein Files a model already absorbed from its training data, a number that
+  will only climb as new models are trained on this public release.</p>
+  <p class="note">Full details in the <a href="methodology.html">methodology</a>
+  and <a href="dataset.html">dataset card</a>. Every task survived a four-stage
+  verification gauntlet before release.</p>
 
   <h2>Leaderboard — <code>full</code> split, dataset v1.0</h2>
   <div class="tablewrap">
@@ -87,6 +142,12 @@
   citation gate (for the <code>parametric</code> baseline, a probe of how much of
   the corpus a model already knows from training). Submit via PR — see the
   <a href="https://github.com/yourbuddyconner/epstein-bench#submitting-to-the-leaderboard">README</a>.</p>
+
+  <div class="disclaimer">These are public records released by U.S. courts and
+  Congress. Appearing in the files means appearing in someone's email, calendar,
+  or financial records — it is not an accusation of wrongdoing. Epstein Bench
+  measures whether AI can retrieve and cite what the documents say; it takes no
+  position on anyone's conduct.</div>
 
 <script>
   const fmt = x => (typeof x === "number" ? x.toFixed(3) : "—");

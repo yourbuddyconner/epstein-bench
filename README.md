@@ -4,15 +4,27 @@
   <img src="mascot.png" alt="Epstein Bench Mascot" width="220" />
 </p>
 
-A RAG benchmark over the **Epstein Files** — the full public release
-(~4.1M files; the ~1M+ text-bearing documents form the retrieval corpus):
-OCR'd, noisy, entity-rich. Wikipedia-derived benchmarks test
-retrieval over clean encyclopedic text; this one tests what enterprise RAG
-actually faces: messy scans, duplicated emails, boilerplate, and facts
-scattered across documents.
+**Can your AI find the one sentence that matters in 80,000 scanned, garbled,
+redaction-strewn government documents?**
+
+Every other retrieval benchmark quizzes AI on clean Wikipedia. The real world
+looks nothing like that — OCR wreckage, near-duplicate emails, endless legalese,
+and the fact you need buried on page 4,000. Epstein Bench is that world: 1,000
+questions built from the full public **Epstein Files**, answerable only by
+actually finding — and citing — the right document. Live leaderboard and example
+questions at **[epsteinbench.com](https://epsteinbench.com)**.
+
+Sample tasks: *Who did Epstein ask to find him "the best codebreaker, NSA type"?*
+· *What did Steve Bannon email him about "real power"?* · *Reconstruct the
+documented timeline of a given person's contacts with Epstein.* Every answer is
+one sentence hiding somewhere in the corpus.
 
 **The benchmark is a dataset, a file contract, and a scorer — not a framework.**
 Your system never imports this code.
+
+> These are public records released by U.S. courts and Congress. Appearing in
+> the files means appearing in someone's email, calendar, or financial records —
+> not an accusation. The benchmark measures retrieval, not guilt.
 
 ## The contract
 
