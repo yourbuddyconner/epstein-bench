@@ -58,7 +58,11 @@ class Config:
     # via other targets' docs + backbone but get no dossier
     # hub entities excluded as dossier targets under ANY spelling (OCR variants
     # of Epstein fragment his mentions and slip the doc cap otherwise)
-    exclude_entity_substrings: tuple[str, ...] = ("epstein", "maxwell")
+    exclude_entity_substrings: tuple[str, ...] = (
+        "epstein",
+        "maxwell",
+        "morgan chase",  # bank fragment that passed the person-notability check
+    )
     backbone_docs: int = 30000  # random non-target docs kept as haystack
 
     # --- models (pinned) ---
