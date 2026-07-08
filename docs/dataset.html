@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Epstein Bench — Dataset Card</title>
+<title>Epstein Bench: Dataset Card</title>
 <style>
   :root { --bg:#faf9f6; --fg:#1a1a1a; --muted:#6b6b6b; --line:#e2ddd4;
           --accent:#8b2c2c; --card:#ffffff; }
@@ -76,47 +76,47 @@
 <p><strong>Current release:</strong> <code>v1.0</code> (2026-07-07). This card documents the methodology; the <em>Release statistics</em> section is updated whenever a version ships.</p>
 <h2>Source corpus</h2>
 <ul><li><code>aurora2424/Epstein-Files</code> (Hugging Face): the full public Epstein Files</li></ul>
-<p>release — ~4.1M rows (340GB including raw media bytes). Only the text columns are consumed, via parquet column projection; rows without <code>text_content</code> (images, audio, video) are skipped. Emails, depositions, flight logs, scanned letters. The media columns (<code>image</code>, <code>audio</code>, <code>video</code>, <code>online_url</code>) open the door to multimodal task families later; v1 is text-only.</p>
+<p>release, ~4.1M rows (340GB including raw media bytes). Only the text columns are consumed, via parquet column projection; rows without <code>text_content</code> (images, audio, video) are skipped. Emails, depositions, flight logs, scanned letters. The media columns (<code>image</code>, <code>audio</code>, <code>video</code>, <code>online_url</code>) open the door to multimodal task families later; v1 is text-only.</p>
 <ul><li>Documents are quality-screened into <code>clean</code> / <code>degraded</code> / <code>garbage</code>.</li></ul>
 <p>Tasks are generated <strong>only from clean text</strong>; degraded documents remain in the retrieval corpus as natural distractors; garbage is excluded entirely.</p>
 <h2>Task types</h2>
 <div class="tablewrap"><table><thead><tr><th>type</th><th>gold</th><th>scored as</th></tr></thead><tbody><tr><td><code>single_hop</code></td><td>short answer + supporting docs</td><td>cited answer correctness (binary)</td></tr><tr><td><code>aggregation</code></td><td>item list, per-item supporting docs</td><td>item-level P/R/F1, citation-gated</td></tr><tr><td><code>timeline</code></td><td>short answer + supporting docs (≥2 required)</td><td>cited answer correctness (binary)</td></tr><tr><td><code>dossier</code></td><td>dated event list for a notable person, per-item docs</td><td>item-level P/R/F1, citation-gated</td></tr><tr><td><code>unanswerable</code></td><td>none (refusal expected)</td><td>refusal accuracy</td></tr></tbody></table></div>
-<p>Corpus selection is <strong>entity-complete</strong>: a wide scan indexes entity mentions across the source dataset, an LLM notability check picks target people (public figures only; entities appearing in more than <code>max_entity_docs</code> documents are excluded as impractically pervasive), and the corpus is all documents mentioning any target plus a seeded random backbone. Single-hop facts are <strong>salience-filtered</strong> (newsworthiness ≥3/5: notable people, money flows, meetings/travel, legal exposure — never speculation; facts must be document-stated).</p>
-<p>Generation is fact-first: atomic facts are extracted from clean documents and questions are written against the fact, in investigator phrasing. Aggregation questions are <strong>bounded</strong> — scoped to an entity whose candidate documents are enumerable via an alias index — because unbounded &quot;list all X&quot; gold sets cannot be verified at corpus scale.</p>
+<p>Corpus selection is <strong>entity-complete</strong>: a wide scan indexes entity mentions across the source dataset, an LLM notability check picks target people (public figures only; entities appearing in more than <code>max_entity_docs</code> documents are excluded as impractically pervasive), and the corpus is all documents mentioning any target plus a seeded random backbone. Single-hop facts are <strong>salience-filtered</strong> (newsworthiness ≥3/5: notable people, money flows, meetings/travel, legal exposure, never speculation; facts must be document-stated).</p>
+<p>Generation is fact-first: atomic facts are extracted from clean documents and questions are written against the fact, in investigator phrasing. Aggregation questions are <strong>bounded</strong>, scoped to an entity whose candidate documents are enumerable via an alias index, because unbounded &quot;list all X&quot; gold sets cannot be verified at corpus scale.</p>
 <h2>Verification</h2>
 <p>Every shipped task passed all of:</p>
-<ol><li><strong>Standalone</strong> — interpretable without the source document (concrete</li></ol>
+<ol><li><strong>Standalone</strong>: interpretable without the source document (concrete</li></ol>
 <p>entities, no deixis, no boilerplate targets).</p>
-<ol><li><strong>Answerability</strong> — an independent prompt, shown the gold documents,</li></ol>
+<ol><li><strong>Answerability</strong>: an independent prompt, shown the gold documents,</li></ol>
 <p>recovers the reference answer (semantic match + token-F1 floor; ≥80% item recovery for aggregation).</p>
-<ol><li><strong>Necessity</strong> — closed-book and random-distractor attempts fail; for</li></ol>
+<ol><li><strong>Necessity</strong>: closed-book and random-distractor attempts fail; for</li></ol>
 <p>multi-document types, no single gold document suffices.</p>
-<ol><li><strong>Adjudication</strong> — a stronger model passes/fails with a category.</li></ol>
+<ol><li><strong>Adjudication</strong>: a stronger model passes/fails with a category.</li></ol>
 <p>Unanswerable tasks run stages 1 and 4, plus a generation-time absence check (top BM25 hits confirmed non-answering). All rejections are logged with the failing stage (<code>build/rejected.jsonl</code>).</p>
 <h2>Retrieval ground truth (pooled)</h2>
 <p>Gold document sets come from TREC-style pooling: the union of top-20 results from three diverse retrievers (BM25, dense embeddings, hybrid RRF) plus the source documents, each judged supports/partial/irrelevant. Gold = all &#x27;supports&#x27; documents. A sample is re-judged by the strong model; tasks with supports↔irrelevant flips are dropped as unstable.</p>
 <p><strong>Limitation:</strong> pooled relevance sets are not exhaustive. A document outside the pool that happens to state the answer will be scored as non-gold. Pool composition is versioned with each release.</p>
 <h2>Models (pinned per release)</h2>
-<div class="tablewrap"><table><thead><tr><th>role</th><th>model</th></tr></thead><tbody><tr><td>generation + gauntlet stages 1–3 + pool judging</td><td><code>gpt-4o-mini-2024-07-18</code></td></tr><tr><td>adjudication + pool stability re-check</td><td><code>gpt-4o-2024-08-06</code></td></tr><tr><td>scoring judge (prompt v1)</td><td><code>gpt-4o-mini-2024-07-18</code></td></tr></tbody></table></div>
+<div class="tablewrap"><table><thead><tr><th>role</th><th>model</th></tr></thead><tbody><tr><td>generation + gauntlet stages 1-3 + pool judging</td><td><code>gpt-4o-mini-2024-07-18</code></td></tr><tr><td>adjudication + pool stability re-check</td><td><code>gpt-4o-2024-08-06</code></td></tr><tr><td>scoring judge (prompt v1)</td><td><code>gpt-4o-mini-2024-07-18</code></td></tr></tbody></table></div>
 <p>Changing the scoring judge or its prompt is a new benchmark version; scores across versions are not comparable.</p>
 <h2>Release statistics</h2>
 <h3>v1.0 (2026-07-07)</h3>
-<ul><li><strong>Corpus:</strong> entity-complete selection over the full source dataset — a wide</li></ul>
-<p>scan of all 634 parquet shards (~1.38M text-bearing docs) indexed entity mentions; 40 notable target people were chosen (LLM notability check) and the retrieval corpus is every document mentioning a target plus a 30,000-doc random backbone → 83,810 documents, 159,564 chunks.</p>
+<ul><li><strong>Corpus:</strong> entity-complete selection over the full source dataset, a wide</li></ul>
+<p>scan of all 634 parquet shards (~1.38M text-bearing docs) indexed entity mentions; 40 notable target people were chosen (LLM notability check) and the retrieval corpus is every document mentioning a target plus a 30,000-doc random backbone, for a corpus of 83,810 documents and 159,564 chunks.</p>
 <ul><li><strong>Tasks:</strong> 1,000 (<code>full</code>): 823 single_hop / 111 aggregation / 27 timeline /</li></ul>
 <p>7 dossier / 32 unanswerable. <code>dev</code>: 44. Multi-document types (timeline, dossier) survive verification at low rates, so they remain a small share.</p>
 <ul><li><strong>Gauntlet:</strong> 1,098 of 4,034 candidates passed (27%). Rejections:</li></ul>
 <p>1,528 standalone, 1,080 answerability, 786 adjudication, 229 necessity.</p>
 <ul><li><strong>Pooling:</strong> 1,018 of 1,098 kept; 74 dropped as unstable under strong-model</li></ul>
-<p>re-judging, 6 as source-not-supportive. One non-person dossier target was retracted → 1,000 final tasks.</p>
+<p>re-judging, 6 as source-not-supportive. One non-person dossier target was retracted, leaving 1,000 final tasks.</p>
 <ul><li><strong>Reference baselines</strong> (cited / uncited correctness): bm25 0.390 / 0.398,</li></ul>
-<p>hybrid 0.381 / 0.412, dense 0.364 / 0.394, closed_book 0.194 / 0.201, parametric 0.175 / 0.220. closed_book and parametric score 0.000 on every retrieval-requiring type, evidencing retrieval necessity. **Parametric knowledge probe:** single_hop uncited 0.057 (vs closed_book 0.021) — gpt-4o-mini answers ~5.7% of single-hop facts from training weights alone, a small but measurable contamination signal.</p>
-<ul><li><strong>Spot-check:</strong> all 7 dossiers reviewed by hand (real public figures —</li></ul>
-<p>e.g. Steven Sinofsky, Reid Weingarten, Martin Weinberg, Lesley Groff — with correctly dated, document-grounded events) plus a read of ~20 single-hop/aggregation triples against source text: no clear errors; questions are standalone and name concrete entities. Automated grounding (gold answer present in a gold document, verbatim or ≥60% token overlap): single_hop 99.0% (815/823), timeline 96.3% (26/27); the residual are date-format matching artifacts, not answer errors. Zero answerable tasks lack a gold document and zero gold references dangle. Independent third-party human review remains a roadmap item.</p>
+<p>hybrid 0.381 / 0.412, dense 0.364 / 0.394, closed_book 0.194 / 0.201, parametric 0.175 / 0.220. closed_book and parametric score 0.000 on every retrieval-requiring type, evidencing retrieval necessity. **Parametric knowledge probe:** single_hop uncited 0.057 (vs closed_book 0.021): gpt-4o-mini answers ~5.7% of single-hop facts from training weights alone, a small but measurable contamination signal.</p>
+<ul><li><strong>Spot-check:</strong> all 7 dossiers reviewed by hand (real public figures such as</li></ul>
+<p>Steven Sinofsky, Reid Weingarten, Martin Weinberg, and Lesley Groff, with correctly dated, document-grounded events) plus a read of ~20 single-hop/aggregation triples against source text: no clear errors; questions are standalone and name concrete entities. Automated grounding (gold answer present in a gold document, verbatim or ≥60% token overlap): single_hop 99.0% (815/823), timeline 96.3% (26/27); the residual are date-format matching artifacts, not answer errors. Zero answerable tasks lack a gold document and zero gold references dangle. Independent third-party human review remains a roadmap item.</p>
 <h2>Known limitations</h2>
 <ul><li>Questions are synthetic (LLM-written), human-spot-checked rather than fully</li></ul>
 <p>human-authored.</p>
-<ul><li>Pooled (non-exhaustive) relevance judgments; see above.</li><li>OCR noise in degraded documents is uncorrected by design — it is part of</li></ul>
+<ul><li>Pooled (non-exhaustive) relevance judgments; see above.</li><li>OCR noise in degraded documents is uncorrected by design: it is part of</li></ul>
 <p>the haystack, never part of the answer key.</p>
 <ul><li>The alias index driving aggregation/timeline bounding is heuristic;</li></ul>
 <p>entities with unusual name forms may be under-covered.</p>

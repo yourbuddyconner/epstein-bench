@@ -226,12 +226,11 @@ LEADERBOARD_BODY = """
   80,000 scanned, garbled, redaction-strewn government documents?</p>
 
   <p>Every other retrieval benchmark quizzes AI on clean Wikipedia. The real
-  world looks nothing like that — OCR wreckage, near-duplicate emails, endless
-  legalese, and the fact you need buried on page 4,000. <strong>Epstein Bench is
-  that world.</strong> It's built from the full public Epstein Files: ~80,000
-  real documents released by courts and Congress, turned into 1,000 questions
-  that a system can only answer by actually finding — and citing — the right
-  page.</p>
+  world looks nothing like that: OCR wreckage, near-duplicate emails, endless
+  legalese, and the one fact you need buried on page 4,000. <strong>Epstein Bench
+  is that world.</strong> It's built from the full public Epstein Files: about
+  80,000 real documents released by courts and Congress, turned into 1,000
+  questions a system can only answer by finding the right page and citing it.</p>
 
   <p class="kicker">From the files</p>
   <p>Real, verified questions in the benchmark. Each answer is a single sentence
@@ -243,37 +242,37 @@ LEADERBOARD_BODY = """
     </div>
     <div class="file">
       <div class="q">What did Steve Bannon email Epstein about "real power"?</div>
-      <div class="a"><b>"we r on the cusp of real power"</b> — one line in a chain of correspondence between Epstein and the former White House strategist.</div>
+      <div class="a"><b>"we r on the cusp of real power."</b> One line in a chain of emails between Epstein and the former White House strategist.</div>
     </div>
     <div class="file">
       <div class="q">Who was on the guest list for Epstein's dinner on September 20, 2013?</div>
-      <div class="a">A calendar entry: <b>"DINNER W/ BILL GATES, TERJE, JAGBLAND, OTHERS."</b> The corpus is full of these — the trick is retrieving the right one.</div>
+      <div class="a">A calendar entry: <b>"DINNER W/ BILL GATES, TERJE, JAGBLAND, OTHERS."</b> The corpus is full of these. The trick is retrieving the right one.</div>
     </div>
     <div class="file">
       <div class="q">Which account was tied to Ghislaine Maxwell at J.P. Morgan?</div>
-      <div class="a">The answer is a line item on a scanned bank statement — the kind of needle dense-vector search routinely fails to find on noisy OCR.</div>
+      <div class="a">The answer is a line item on a scanned bank statement, the kind of needle dense-vector search routinely misses on noisy OCR.</div>
     </div>
   </div>
 
   <p class="pull">The hardest questions ask a system to reconstruct the entire
-  documented timeline of one person's contacts with Epstein — scattered across
+  documented timeline of one person's contacts with Epstein, scattered across
   dozens of files. Our best baseline scores near zero.
-  <cite>— the "dossier" task family</cite></p>
+  <cite>the "dossier" task family</cite></p>
 
   <h2>How it's scored, and why it's honest</h2>
   <p>A system earns a point only when it gets the answer right <strong>and</strong>
-  cites the document that proves it. No confident bluffing — the thing language
+  cites the document that proves it. No confident bluffing: the thing language
   models do worst is rewarded least. We also run a control that gets no documents
-  at all, only the question: it scores <strong>zero</strong> on every fact,
-  proving these answers can't be guessed. That same control doubles as a
-  <strong>training-contamination probe</strong> — a measure of how much of the
+  at all, only the question. It scores <strong>zero</strong> on every fact, which
+  proves these answers can't be guessed. That same control doubles as a
+  <strong>training-contamination probe</strong>: a measure of how much of the
   Epstein Files a model already absorbed from its training data, a number that
   will only climb as new models are trained on this public release.</p>
   <p class="note">Full details in the <a href="methodology.html">methodology</a>
   and <a href="dataset.html">dataset card</a>. Every task survived a four-stage
   verification gauntlet before release.</p>
 
-  <h2>Leaderboard — <code>full</code> split, dataset v1.0</h2>
+  <h2>Leaderboard: <code>full</code> split, dataset v1.0</h2>
   <div class="tablewrap">
     <table id="board">
       <thead><tr>
@@ -288,17 +287,17 @@ LEADERBOARD_BODY = """
   <p class="note">Scores are recomputed by CI from raw predictions; self-reported
   numbers are never used. <strong>uncited</strong> = correctness ignoring the
   citation gate (for the <code>parametric</code> baseline, a probe of how much of
-  the corpus a model already knows from training). Submit via PR — see the
+  the corpus a model already knows from training). Submit via PR. See the
   <a href="%GITHUB%#submitting-to-the-leaderboard">README</a>.</p>
 
   <div class="disclaimer">These are public records released by U.S. courts and
   Congress. Appearing in the files means appearing in someone's email, calendar,
-  or financial records — it is not an accusation of wrongdoing. Epstein Bench
+  or financial records. It is not an accusation of wrongdoing. Epstein Bench
   measures whether AI can retrieve and cite what the documents say; it takes no
   position on anyone's conduct.</div>
 
 <script>
-  const fmt = x => (typeof x === "number" ? x.toFixed(3) : "—");
+  const fmt = x => (typeof x === "number" ? x.toFixed(3) : "n/a");
   fetch("leaderboard.json").then(r => r.json()).then(data => {
     const rows = data.entries || [];
     if (!rows.length) { document.getElementById("empty").hidden = false; return; }
@@ -320,16 +319,16 @@ LEADERBOARD_BODY = """
 
 
 def main() -> None:
-    (DOCS / "index.html").write_text(page("Epstein Bench — Leaderboard", "home", LEADERBOARD_BODY))
+    (DOCS / "index.html").write_text(page("Epstein Bench: Leaderboard", "home", LEADERBOARD_BODY))
 
     methodology = (DOCS / "methodology.md").read_text()
     (DOCS / "methodology.html").write_text(
-        page("Epstein Bench — Methodology", "methodology", md_to_html(methodology))
+        page("Epstein Bench: Methodology", "methodology", md_to_html(methodology))
     )
 
     card = (REPO / "dataset" / "DATASET_CARD.md").read_text()
     (DOCS / "dataset.html").write_text(
-        page("Epstein Bench — Dataset Card", "dataset", md_to_html(card))
+        page("Epstein Bench: Dataset Card", "dataset", md_to_html(card))
     )
     print("wrote docs/index.html, docs/methodology.html, docs/dataset.html")
 

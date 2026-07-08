@@ -8,23 +8,23 @@
 redaction-strewn government documents?**
 
 Every other retrieval benchmark quizzes AI on clean Wikipedia. The real world
-looks nothing like that — OCR wreckage, near-duplicate emails, endless legalese,
-and the fact you need buried on page 4,000. Epstein Bench is that world: 1,000
-questions built from the full public **Epstein Files**, answerable only by
-actually finding — and citing — the right document. Live leaderboard and example
-questions at **[epsteinbench.com](https://epsteinbench.com)**.
+looks nothing like that: OCR wreckage, near-duplicate emails, endless legalese,
+and the one fact you need buried on page 4,000. Epstein Bench is that world:
+1,000 questions built from the full public **Epstein Files**, answerable only by
+finding the right document and citing it. Live leaderboard and example questions
+at **[epsteinbench.com](https://epsteinbench.com)**.
 
 Sample tasks: *Who did Epstein ask to find him "the best codebreaker, NSA type"?*
 · *What did Steve Bannon email him about "real power"?* · *Reconstruct the
 documented timeline of a given person's contacts with Epstein.* Every answer is
 one sentence hiding somewhere in the corpus.
 
-**The benchmark is a dataset, a file contract, and a scorer — not a framework.**
-Your system never imports this code.
+**Epstein Bench is a dataset, a file contract, and a scorer.** Your system never
+imports this code. It reads `questions.jsonl` and writes `predictions.jsonl`.
 
 > These are public records released by U.S. courts and Congress. Appearing in
-> the files means appearing in someone's email, calendar, or financial records —
-> not an accusation. The benchmark measures retrieval, not guilt.
+> the files means appearing in someone's email, calendar, or financial records.
+> It is not an accusation. The benchmark measures retrieval, not guilt.
 
 ## The contract
 
@@ -40,9 +40,9 @@ Emit `predictions.jsonl`:
 {"task_id": "...", "answer": "...", "citations": ["doc_id"], "retrieved": ["doc_id", "..."]}
 ```
 
-- `answer` — free text; for unanswerable tasks the correct behavior is an explicit refusal
-- `citations` — document ids your system claims support the answer
-- `retrieved` — your ranked retrieval list (max 20), for retrieval diagnostics
+- `answer`: free text; for unanswerable tasks the correct behavior is an explicit refusal
+- `citations`: document ids your system claims support the answer
+- `retrieved`: your ranked retrieval list (max 20), for retrieval diagnostics
 
 Score it:
 
@@ -60,9 +60,9 @@ Retrieval diagnostics: recall@5/20, nDCG@10 against pooled gold sets.
 
 ## Why trust the ground truth
 
-Every task in a release has survived a four-stage verification gauntlet —
-standalone interpretability, independent re-answering from the gold docs,
-closed-book/distractor necessity checks, and strong-model adjudication —
+Every task in a release has survived a four-stage verification gauntlet
+(standalone interpretability, independent re-answering from the gold docs,
+closed-book/distractor necessity checks, and strong-model adjudication),
 plus TREC-style pooled relevance judgments across three diverse retrievers,
 with a stability re-check. Verification pass rates and known limitations are
 published in [`dataset/DATASET_CARD.md`](dataset/DATASET_CARD.md), and every
@@ -85,7 +85,7 @@ python baselines/run_baseline.py --system hybrid --split dev --out preds.jsonl
 python -m epstein_bench score preds.jsonl --split dev
 ```
 
-Baselines: `bm25`, `dense`, `hybrid`, and `closed_book` (no retrieval — public
+Baselines: `bm25`, `dense`, `hybrid`, and `closed_book` (no retrieval, public
 evidence the tasks require it).
 
 ## Submitting to the leaderboard
@@ -94,7 +94,7 @@ evidence the tasks require it).
 2. `python -m epstein_bench submit predictions.jsonl --name "My System" --split full`
 3. Open a PR adding the generated `submissions/<name>/` directory.
 
-CI recomputes all scores from your predictions — submitted scores are never
+CI recomputes all scores from your predictions, submitted scores are never
 trusted. The `dev` split is for iteration and is not leaderboard-eligible.
 
 ## Regenerating the dataset

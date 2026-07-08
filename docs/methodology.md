@@ -6,7 +6,7 @@ This page specifies the benchmark precisely enough to re-derive every number.
 
 Systems under test consume `questions.jsonl` and emit `predictions.jsonl`.
 
-**questions.jsonl** — one task per line:
+**questions.jsonl**, one task per line:
 
 | field | type | meaning |
 |---|---|---|
@@ -14,7 +14,7 @@ Systems under test consume `questions.jsonl` and emit `predictions.jsonl`.
 | `type` | str | `single_hop` \| `aggregation` \| `timeline` \| `dossier` \| `unanswerable` |
 | `question` | str | the question |
 
-**predictions.jsonl** — one prediction per line, every task answered:
+**predictions.jsonl**, one prediction per line, every task answered:
 
 | field | type | meaning |
 |---|---|---|
@@ -32,31 +32,31 @@ production conditions.
 
 Run: `python -m epstein_bench score predictions.jsonl --split full`
 
-- **single_hop / timeline** — 1.0 iff the LLM judge (pinned model, prompt v1)
+- **single_hop / timeline**: 1.0 iff the LLM judge (pinned model, prompt v1)
   says the answer states the same fact as the reference AND ≥1 cited doc is
   in the pooled gold set; else 0.0.
-- **aggregation / dossier** — judge marks which gold items the answer
+- **aggregation / dossier**: judge marks which gold items the answer
   includes and counts extra items. An included item *counts only if* a cited
   doc is in that item's supporting set (or the task's gold set). Score =
   item-level F1. Dossier tasks are person-centric timelines over notable
   target entities; the corpus is entity-complete for those targets (every
   document mentioning them is included), so the gold timeline is honest.
-- **unanswerable** — 1.0 iff the judge classifies the answer as a
+- **unanswerable**: 1.0 iff the judge classifies the answer as a
   refusal/abstention. A confident wrong answer scores 0 (that's the
   hallucination probe).
-- **overall_cited_correctness** — unweighted macro-average over the per-type
+- **overall_cited_correctness**: unweighted macro-average over the per-type
   scores. This is the leaderboard sort key.
-- **overall_uncited_correctness** (diagnostic) — the same judgments with the
+- **overall_uncited_correctness** (diagnostic), the same judgments with the
   citation gate removed. For retrieval systems it isolates grounding failures
-  (correct answer, wrong/no citation). For the `parametric` baseline — which
-  answers purely from model weights, no corpus access — it measures how much
+  (correct answer, wrong/no citation). For the `parametric` baseline, which
+  answers purely from model weights, no corpus access, it measures how much
   of the Epstein files a model already knows from training. Note the
   benchmark is decontaminated against the *generation-time* model only (the
   necessity stage rejects tasks that model can answer closed-book), so any
   other model's parametric score is a clean signal of its own training
-  exposure — and a per-model contamination probe as newer models train on
+  exposure, and a per-model contamination probe as newer models train on
   the released files.
-- **retrieval diagnostics** — recall@5, recall@20, nDCG@10 of `retrieved`
+- **retrieval diagnostics**: recall@5, recall@20, nDCG@10 of `retrieved`
   against pooled gold docs (answerable tasks only). Secondary columns; not
   part of the headline.
 
@@ -65,9 +65,9 @@ are reported in `judge_errors`.
 
 ## Splits
 
-- `dev` — small fixed subset (source docs drawn from a seeded ~1K-doc subset,
+- `dev`: small fixed subset (source docs drawn from a seeded ~1K-doc subset,
   plus unanswerable top-ups). For iteration. Not leaderboard-eligible.
-- `full` — the leaderboard split; retrieval is always over the full corpus.
+- `full`: the leaderboard split; retrieval is always over the full corpus.
 
 `dataset/<version>/manifest.json` records counts and the sha256 of each
 `questions.jsonl`; submissions pin that hash.

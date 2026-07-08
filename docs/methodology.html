@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Epstein Bench — Methodology</title>
+<title>Epstein Bench: Methodology</title>
 <style>
   :root { --bg:#faf9f6; --fg:#1a1a1a; --muted:#6b6b6b; --line:#e2ddd4;
           --accent:#8b2c2c; --card:#ffffff; }
@@ -76,30 +76,30 @@
 <p>This page specifies the benchmark precisely enough to re-derive every number.</p>
 <h2>The file contract</h2>
 <p>Systems under test consume <code>questions.jsonl</code> and emit <code>predictions.jsonl</code>.</p>
-<p><strong>questions.jsonl</strong> — one task per line:</p>
+<p><strong>questions.jsonl</strong>, one task per line:</p>
 <div class="tablewrap"><table><thead><tr><th>field</th><th>type</th><th>meaning</th></tr></thead><tbody><tr><td><code>task_id</code></td><td>str</td><td>opaque id, echo it back</td></tr><tr><td><code>type</code></td><td>str</td><td><code>single_hop</code> | <code>aggregation</code> | <code>timeline</code> | <code>dossier</code> | <code>unanswerable</code></td></tr><tr><td><code>question</code></td><td>str</td><td>the question</td></tr></tbody></table></div>
-<p><strong>predictions.jsonl</strong> — one prediction per line, every task answered:</p>
+<p><strong>predictions.jsonl</strong>, one prediction per line, every task answered:</p>
 <div class="tablewrap"><table><thead><tr><th>field</th><th>type</th><th>meaning</th></tr></thead><tbody><tr><td><code>task_id</code></td><td>str</td><td>must match a released task</td></tr><tr><td><code>answer</code></td><td>str</td><td>free text; explicit refusal when you believe the corpus lacks the answer</td></tr><tr><td><code>citations</code></td><td>[str]</td><td>document ids you claim support the answer</td></tr><tr><td><code>retrieved</code></td><td>[str]</td><td>your ranked retrieval list, ≤ 20 ids</td></tr></tbody></table></div>
 <p>Document ids are the <code>doc_id</code> values of <code>aurora2424/Epstein-Files</code> records (text-bearing rows only). Systems are not told a task&#x27;s type beyond the field itself; note that hiding the <code>type</code> field from your pipeline is fair play and closer to production conditions.</p>
 <h2>Scoring</h2>
 <p>Run: <code>python -m epstein_bench score predictions.jsonl --split full</code></p>
-<ul><li><strong>single_hop / timeline</strong> — 1.0 iff the LLM judge (pinned model, prompt v1)</li></ul>
+<ul><li><strong>single_hop / timeline</strong>: 1.0 iff the LLM judge (pinned model, prompt v1)</li></ul>
 <p>says the answer states the same fact as the reference AND ≥1 cited doc is in the pooled gold set; else 0.0.</p>
-<ul><li><strong>aggregation / dossier</strong> — judge marks which gold items the answer</li></ul>
+<ul><li><strong>aggregation / dossier</strong>: judge marks which gold items the answer</li></ul>
 <p>includes and counts extra items. An included item <em>counts only if</em> a cited doc is in that item&#x27;s supporting set (or the task&#x27;s gold set). Score = item-level F1. Dossier tasks are person-centric timelines over notable target entities; the corpus is entity-complete for those targets (every document mentioning them is included), so the gold timeline is honest.</p>
-<ul><li><strong>unanswerable</strong> — 1.0 iff the judge classifies the answer as a</li></ul>
+<ul><li><strong>unanswerable</strong>: 1.0 iff the judge classifies the answer as a</li></ul>
 <p>refusal/abstention. A confident wrong answer scores 0 (that&#x27;s the hallucination probe).</p>
-<ul><li><strong>overall_cited_correctness</strong> — unweighted macro-average over the per-type</li></ul>
+<ul><li><strong>overall_cited_correctness</strong>: unweighted macro-average over the per-type</li></ul>
 <p>scores. This is the leaderboard sort key.</p>
-<ul><li><strong>overall_uncited_correctness</strong> (diagnostic) — the same judgments with the</li></ul>
-<p>citation gate removed. For retrieval systems it isolates grounding failures (correct answer, wrong/no citation). For the <code>parametric</code> baseline — which answers purely from model weights, no corpus access — it measures how much of the Epstein files a model already knows from training. Note the benchmark is decontaminated against the <em>generation-time</em> model only (the necessity stage rejects tasks that model can answer closed-book), so any other model&#x27;s parametric score is a clean signal of its own training exposure — and a per-model contamination probe as newer models train on the released files.</p>
-<ul><li><strong>retrieval diagnostics</strong> — recall@5, recall@20, nDCG@10 of <code>retrieved</code></li></ul>
+<ul><li><strong>overall_uncited_correctness</strong> (diagnostic), the same judgments with the</li></ul>
+<p>citation gate removed. For retrieval systems it isolates grounding failures (correct answer, wrong/no citation). For the <code>parametric</code> baseline, which answers purely from model weights, no corpus access, it measures how much of the Epstein files a model already knows from training. Note the benchmark is decontaminated against the <em>generation-time</em> model only (the necessity stage rejects tasks that model can answer closed-book), so any other model&#x27;s parametric score is a clean signal of its own training exposure, and a per-model contamination probe as newer models train on the released files.</p>
+<ul><li><strong>retrieval diagnostics</strong>: recall@5, recall@20, nDCG@10 of <code>retrieved</code></li></ul>
 <p>against pooled gold docs (answerable tasks only). Secondary columns; not part of the headline.</p>
 <p>Judge failures during scoring count the affected task as 0 (fail closed) and are reported in <code>judge_errors</code>.</p>
 <h2>Splits</h2>
-<ul><li><code>dev</code> — small fixed subset (source docs drawn from a seeded ~1K-doc subset,</li></ul>
+<ul><li><code>dev</code>: small fixed subset (source docs drawn from a seeded ~1K-doc subset,</li></ul>
 <p>plus unanswerable top-ups). For iteration. Not leaderboard-eligible.</p>
-<ul><li><code>full</code> — the leaderboard split; retrieval is always over the full corpus.</li></ul>
+<ul><li><code>full</code>: the leaderboard split; retrieval is always over the full corpus.</li></ul>
 <p><code>dataset/&lt;version&gt;/manifest.json</code> records counts and the sha256 of each <code>questions.jsonl</code>; submissions pin that hash.</p>
 <h2>Submissions</h2>
 <p><code>python -m epstein_bench submit preds.jsonl --name &quot;My System&quot; --split full</code> creates <code>submissions/&lt;slug&gt;/</code> with your predictions and metadata. Open a PR adding it. CI (<code>.github/workflows/validate-submission.yml</code>):</p>
