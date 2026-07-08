@@ -13,7 +13,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# override=True so .env is authoritative over a stale exported OPENAI_API_KEY
+# (a rotated key left exported in the shell must not shadow the file).
+load_dotenv(override=True)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
