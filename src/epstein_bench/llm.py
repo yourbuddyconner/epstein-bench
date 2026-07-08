@@ -43,6 +43,19 @@ def _is_size_error(e: Exception) -> bool:
     )
 
 
+def _omit_sampling_params(model: str) -> bool:
+    """True for model families that reject ``temperature``/``seed`` on
+    chat.completions (they only accept the default temperature=1 and no seed).
+
+    Covers the GPT-5 family and the o-series reasoning models. Verified against
+    the API: gpt-5.5 returns 400 "temperature does not support 0 with this
+    model". For these, determinism comes from snapshot pinning + the disk cache,
+    not from seed.
+    """
+    m = model.lower()
+    return m.startswith("gpt-5") or m.startswith(("o1", "o3", "o4"))
+
+
 def _cache_key(model: str, prompt: str, system: str) -> str:
     h = hashlib.sha256()
     h.update(model.encode())
@@ -108,13 +121,14 @@ class LLM:
             try:
                 kwargs: dict[str, Any] = {
                     "model": model,
-                    "temperature": self.config.temperature,
-                    "seed": self.config.seed,
                     "messages": [
                         {"role": "system", "content": system},
                         {"role": "user", "content": prompt},
                     ],
                 }
+                if not _omit_sampling_params(model):
+                    kwargs["temperature"] = self.config.temperature
+                    kwargs["seed"] = self.config.seed
                 if json_mode:
                     kwargs["response_format"] = {"type": "json_object"}
                 resp = client.chat.completions.create(**kwargs)
@@ -284,6 +298,16 @@ def stub_response(prompt: str) -> str:
         return json.dumps(
             {"question": "What was Alice Example's role at Acme Corporation in 1999?"}
         )
+    if tag == "FALSEPREMISE":
+        return json.dumps(
+            {
+                "question": "When Alice Example met Bob Sample in Geneva in 2015, "
+                "who introduced them?",
+                "false_element": "a meeting between Alice Example and Bob Sample in Geneva",
+            }
+        )
+    if tag == "PREMISEID":
+        return json.dumps({"identified": True})
     if tag == "STANDALONE":
         return json.dumps({"standalone": True, "reason": "names concrete entities"})
     if tag == "ANSWER":

@@ -70,7 +70,10 @@ class Config:
     # --- models (pinned) ---
     cheap_model: str = "gpt-4o-mini-2024-07-18"
     strong_model: str = "gpt-4o-2024-08-06"
-    judge_model: str = "gpt-4o-mini-2024-07-18"  # scoring judge; part of the release
+    # scoring judge; part of the release. A strong model here because correctness
+    # judging approaches human agreement at this tier, whereas generation/gauntlet
+    # filtering (cheap_model) tolerates a weaker model.
+    judge_model: str = "gpt-5.5-2026-04-23"
     embed_model: str = "text-embedding-3-small"
     temperature: float = 0.0
     seed: int = 20260705
@@ -81,11 +84,12 @@ class Config:
     oversample_factor: float = 5.0
     type_mix: dict[str, float] = field(
         default_factory=lambda: {
-            "single_hop": 0.40,
-            "dossier": 0.20,
+            "single_hop": 0.37,
+            "dossier": 0.18,
             "aggregation": 0.15,
             "timeline": 0.10,
             "unanswerable": 0.15,
+            "false_premise": 0.05,
         }
     )
     # facts below this newsworthiness rating (1-5) are not made into tasks
@@ -104,6 +108,10 @@ class Config:
     recall_ks: tuple[int, ...] = (5, 20)
     ndcg_k: int = 10
     max_retrieved: int = 20
+    # only the first N citations count toward the correctness gate, so dumping
+    # the whole retrieval list into `citations` cannot game a chance gold hit
+    gate_max_citations: int = 3
+    bootstrap_iterations: int = 1000  # resamples for score confidence intervals
 
     # --- paths ---
     build_dir: Path = REPO_ROOT / "build"

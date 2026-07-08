@@ -85,3 +85,15 @@ def test_embed_stub_mode_bypasses_api(config):
     llm = LLM(config)
     vecs = llm.embed(["hello", "world"])
     assert len(vecs) == 2 and len(vecs[0]) == 32
+
+
+def test_omit_sampling_params_for_gpt5_and_reasoning_models():
+    from epstein_bench.llm import _omit_sampling_params
+
+    # GPT-5 family and o-series reject temperature/seed on chat.completions
+    assert _omit_sampling_params("gpt-5.5-2026-04-23")
+    assert _omit_sampling_params("gpt-5")
+    assert _omit_sampling_params("o3-2025-04-16")
+    # gpt-4o and text-embedding models accept them
+    assert not _omit_sampling_params("gpt-4o-2024-08-06")
+    assert not _omit_sampling_params("gpt-4o-mini-2024-07-18")

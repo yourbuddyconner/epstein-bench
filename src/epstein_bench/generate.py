@@ -263,6 +263,94 @@ def gen_unanswerable(
     return [t for t in results if t][:n]
 
 
+def gen_false_premise(
+    config: Config,
+    llm: LLM,
+    docs: list[dict],
+    targets: dict,
+    bm25: BM25Retriever,
+    n: int,
+) -> list[dict]:
+    """Questions that presuppose a fabricated fact about a real, in-corpus person.
+
+    Anchored only on entity-complete targets: the corpus holds *every* document
+    mentioning them, so 'no document supports this premise' is a bounded,
+    checkable claim (the same property that makes dossiers honest, reused for
+    negation). A premise is minted by perturbing exactly one element of a real
+    fact, then confirmed absent: BM25 top hits for the presupposing question must
+    not answer it. Fail closed (drop) on any doubt; the target behavior is
+    refusal, so `false_element` records what a system must reject.
+    """
+    rng = random.Random(config.seed + 4)
+    docs_by_id = {d["doc_id"]: d for d in docs}
+    ordered = list(targets.items())
+    rng.shuffle(ordered)
+
+    def per_target(pair: tuple[str, dict]) -> dict | None:
+        name, info = pair
+        alias = (info.get("aliases") or [name])[0]
+        edocs = [
+            docs_by_id[d]
+            for d in info["doc_ids"]
+            if d in docs_by_id and docs_by_id[d]["quality"] == "clean"
+        ][:6]
+        if len(edocs) < 2:
+            return None
+        listing = "\n\n".join(
+            f"[DOC {i}]\n{_excerpt(d['text'], 1500)}" for i, d in enumerate(edocs)
+        )
+        prompt = (
+            f'[FALSEPREMISE] The documents below all mention "{alias}". Invent ONE '
+            "question that PRESUPPOSES a specific fact about this person that is "
+            "plausible but FALSE — not stated anywhere in these documents. Build it "
+            "by perturbing exactly one element of a real fact: swap the counterparty "
+            "for a different real person, move a documented meeting to a place or "
+            "year they never appear together, or invent a transaction. The question "
+            "must take the false fact for granted and ask a natural follow-up (e.g. "
+            "'Who arranged the 2003 Geneva meeting between X and Y?'), naming "
+            "concrete entities. Do NOT signal that anything is false. Also state the "
+            "false presupposition in one short phrase. Respond with JSON "
+            '{"question": str|null, "false_element": str}.'
+            "\n\n" + listing
+        )
+        try:
+            resp = llm.chat_json(prompt)
+            question = str(resp.get("question") or "").strip()
+            false_element = str(resp.get("false_element") or "").strip()
+            if not question or not false_element:
+                return None
+            top = bm25.search(question, 5)
+            context = "\n\n".join(
+                f"[DOC id={doc_id}]\n{_excerpt(docs_by_id[doc_id]['text'], 1500)}"
+                for doc_id, _ in top
+                if doc_id in docs_by_id
+            )
+            check = llm.chat_json(
+                "[ABSENT] Can the question below be answered from the documents "
+                'provided? Respond with JSON {"answerable": true|false}.'
+                f"\n\nQuestion: {question}\n\n{context}"
+            )
+        except LLMError:
+            return None
+        if check.get("answerable") is not False:
+            return None
+        return _mk_task(
+            config,
+            "false_premise",
+            [],
+            question=question,
+            false_element=false_element,
+            provenance={
+                "generator_model": config.cheap_model,
+                "pipeline_version": __version__,
+                "target_entity": name,
+            },
+        )
+
+    results = parallel_map(per_target, ordered[: n * 2], config.max_workers)
+    return [t for t in results if t][:n]
+
+
 def gen_dossier(
     config: Config, llm: LLM, docs: list[dict], targets: dict, n: int
 ) -> list[dict]:
@@ -360,15 +448,22 @@ def generate_candidates(config: Config, llm: LLM) -> dict[str, int]:
     candidates += gen_aggregation(config, llm, docs, entities, quotas["aggregation"])
     candidates += gen_timeline(config, llm, docs, entities, quotas["timeline"])
     candidates += gen_unanswerable(config, llm, docs, bm25, quotas["unanswerable"])
-    if quotas.get("dossier"):
+
+    # dossier and false_premise both require the entity-complete target set
+    if quotas.get("dossier") or quotas.get("false_premise"):
         from .scan import load_targets
 
         try:
             targets = load_targets(config)
         except FileNotFoundError:
-            targets = {}  # direct-corpus mode (no scan/select): skip dossiers
+            targets = {}  # direct-corpus mode (no scan/select): skip these types
         if targets:
-            candidates += gen_dossier(config, llm, docs, targets, quotas["dossier"])
+            if quotas.get("dossier"):
+                candidates += gen_dossier(config, llm, docs, targets, quotas["dossier"])
+            if quotas.get("false_premise"):
+                candidates += gen_false_premise(
+                    config, llm, docs, targets, bm25, quotas["false_premise"]
+                )
 
     write_jsonl(config.build_dir / "candidates.jsonl", candidates)
     counts: dict[str, int] = {}

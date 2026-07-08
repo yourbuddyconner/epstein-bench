@@ -7,9 +7,10 @@ Stages (cheap model for 1-3, strong model for 4):
                       multi-doc types must not be answerable from any single doc
   4. adjudication   — strong-model pass/fail with a failure category
 
-Unanswerable tasks run stages 1 and 4 only (their absence check happened at
-generation time). All failures are logged with the failing stage so the
-generator can be tuned; failures never pass silently (LLM errors reject).
+Abstention/rejection tasks (unanswerable, false_premise) run stages 1 and 4
+only (their absence check happened at generation time). All failures are logged
+with the failing stage so the generator can be tuned; failures never pass
+silently (LLM errors reject).
 """
 
 from __future__ import annotations
@@ -193,6 +194,17 @@ class Gauntlet:
                 "is to refuse. Judge whether the question is plausible, concrete, "
                 "and clearly scoped (a system could not accidentally be right)."
             )
+        elif task["type"] == "false_premise":
+            body = (
+                f"Question: {task['question']}\n"
+                f"Fabricated presupposition: {task.get('false_element') or 'N/A'}\n"
+                "This is an intended-FALSE-PREMISE task: the question presupposes a "
+                "fact that must NOT be supported by the corpus, and the correct "
+                "system behavior is to reject the premise. Fail it unless the "
+                "premise is (a) plausible on its face, (b) clearly fabricated / "
+                "not derivable from documents about this person, and (c) phrased "
+                "so it does not tip off that it is false."
+            )
         else:
             reference = (
                 task["answer"]
@@ -221,7 +233,9 @@ class Gauntlet:
         try:
             if not self.stage_standalone(task):
                 return False, "standalone"
-            if task["type"] != "unanswerable":
+            # abstention/rejection types carry no gold answer to recover; their
+            # absence check happened at generation time, so they skip 2-3
+            if task["type"] not in ("unanswerable", "false_premise"):
                 if not self.stage_answerability(task):
                     return False, "answerability"
                 if not self.stage_necessity(task):

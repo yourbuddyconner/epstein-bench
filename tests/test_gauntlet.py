@@ -113,3 +113,35 @@ def test_unanswerable_skips_answerability(config, llm):
     g = Gauntlet(config, llm, DOCS)
     passed, reason = g.run(task)
     assert passed, reason
+
+
+def test_false_premise_skips_answerability_and_necessity(config, llm):
+    task = _task(
+        type="false_premise",
+        question="When Alice Example met Bob Sample in Geneva in 2015, who introduced them?",
+        answer=None,
+        source_doc_ids=[],
+        false_element="a meeting between Alice Example and Bob Sample in Geneva",
+    )
+    # stages 2-3 would fail with no gold docs; false_premise must skip them and
+    # be gated only by standalone + adjudication
+    llm_mod.STUB_OVERRIDES["ANSWER"] = json.dumps({"answer": None, "found": False})
+    g = Gauntlet(config, llm, DOCS)
+    passed, reason = g.run(task)
+    assert passed, reason
+
+
+def test_false_premise_rejected_on_adjudication(config, llm):
+    task = _task(
+        type="false_premise",
+        question="When Alice Example met Bob Sample in Geneva in 2015, who introduced them?",
+        answer=None,
+        source_doc_ids=[],
+        false_element="a meeting between Alice Example and Bob Sample in Geneva",
+    )
+    llm_mod.STUB_OVERRIDES["ADJUDICATE"] = json.dumps(
+        {"pass": False, "category": "wrong"}
+    )
+    g = Gauntlet(config, llm, DOCS)
+    passed, reason = g.run(task)
+    assert not passed and reason == "adjudication:wrong"

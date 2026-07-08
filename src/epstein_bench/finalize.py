@@ -47,11 +47,11 @@ def finalize_dataset(config: Config) -> dict:
         if t["source_doc_ids"] and all(d in dev_docs for d in t["source_doc_ids"])
     ][:DEV_MAX_TASKS]
     dev_ids = {t["task_id"] for t in dev}
-    # top up dev with unanswerable tasks (they have no source docs)
+    # top up dev with no-source-doc types (unanswerable, false_premise)
     for t in tasks:
         if len(dev) >= DEV_MAX_TASKS:
             break
-        if t["type"] == "unanswerable" and t["task_id"] not in dev_ids:
+        if t["type"] in ("unanswerable", "false_premise") and t["task_id"] not in dev_ids:
             dev.append(t)
             dev_ids.add(t["task_id"])
 

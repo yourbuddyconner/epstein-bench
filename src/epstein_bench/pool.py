@@ -93,7 +93,7 @@ def pool_tasks(config: Config, llm: LLM) -> dict[str, int]:
         """Return ('kept', task) or ('dropped', record)."""
         # per-task seeding keeps the stability sample deterministic in parallel
         rng = random.Random(f"{config.seed}:{task['task_id']}:stability")
-        if task["type"] == "unanswerable":
+        if task["type"] in ("unanswerable", "false_premise"):
             task["gold_docs"] = []
             return "kept", task
         try:

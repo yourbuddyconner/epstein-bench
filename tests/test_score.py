@@ -140,6 +140,91 @@ def test_aggregation_item_level_f1(config, llm):
     assert report["per_type"]["aggregation"] == 0.0
 
 
+def test_gate_ignores_citations_past_the_cap(config, llm):
+    """A supporting citation beyond gate_max_citations must not earn credit;
+    dumping the whole retrieval list into `citations` cannot fish for a gold hit."""
+    config.gate_max_citations = 3
+    tasks = [_single_hop_task()]  # gold_docs = ["d1", "d5"]
+    # gold citation sits at index 3 -> outside the gate -> cited 0, uncited 1
+    report = score_predictions(
+        config, llm, tasks, [_pred(citations=["x1", "x2", "x3", "d1"])]
+    )
+    assert report["per_type"]["single_hop"] == 0.0
+    assert report["per_type_uncited"]["single_hop"] == 1.0
+    # gold citation inside the gate -> full credit
+    report = score_predictions(
+        config, llm, tasks, [_pred(citations=["d1", "x2", "x3", "x4"])]
+    )
+    assert report["per_type"]["single_hop"] == 1.0
+
+
+def test_citation_precision_recall_reported(config, llm):
+    tasks = [_single_hop_task()]  # gold_docs = ["d1", "d5"]
+    report = score_predictions(config, llm, tasks, [_pred(citations=["d1", "d9"])])
+    # one of two citations is gold -> precision 0.5; one of two gold cited -> recall 0.5
+    assert report["citation_precision"] == pytest.approx(0.5)
+    assert report["citation_recall"] == pytest.approx(0.5)
+
+
+def test_confidence_intervals_and_micro_present(config, llm):
+    tasks = [_single_hop_task("t1"), _single_hop_task("t2")]
+    report = score_predictions(
+        config, llm, tasks, [_pred("t1"), _pred("t2", citations=["d9"])]
+    )
+    lo, hi = report["overall_cited_correctness_ci95"]
+    assert lo <= report["overall_cited_correctness"] <= hi
+    assert 0.0 <= report["overall_cited_correctness_micro"] <= 1.0
+    # deterministic across runs (seeded RNG)
+    again = score_predictions(
+        config, llm, tasks, [_pred("t1"), _pred("t2", citations=["d9"])]
+    )
+    assert again["overall_cited_correctness_ci95"] == [lo, hi]
+
+
+def _false_premise_task(task_id="fp1"):
+    return {
+        "task_id": task_id,
+        "type": "false_premise",
+        "question": "When Alice Example met Bob Sample in Geneva in 2015, who introduced them?",
+        "answer": None,
+        "items": None,
+        "false_element": "a meeting between Alice Example and Bob Sample in Geneva",
+        "gold_docs": [],
+        "source_doc_ids": [],
+        "provenance": {},
+    }
+
+
+def test_false_premise_rewards_rejection_and_reports_id_rate(config, llm):
+    task = _false_premise_task()
+    # system rejects the premise -> full credit; stub PREMISEID says it named it
+    llm_mod.STUB_OVERRIDES["SCOREJUDGE"] = json.dumps(
+        {"correct": False, "is_refusal": True}
+    )
+    report = score_predictions(
+        config, llm, [task], [_pred("fp1", answer="No such meeting is documented.")]
+    )
+    assert report["per_type"]["false_premise"] == 1.0
+    assert report["premise_refused_n"] == 1
+    assert report["premise_id_rate"] == 1.0
+    # false_premise carries no gold docs -> excluded from citation diagnostics
+    assert report["citation_precision"] == 0.0
+
+
+def test_false_premise_accepting_the_premise_scores_zero(config, llm):
+    task = _false_premise_task()
+    # system answers the follow-up (accepts the false premise) -> 0, and there
+    # is no refusal so premise_id_rate is not reported
+    llm_mod.STUB_OVERRIDES["SCOREJUDGE"] = json.dumps(
+        {"correct": False, "is_refusal": False}
+    )
+    report = score_predictions(
+        config, llm, [task], [_pred("fp1", answer="They were introduced by Carol Case.")]
+    )
+    assert report["per_type"]["false_premise"] == 0.0
+    assert "premise_id_rate" not in report
+
+
 def test_missing_predictions_rejected(config, llm):
     with pytest.raises(ValueError, match="missing"):
         score_predictions(config, llm, [_single_hop_task()], [])
