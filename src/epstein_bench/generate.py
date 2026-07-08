@@ -43,6 +43,28 @@ def _excerpt(text: str, limit: int = 3000) -> str:
     return text[:limit]
 
 
+# Prominent figures across politics, tech, finance, entertainment, sport, and
+# science, rotated as fabricated false-premise counterparties. Chosen for low
+# collision with this corpus; the absence + support checks drop any that a given
+# target's documents actually connect to.
+_FALSE_PREMISE_FIGURES = (
+    "Barack Obama", "Michelle Obama", "Angela Merkel", "Emmanuel Macron",
+    "Justin Trudeau", "Narendra Modi", "Pope Francis", "Volodymyr Zelensky",
+    "Jacinda Ardern", "Oprah Winfrey", "Taylor Swift", "Beyoncé", "Tom Hanks",
+    "Meryl Streep", "LeBron James", "Serena Williams", "Cristiano Ronaldo",
+    "Lionel Messi", "Roger Federer", "Greta Thunberg", "Malala Yousafzai",
+    "Tim Cook", "Sundar Pichai", "Warren Buffett",
+)
+
+# occasions rotated per target so fabricated interactions don't all become
+# "a dinner" (a template tell); paired with the diverse figure pool above
+_FALSE_PREMISE_OCCASIONS = (
+    "private dinner", "one-on-one meeting", "phone call", "conference panel",
+    "private flight", "business deal", "charity gala", "working lunch",
+    "recorded interview", "video call",
+)
+
+
 # -- per-type generators ---------------------------------------------------------
 
 
@@ -283,11 +305,31 @@ def gen_false_premise(
     """
     rng = random.Random(config.seed + 4)
     docs_by_id = {d["doc_id"]: d for d in docs}
-    ordered = list(targets.items())
+    # exclude non-person / hub targets (e.g. the "morgan chase" bank fragment)
+    # that a false-premise question would render nonsensical
+    ordered = [
+        (name, info)
+        for name, info in targets.items()
+        if not any(sub in name.lower() for sub in config.exclude_entity_substrings)
+    ]
     rng.shuffle(ordered)
+    # a diverse pool of prominent figures across domains, rotated one-per-target
+    # so fabricated counterparties don't collapse onto a single name (which would
+    # make the type gameable: "mentions Obama -> refuse"). The absence check and
+    # support adjudication drop any that a target's documents actually connect to.
+    counterparties = list(_FALSE_PREMISE_FIGURES)
+    occasions = list(_FALSE_PREMISE_OCCASIONS)
+    rng.shuffle(counterparties)
+    rng.shuffle(occasions)
+    # offset the occasion index from the figure index so the two don't correlate
+    assigned = [
+        (name, info, counterparties[i % len(counterparties)],
+         occasions[(i + 3) % len(occasions)])
+        for i, (name, info) in enumerate(ordered)
+    ]
 
-    def per_target(pair: tuple[str, dict]) -> dict | None:
-        name, info = pair
+    def per_target(quad: tuple[str, dict, str, str]) -> dict | None:
+        name, info, figure, occasion = quad
         alias = (info.get("aliases") or [name])[0]
         edocs = [
             docs_by_id[d]
@@ -301,15 +343,17 @@ def gen_false_premise(
         )
         prompt = (
             f'[FALSEPREMISE] The documents below all mention "{alias}". Invent ONE '
-            "question that PRESUPPOSES a specific fact about this person that is "
-            "plausible but FALSE — not stated anywhere in these documents. Build it "
-            "by perturbing exactly one element of a real fact: swap the counterparty "
-            "for a different real person, move a documented meeting to a place or "
-            "year they never appear together, or invent a transaction. The question "
-            "must take the false fact for granted and ask a natural follow-up (e.g. "
-            "'Who arranged the 2003 Geneva meeting between X and Y?'), naming "
-            "concrete entities. Do NOT signal that anything is false. Also state the "
-            "false presupposition in one short phrase. Respond with JSON "
+            f'question that PRESUPPOSES a FABRICATED {occasion} between EXACTLY TWO '
+            f'people — "{alias}" and {figure} — that these documents never mention. '
+            f"(If, and only if, {figure} actually appears in the documents below, "
+            "substitute a different, comparably prominent public figure from an "
+            "unrelated field who is NOT present here.) Name only those two people — no "
+            "third party. The entire interaction is invented; pick a plausible year. "
+            "Do NOT merely change the date or place of a real meeting — the fabricated "
+            f"relationship itself is the false premise. Phrase it naturally as a "
+            "question that takes the invented interaction for granted and asks a "
+            "follow-up, without signalling that anything is false. Also state the "
+            'fabricated interaction in one short phrase. Respond with JSON '
             '{"question": str|null, "false_element": str}.'
             "\n\n" + listing
         )
@@ -320,10 +364,10 @@ def gen_false_premise(
             if not question or not false_element:
                 return None
             top = bm25.search(question, 5)
+            absence_doc_ids = [doc_id for doc_id, _ in top if doc_id in docs_by_id]
             context = "\n\n".join(
                 f"[DOC id={doc_id}]\n{_excerpt(docs_by_id[doc_id]['text'], 1500)}"
-                for doc_id, _ in top
-                if doc_id in docs_by_id
+                for doc_id in absence_doc_ids
             )
             check = llm.chat_json(
                 "[ABSENT] Can the question below be answered from the documents "
@@ -344,10 +388,13 @@ def gen_false_premise(
                 "generator_model": config.cheap_model,
                 "pipeline_version": __version__,
                 "target_entity": name,
+                # the most on-topic docs, confirmed here not to support the
+                # premise; adjudication re-shows them to confirm fabrication
+                "absence_doc_ids": absence_doc_ids,
             },
         )
 
-    results = parallel_map(per_target, ordered[: n * 2], config.max_workers)
+    results = parallel_map(per_target, assigned[: n * 2], config.max_workers)
     return [t for t in results if t][:n]
 
 

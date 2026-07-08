@@ -187,25 +187,32 @@ class Gauntlet:
         return True
 
     def stage_adjudicate(self, task: dict) -> tuple[bool, str]:
+        # each type gets an instruction matched to its success condition; the
+        # generic "fail anything not grounded in the evidence" rule is right for
+        # answerable tasks but wrong for the rejection types, whose whole point
+        # is that no evidence grounds the question.
+        header = "[ADJUDICATE] You are the final quality gate for a public RAG benchmark. "
         if task["type"] == "unanswerable":
-            body = (
-                f"Question: {task['question']}\n"
-                "This is an intended-UNANSWERABLE task: the correct system behavior "
-                "is to refuse. Judge whether the question is plausible, concrete, "
-                "and clearly scoped (a system could not accidentally be right)."
+            instruction = (
+                header + "This is an intended-UNANSWERABLE task: the correct system "
+                "behavior is to refuse. Pass it only if the question is plausible, "
+                "concrete, and clearly scoped so a system could not accidentally be "
+                'right. Respond with JSON {"pass": true|false, '
+                '"category": "ok|ambiguous|trivial|answerable"}.'
             )
+            body = f"Question: {task['question']}"
         elif task["type"] == "false_premise":
-            body = (
-                f"Question: {task['question']}\n"
-                f"Fabricated presupposition: {task.get('false_element') or 'N/A'}\n"
-                "This is an intended-FALSE-PREMISE task: the question presupposes a "
-                "fact that must NOT be supported by the corpus, and the correct "
-                "system behavior is to reject the premise. Fail it unless the "
-                "premise is (a) plausible on its face, (b) clearly fabricated / "
-                "not derivable from documents about this person, and (c) phrased "
-                "so it does not tip off that it is false."
-            )
+            # two focused judgments: a neutral support check, then a quality
+            # check. A single omnibus prompt proved unstable exactly on the
+            # cases that matter (premises that perturb only the date/place of a
+            # *real* meeting, which must be dropped).
+            return self._adjudicate_false_premise(task)
         else:
+            instruction = (
+                header + "Fail anything ambiguous, wrongly answered, not grounded in "
+                "the evidence, or trivially guessable. Respond with JSON "
+                '{"pass": true|false, "category": "ok|ambiguous|wrong|not_grounded|trivial"}.'
+            )
             reference = (
                 task["answer"]
                 if task["answer"]
@@ -216,15 +223,53 @@ class Gauntlet:
                 "Evidence:\n"
                 + _doc_context(task["source_doc_ids"], self.docs_by_id, limit=2500)
             )
-        resp = self.llm.chat_json(
-            "[ADJUDICATE] You are the final quality gate for a public RAG "
-            "benchmark. Fail anything ambiguous, wrongly answered, not grounded "
-            "in the evidence, or trivially guessable. Respond with JSON "
-            '{"pass": true|false, "category": "ok|ambiguous|wrong|not_grounded|trivial"}.'
-            "\n\n" + body,
+        resp = self.llm.chat_json(instruction + "\n\n" + body, model=self.config.strong_model)
+        return bool(resp.get("pass")), str(resp.get("category", "unspecified"))
+
+    def _adjudicate_false_premise(self, task: dict) -> tuple[bool, str]:
+        """Two-stage adjudication for false_premise (both on the strong model).
+
+        1. Support: judged neutrally from the most on-topic documents, does the
+           corpus support the presupposed fact? 'supports' -> drop (the premise
+           is really true, only a detail perturbed; scoring would wrongly punish
+           a correct system). 'absent' (unsupported) or 'contradicts' (corpus
+           refutes it) both make a legitimate rejection task.
+        2. Quality: the premise must sound plausible/concrete and must not tip
+           off, in its wording, that it is false.
+        """
+        docs = _doc_context(
+            task["provenance"].get("absence_doc_ids", []), self.docs_by_id, limit=1500
+        )
+        support = self.llm.chat_json(
+            "[FPSUPPORT] Below is a factual CLAIM and some documents. Judging ONLY "
+            "from the documents, does the evidence support that the claim is true? "
+            "Answer 'supports' if any document states or clearly implies it (even "
+            "with a differing detail such as date or place); 'contradicts' if a "
+            "document shows it did not happen; 'absent' if the documents neither "
+            'support nor contradict it. Respond JSON {"verdict": '
+            '"supports|contradicts|absent"}.'
+            f"\n\nCLAIM: {task.get('false_element') or task['question']}\n\nDocuments:\n{docs}",
             model=self.config.strong_model,
         )
-        return bool(resp.get("pass")), str(resp.get("category", "unspecified"))
+        if str(support.get("verdict")) == "supports":
+            return False, "supported"
+        quality = self.llm.chat_json(
+            "[FPQUALITY] A benchmark question deliberately presupposes a FABRICATED "
+            "fact; a good system must reject it. Judge only the question's wording, "
+            "not whether the fact is true. Is the presupposed fact concrete and "
+            "believable to a reader who has not seen the source documents (real-"
+            "seeming named entities, a coherent specific event), rather than absurd "
+            "or generic? And does the wording avoid hinting that the premise is "
+            'false? Respond JSON {"plausible": true|false, "tips_off": true|false}.'
+            f"\n\nQuestion: {task['question']}"
+            f"\nPresupposed (fabricated) fact: {task.get('false_element') or 'N/A'}",
+            model=self.config.strong_model,
+        )
+        if not quality.get("plausible"):
+            return False, "implausible"
+        if quality.get("tips_off"):
+            return False, "tips_off"
+        return True, "ok"
 
     # -- driver ----------------------------------------------------------------
 

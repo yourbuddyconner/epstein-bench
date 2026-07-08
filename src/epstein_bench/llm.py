@@ -318,6 +318,10 @@ def stub_response(prompt: str) -> str:
         return json.dumps({"match": True})
     if tag == "ADJUDICATE":
         return json.dumps({"pass": True, "category": "ok"})
+    if tag == "FPSUPPORT":
+        return json.dumps({"verdict": "absent"})
+    if tag == "FPQUALITY":
+        return json.dumps({"plausible": True, "tips_off": False})
     if tag in ("POOLJUDGE", "POOLRESCUE"):
         return json.dumps({"verdicts": ["supports"] * 16})
     if tag == "SCOREJUDGE":

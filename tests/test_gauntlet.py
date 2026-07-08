@@ -131,7 +131,9 @@ def test_false_premise_skips_answerability_and_necessity(config, llm):
     assert passed, reason
 
 
-def test_false_premise_rejected_on_adjudication(config, llm):
+def test_false_premise_dropped_when_corpus_supports_premise(config, llm):
+    """A premise the documents actually support (only a detail perturbed) must
+    be dropped, else scoring would punish a correct system for not refusing."""
     task = _task(
         type="false_premise",
         question="When Alice Example met Bob Sample in Geneva in 2015, who introduced them?",
@@ -139,9 +141,23 @@ def test_false_premise_rejected_on_adjudication(config, llm):
         source_doc_ids=[],
         false_element="a meeting between Alice Example and Bob Sample in Geneva",
     )
-    llm_mod.STUB_OVERRIDES["ADJUDICATE"] = json.dumps(
-        {"pass": False, "category": "wrong"}
+    llm_mod.STUB_OVERRIDES["FPSUPPORT"] = json.dumps({"verdict": "supports"})
+    g = Gauntlet(config, llm, DOCS)
+    passed, reason = g.run(task)
+    assert not passed and reason == "adjudication:supported"
+
+
+def test_false_premise_dropped_when_wording_tips_off(config, llm):
+    task = _task(
+        type="false_premise",
+        question="Who supposedly introduced Alice Example to Bob Sample at the fictional Geneva meeting?",
+        answer=None,
+        source_doc_ids=[],
+        false_element="a meeting between Alice Example and Bob Sample in Geneva",
+    )
+    llm_mod.STUB_OVERRIDES["FPQUALITY"] = json.dumps(
+        {"plausible": True, "tips_off": True}
     )
     g = Gauntlet(config, llm, DOCS)
     passed, reason = g.run(task)
-    assert not passed and reason == "adjudication:wrong"
+    assert not passed and reason == "adjudication:tips_off"
