@@ -1,19 +1,28 @@
 {
   "entries": [
     {
-      "overall_cited_correctness": 0.6066763809476875,
+      "overall_cited_correctness": 0.3898897865058254,
       "per_type": {
-        "single_hop": 0.5819672131147541,
-        "aggregation": 0.5550011392116655,
-        "unanswerable": 0.9705882352941176,
-        "timeline": 0.3191489361702128
+        "aggregation": 0.270992420992421,
+        "single_hop": 0.47144592952612396,
+        "timeline": 0.2962962962962963,
+        "dossier": 0.03571428571428571,
+        "unanswerable": 0.875
+      },
+      "overall_uncited_correctness": 0.39806999587680025,
+      "per_type_uncited": {
+        "aggregation": 0.2803017303017303,
+        "single_hop": 0.503037667071689,
+        "timeline": 0.2962962962962963,
+        "dossier": 0.03571428571428571,
+        "unanswerable": 0.875
       },
       "retrieval": {
-        "recall@5": 0.40202132580254224,
-        "recall@20": 0.6599740258495521,
-        "ndcg@10": 0.4868742926792167
+        "recall@5": 0.27110883483610854,
+        "recall@20": 0.5894933149531674,
+        "ndcg@10": 0.4053735887641372
       },
-      "n_tasks": 973,
+      "n_tasks": 1000,
       "judge_model": "gpt-4o-mini-2024-07-18",
       "judge_prompt_version": "v1",
       "judge_errors": 0,
@@ -22,19 +31,28 @@
       "dataset_version": "v1.0"
     },
     {
-      "overall_cited_correctness": 0.5752822933094446,
+      "overall_cited_correctness": 0.38091168875950165,
       "per_type": {
-        "single_hop": 0.5737704918032787,
-        "aggregation": 0.5095864661654135,
-        "unanswerable": 0.9411764705882353,
-        "timeline": 0.2765957446808511
+        "aggregation": 0.32567372567372566,
+        "single_hop": 0.48116646415552855,
+        "timeline": 0.2222222222222222,
+        "dossier": 0.031746031746031744,
+        "unanswerable": 0.84375
+      },
+      "overall_uncited_correctness": 0.4123268219972351,
+      "per_type_uncited": {
+        "aggregation": 0.3436917436917437,
+        "single_hop": 0.5091130012150669,
+        "timeline": 0.3333333333333333,
+        "dossier": 0.031746031746031744,
+        "unanswerable": 0.84375
       },
       "retrieval": {
-        "recall@5": 0.40459113403338065,
-        "recall@20": 0.690285168764098,
-        "ndcg@10": 0.48903852366976336
+        "recall@5": 0.27161833585958484,
+        "recall@20": 0.5943520456421887,
+        "ndcg@10": 0.40109274123124206
       },
-      "n_tasks": 973,
+      "n_tasks": 1000,
       "judge_model": "gpt-4o-mini-2024-07-18",
       "judge_prompt_version": "v1",
       "judge_errors": 0,
@@ -43,19 +61,28 @@
       "dataset_version": "v1.0"
     },
     {
-      "overall_cited_correctness": 0.49284028142670744,
+      "overall_cited_correctness": 0.3639973366463422,
       "per_type": {
-        "single_hop": 0.49882903981264637,
-        "aggregation": 0.3955608718766614,
-        "unanswerable": 0.9705882352941176,
-        "timeline": 0.10638297872340426
+        "aggregation": 0.2492022097285255,
+        "single_hop": 0.37667071688942894,
+        "timeline": 0.18518518518518517,
+        "dossier": 0.07142857142857142,
+        "unanswerable": 0.9375
+      },
+      "overall_uncited_correctness": 0.3942799956288797,
+      "per_type_uncited": {
+        "aggregation": 0.26541842594474174,
+        "single_hop": 0.40340218712029163,
+        "timeline": 0.2222222222222222,
+        "dossier": 0.14285714285714285,
+        "unanswerable": 0.9375
       },
       "retrieval": {
-        "recall@5": 0.3481069764326537,
-        "recall@20": 0.6310024212532623,
-        "ndcg@10": 0.42246013188660847
+        "recall@5": 0.21868990486596868,
+        "recall@20": 0.5170765364802601,
+        "ndcg@10": 0.3316580918230219
       },
-      "n_tasks": 973,
+      "n_tasks": 1000,
       "judge_model": "gpt-4o-mini-2024-07-18",
       "judge_prompt_version": "v1",
       "judge_errors": 0,
@@ -64,23 +91,62 @@
       "dataset_version": "v1.0"
     },
     {
-      "overall_cited_correctness": 0.2426470588235294,
+      "overall_cited_correctness": 0.19375,
       "per_type": {
-        "single_hop": 0.0,
         "aggregation": 0.0,
-        "unanswerable": 0.9705882352941176,
-        "timeline": 0.0
+        "single_hop": 0.0,
+        "timeline": 0.0,
+        "dossier": 0.0,
+        "unanswerable": 0.96875
+      },
+      "overall_uncited_correctness": 0.20096860030487007,
+      "per_type_uncited": {
+        "aggregation": 0.015436865436865437,
+        "single_hop": 0.020656136087484813,
+        "timeline": 0.0,
+        "dossier": 0.0,
+        "unanswerable": 0.96875
       },
       "retrieval": {
         "recall@5": 0.0,
         "recall@20": 0.0,
         "ndcg@10": 0.0
       },
-      "n_tasks": 973,
+      "n_tasks": 1000,
       "judge_model": "gpt-4o-mini-2024-07-18",
       "judge_prompt_version": "v1",
       "judge_errors": 0,
       "system_name": "closed_book (reference)",
+      "split": "full",
+      "dataset_version": "v1.0"
+    },
+    {
+      "overall_cited_correctness": 0.175,
+      "per_type": {
+        "aggregation": 0.0,
+        "single_hop": 0.0,
+        "timeline": 0.0,
+        "dossier": 0.0,
+        "unanswerable": 0.875
+      },
+      "overall_uncited_correctness": 0.21982386159178385,
+      "per_type_uncited": {
+        "aggregation": 0.01886301886301886,
+        "single_hop": 0.05710814094775213,
+        "timeline": 0.14814814814814814,
+        "dossier": 0.0,
+        "unanswerable": 0.875
+      },
+      "retrieval": {
+        "recall@5": 0.0,
+        "recall@20": 0.0,
+        "ndcg@10": 0.0
+      },
+      "n_tasks": 1000,
+      "judge_model": "gpt-4o-mini-2024-07-18",
+      "judge_prompt_version": "v1",
+      "judge_errors": 0,
+      "system_name": "parametric (reference)",
       "split": "full",
       "dataset_version": "v1.0"
     }

@@ -218,7 +218,7 @@ LEADERBOARD_BODY = """
   release. See the <a href="methodology.html">methodology</a> and
   <a href="dataset.html">dataset card</a>.</p>
 
-  <h2>Leaderboard — <code>full</code> split, dataset v1.1</h2>
+  <h2>Leaderboard — <code>full</code> split, dataset v1.0</h2>
   <div class="tablewrap">
     <table id="board">
       <thead><tr>

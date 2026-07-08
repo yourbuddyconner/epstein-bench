@@ -1,6 +1,6 @@
 # Epstein Bench Dataset Card
 
-**Current release:** `v1.0` (2026-07-05). This card documents the
+**Current release:** `v1.0` (2026-07-07). This card documents the
 methodology; the *Release statistics* section is updated whenever a version
 ships.
 
@@ -27,14 +27,14 @@ ships.
 | `dossier` | dated event list for a notable person, per-item docs | item-level P/R/F1, citation-gated |
 | `unanswerable` | none (refusal expected) | refusal accuracy |
 
-Since v1.1, corpus selection is **entity-complete**: a wide scan indexes
-entity mentions across the source dataset, an LLM notability check picks
-target people (public figures only; entities appearing in more than
-`max_entity_docs` documents are excluded as impractically pervasive), and the
-corpus is all documents mentioning any target plus a seeded random backbone.
-Single-hop facts are additionally **salience-filtered** (newsworthiness ≥3/5:
-notable people, money flows, meetings/travel, legal exposure — never
-speculation; facts must be document-stated).
+Corpus selection is **entity-complete**: a wide scan indexes entity mentions
+across the source dataset, an LLM notability check picks target people (public
+figures only; entities appearing in more than `max_entity_docs` documents are
+excluded as impractically pervasive), and the corpus is all documents
+mentioning any target plus a seeded random backbone. Single-hop facts are
+**salience-filtered** (newsworthiness ≥3/5: notable people, money flows,
+meetings/travel, legal exposure — never speculation; facts must be
+document-stated).
 
 Generation is fact-first: atomic facts are extracted from clean documents and
 questions are written against the fact, in investigator phrasing. Aggregation
@@ -84,32 +84,31 @@ across versions are not comparable.
 
 ## Release statistics
 
-### v1.0 (2026-07-05)
+### v1.0 (2026-07-07)
 
-- **Corpus:** first 20,000 text-bearing documents of `aurora2424/Epstein-Files`;
-  quality screen: 15,637 clean / 823 degraded / 3,540 garbage
-  (1,067 borderline docs resolved by LLM readability check); 28,032 chunks;
-  5,655-entity alias index.
-- **Tasks:** 973 (`full`): 854 single_hop / 47 timeline / 38 aggregation /
-  34 unanswerable. `dev`: 88. The mix is single-hop-heavy relative to the
-  50/20/15/15 generation quotas because multi-document candidates survive
-  verification at much lower rates.
-- **Gauntlet:** 1,038 of 5,000 candidates passed (20.8%). Rejections:
-  1,528 standalone, 1,448 answerability, 751 adjudication, 234 necessity,
-  1 error.
-- **Pooling:** 973 of 1,038 kept; 61 dropped as unstable under strong-model
-  re-judging, 4 as source-not-supportive.
-- **Reference baselines** (overall cited correctness): bm25 0.607,
-  hybrid 0.575, dense 0.493, closed_book 0.243 — closed-book scores 0.000
-  on every retrieval-requiring type, evidencing retrieval necessity;
-  its overall score is entirely refusal accuracy on unanswerable tasks.
-- Since v1.1 the scorer also reports **uncited correctness** and baselines
-  include a `parametric` mode (answer purely from model weights) — a
-  per-model probe of training exposure to the released files. The
-  retrieval-necessity control (`closed_book`) is unchanged.
-- **Human spot-check:** *pending* — 100-task sample generated
-  (`scripts/make_spotcheck.py`, seed 20260705); observed error rate will be
-  recorded here and BAD tasks retracted in v1.1.
+- **Corpus:** entity-complete selection over the full source dataset — a wide
+  scan of all 634 parquet shards (~1.38M text-bearing docs) indexed entity
+  mentions; 40 notable target people were chosen (LLM notability check) and the
+  retrieval corpus is every document mentioning a target plus a 30,000-doc
+  random backbone → 83,810 documents, 159,564 chunks.
+- **Tasks:** 1,000 (`full`): 823 single_hop / 111 aggregation / 27 timeline /
+  7 dossier / 32 unanswerable. `dev`: 44. Multi-document types (timeline,
+  dossier) survive verification at low rates, so they remain a small share.
+- **Gauntlet:** 1,098 of 4,034 candidates passed (27%). Rejections:
+  1,528 standalone, 1,080 answerability, 786 adjudication, 229 necessity.
+- **Pooling:** 1,018 of 1,098 kept; 74 dropped as unstable under strong-model
+  re-judging, 6 as source-not-supportive. One non-person dossier target was
+  retracted → 1,000 final tasks.
+- **Reference baselines** (cited / uncited correctness): bm25 0.390 / 0.398,
+  hybrid 0.381 / 0.412, dense 0.364 / 0.394, closed_book 0.194 / 0.201,
+  parametric 0.175 / 0.220. closed_book and parametric score 0.000 on every
+  retrieval-requiring type, evidencing retrieval necessity. **Parametric
+  knowledge probe:** single_hop uncited 0.057 (vs closed_book 0.021) —
+  gpt-4o-mini answers ~5.7% of single-hop facts from training weights alone, a
+  small but measurable contamination signal.
+- **Human spot-check:** *pending* — 100-task sample via
+  `scripts/make_spotcheck.py` (seed 20260705); observed error rate will be
+  recorded here and any bad tasks retracted in a point release.
 
 ## Known limitations
 

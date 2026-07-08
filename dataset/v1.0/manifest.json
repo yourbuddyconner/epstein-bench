@@ -2,22 +2,23 @@
   "version": "v1.0",
   "splits": {
     "full": {
-      "n_tasks": 973,
+      "n_tasks": 1000,
       "by_type": {
-        "single_hop": 854,
-        "aggregation": 38,
-        "unanswerable": 34,
-        "timeline": 47
+        "aggregation": 111,
+        "single_hop": 823,
+        "timeline": 27,
+        "dossier": 7,
+        "unanswerable": 32
       },
-      "questions_sha256": "89019762f63f0f416b7c0024ad510ac1723949292e71caa5a8c0443766f7b717"
+      "questions_sha256": "1716f63b82ab5357bb7a226550058d803dca91cef9ecf1a5913f56e636988804"
     },
     "dev": {
-      "n_tasks": 88,
+      "n_tasks": 44,
       "by_type": {
-        "single_hop": 54,
-        "unanswerable": 34
+        "single_hop": 12,
+        "unanswerable": 32
       },
-      "questions_sha256": "0d664386720606ddcc66b470acc830e945f8f3605c152df31152a7e2c5db8368"
+      "questions_sha256": "b2a05c921877734cdcef9b72d850fceb39b6ffdae08b94fbf53facdd401d2618"
     }
   }
 }

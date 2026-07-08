@@ -1,0 +1,30 @@
+{
+  "overall_cited_correctness": 0.38091168875950165,
+  "per_type": {
+    "aggregation": 0.32567372567372566,
+    "single_hop": 0.48116646415552855,
+    "timeline": 0.2222222222222222,
+    "dossier": 0.031746031746031744,
+    "unanswerable": 0.84375
+  },
+  "overall_uncited_correctness": 0.4123268219972351,
+  "per_type_uncited": {
+    "aggregation": 0.3436917436917437,
+    "single_hop": 0.5091130012150669,
+    "timeline": 0.3333333333333333,
+    "dossier": 0.031746031746031744,
+    "unanswerable": 0.84375
+  },
+  "retrieval": {
+    "recall@5": 0.27161833585958484,
+    "recall@20": 0.5943520456421887,
+    "ndcg@10": 0.40109274123124206
+  },
+  "n_tasks": 1000,
+  "judge_model": "gpt-4o-mini-2024-07-18",
+  "judge_prompt_version": "v1",
+  "judge_errors": 0,
+  "system_name": "hybrid (reference)",
+  "split": "full",
+  "dataset_version": "v1.0"
+}

@@ -1,0 +1,30 @@
+{
+  "overall_cited_correctness": 0.175,
+  "per_type": {
+    "aggregation": 0.0,
+    "single_hop": 0.0,
+    "timeline": 0.0,
+    "dossier": 0.0,
+    "unanswerable": 0.875
+  },
+  "overall_uncited_correctness": 0.21982386159178385,
+  "per_type_uncited": {
+    "aggregation": 0.01886301886301886,
+    "single_hop": 0.05710814094775213,
+    "timeline": 0.14814814814814814,
+    "dossier": 0.0,
+    "unanswerable": 0.875
+  },
+  "retrieval": {
+    "recall@5": 0.0,
+    "recall@20": 0.0,
+    "ndcg@10": 0.0
+  },
+  "n_tasks": 1000,
+  "judge_model": "gpt-4o-mini-2024-07-18",
+  "judge_prompt_version": "v1",
+  "judge_errors": 0,
+  "system_name": "parametric (reference)",
+  "split": "full",
+  "dataset_version": "v1.0"
+}
