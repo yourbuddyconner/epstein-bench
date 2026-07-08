@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from epstein_bench.sdk import REFUSAL, Prediction, System, Task, run
 from epstein_bench.sdk.agentic import AgenticRAG
 
@@ -62,10 +64,18 @@ class _Block:
         self.id = id
 
 
+class _Usage:
+    def __init__(self, input_tokens=0, output_tokens=0, cache_read_input_tokens=0):
+        self.input_tokens = input_tokens
+        self.output_tokens = output_tokens
+        self.cache_read_input_tokens = cache_read_input_tokens
+
+
 class _Resp:
-    def __init__(self, content, stop_reason="tool_use"):
+    def __init__(self, content, stop_reason="tool_use", usage=None):
         self.content = content
         self.stop_reason = stop_reason
+        self.usage = usage or _Usage(input_tokens=1000, output_tokens=200)
 
 
 class _FakeClient:
@@ -102,12 +112,17 @@ def test_agentic_searches_then_submits():
                       input={"answer": "They emailed.", "citations": ["d1"]}, id="s2")]),
     ]
     retr = _StubRetriever()
-    agent = AgenticRAG(_FakeClient(responses), "test-model", retr, DOCS)
+    agent = AgenticRAG(_FakeClient(responses), "claude-sonnet-5", retr, DOCS)
     pred = agent.predict(Task(task_id="t1", question="Did Alice email Bob?"))
     assert pred.answer == "They emailed."
     assert pred.citations == ["d1"]
     assert pred.retrieved == ["d1", "d2"]  # accumulated from the search
     assert retr.queries == ["alice bob"]
+    # usage summed across both API calls; cost priced from the model
+    assert pred.usage["input_tokens"] == 2000 and pred.usage["output_tokens"] == 400
+    assert pred.usage["requests"] == 2
+    # 2000/1e6*3 + 400/1e6*15 = 0.006 + 0.006 = 0.012
+    assert pred.cost_usd == pytest.approx(0.012)
 
 
 def test_agentic_refuses_when_never_submitting():

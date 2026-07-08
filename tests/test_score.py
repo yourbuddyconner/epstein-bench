@@ -225,6 +225,25 @@ def test_false_premise_accepting_the_premise_scores_zero(config, llm):
     assert "premise_id_rate" not in report
 
 
+def test_usage_and_cost_aggregated_into_report(config, llm):
+    tasks = [_single_hop_task("t1"), _single_hop_task("t2")]
+    preds = [
+        _pred("t1", usage={"input_tokens": 1000, "output_tokens": 200}, cost_usd=0.012),
+        _pred("t2", usage={"input_tokens": 3000, "output_tokens": 400}, cost_usd=0.015),
+    ]
+    report = score_predictions(config, llm, tasks, preds)
+    assert report["tokens_total"] == 4600
+    assert report["tokens_per_task"] == pytest.approx(2300.0)
+    assert report["cost_usd_total"] == pytest.approx(0.027)
+    assert report["cost_usd_per_task"] == pytest.approx(0.0135)
+
+
+def test_usage_absent_for_cheap_baselines(config, llm):
+    # predictions without usage/cost -> no telemetry keys in the report
+    report = score_predictions(config, llm, [_single_hop_task()], [_pred()])
+    assert "tokens_total" not in report and "cost_usd_total" not in report
+
+
 def test_missing_predictions_rejected(config, llm):
     with pytest.raises(ValueError, match="missing"):
         score_predictions(config, llm, [_single_hop_task()], [])

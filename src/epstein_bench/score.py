@@ -252,6 +252,19 @@ def score_predictions(
     if premise_refused:
         report["premise_id_rate"] = premise_identified / premise_refused
         report["premise_refused_n"] = premise_refused
+    # operational telemetry: agentic systems report per-task token usage and
+    # dollar cost in their predictions; aggregate it so the leaderboard can show
+    # the accuracy/cost tradeoff. Absent for the cheap non-agentic baselines.
+    usages = [p["usage"] for p in predictions if p.get("usage")]
+    costs = [p["cost_usd"] for p in predictions if p.get("cost_usd") is not None]
+    n = len(predictions)
+    if usages:
+        tok = sum(u.get("input_tokens", 0) + u.get("output_tokens", 0) for u in usages)
+        report["tokens_total"] = tok
+        report["tokens_per_task"] = round(tok / n, 1) if n else 0.0
+    if costs:
+        report["cost_usd_total"] = round(sum(costs), 4)
+        report["cost_usd_per_task"] = round(sum(costs) / n, 6) if n else 0.0
     return report
 
 

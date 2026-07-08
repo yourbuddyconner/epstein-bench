@@ -39,11 +39,18 @@ class Task:
 @dataclass
 class Prediction:
     """What a ``System`` returns for a task. ``run`` serializes this into the
-    contract's ``predictions.jsonl`` shape and enforces the length caps."""
+    contract's ``predictions.jsonl`` shape and enforces the length caps.
+
+    ``usage``/``cost_usd`` are optional operational telemetry (token counts and
+    dollar cost of producing this answer). They are ignored by scoring but
+    carried through so a leaderboard can report the accuracy/cost tradeoff —
+    especially relevant for agentic systems that spend many tokens per task."""
 
     answer: str
     citations: list[str] = field(default_factory=list)
     retrieved: list[str] = field(default_factory=list)
+    usage: dict | None = None
+    cost_usd: float | None = None
 
 
 @runtime_checkable
@@ -84,12 +91,19 @@ def run(
             pred = system.predict(task)
         except Exception:  # noqa: BLE001 — a system error must not lose the run
             pred = Prediction(answer=REFUSAL)
-        return {
+        row = {
             "task_id": task.task_id,
             "answer": str(pred.answer or ""),
             "citations": [str(c) for c in (pred.citations or [])][:max_retrieved],
             "retrieved": [str(r) for r in (pred.retrieved or [])][:max_retrieved],
         }
+        # optional operational telemetry — ignored by scoring, carried for the
+        # accuracy/cost tradeoff on the leaderboard
+        if pred.usage is not None:
+            row["usage"] = pred.usage
+        if pred.cost_usd is not None:
+            row["cost_usd"] = pred.cost_usd
+        return row
 
     rows = parallel_map(predict_one, questions, workers)
     return write_jsonl(out_path, rows)

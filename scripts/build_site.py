@@ -286,7 +286,7 @@ LEADERBOARD_BODY = """
         <th>system</th><th>overall</th><th>95% CI</th><th>micro</th><th>uncited</th>
         <th>single_hop</th><th>aggregation</th><th>timeline</th><th>dossier</th>
         <th>unanswerable</th><th>false_premise</th><th>cit.&nbsp;prec</th>
-        <th>recall@5</th><th>recall@20</th>
+        <th>recall@5</th><th>recall@20</th><th>$/task</th><th>tok/task</th>
       </tr></thead>
       <tbody></tbody>
     </table>
@@ -313,6 +313,8 @@ LEADERBOARD_BODY = """
   const fmt = x => (typeof x === "number" ? x.toFixed(3) : "n/a");
   const ci = a => (Array.isArray(a) && a.length === 2
     ? "[" + a[0].toFixed(2) + ", " + a[1].toFixed(2) + "]" : "n/a");
+  const usd = x => (typeof x === "number" ? "$" + x.toFixed(4) : "n/a");
+  const tok = x => (typeof x === "number" ? Math.round(x).toLocaleString() : "n/a");
   fetch("leaderboard.json").then(r => r.json()).then(data => {
     const rows = data.entries || [];
     if (!rows.length) { document.getElementById("empty").hidden = false; return; }
@@ -323,7 +325,8 @@ LEADERBOARD_BODY = """
         ci(e.overall_cited_correctness_ci95), fmt(e.overall_cited_correctness_micro),
         fmt(e.overall_uncited_correctness), fmt(t.single_hop), fmt(t.aggregation),
         fmt(t.timeline), fmt(t.dossier), fmt(t.unanswerable), fmt(t.false_premise),
-        fmt(e.citation_precision), fmt(r["recall@5"]), fmt(r["recall@20"])];
+        fmt(e.citation_precision), fmt(r["recall@5"]), fmt(r["recall@20"]),
+        usd(e.cost_usd_per_task), tok(e.tokens_per_task)];
       const tr = document.createElement("tr");
       cells.forEach((v, i) => { const td = document.createElement("td");
         if (i === 1) td.className = "headline"; td.textContent = v; tr.appendChild(td); });

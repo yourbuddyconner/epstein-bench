@@ -57,6 +57,23 @@ _SUBMIT_TOOL = {
     },
 }
 
+# USD per 1M tokens (input, output), Anthropic sticker pricing. Used to attach a
+# per-task dollar cost so the leaderboard can show the accuracy/cost tradeoff.
+_PRICING = {
+    "claude-sonnet-5": (3.0, 15.0),
+    "claude-opus-4-8": (5.0, 25.0),
+    "claude-opus-4-7": (5.0, 25.0),
+    "claude-haiku-4-5": (1.0, 5.0),
+}
+
+
+def _cost_usd(model: str, input_tokens: int, output_tokens: int) -> float | None:
+    price = _PRICING.get(model)
+    if price is None:
+        return None
+    return round(input_tokens / 1e6 * price[0] + output_tokens / 1e6 * price[1], 6)
+
+
 _PREAMBLE = (
     "You are answering a question about a large corpus of noisy, OCR'd documents "
     "(emails, depositions, calendars, financial records). Use the `search` tool "
@@ -107,6 +124,17 @@ class AgenticRAG(System):
         ]
         retrieved: list[str] = []
         searches = 0
+        usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0, "requests": 0}
+
+        def finish(answer: str, citations: list[str]) -> Prediction:
+            return Prediction(
+                answer=answer,
+                citations=citations,
+                retrieved=retrieved[:20],
+                usage=dict(usage),
+                cost_usd=_cost_usd(self.model, usage["input_tokens"], usage["output_tokens"]),
+            )
+
         # a few turns beyond the search budget for reasoning + the final submit
         for _ in range(self.max_searches + 3):
             try:
@@ -120,6 +148,12 @@ class AgenticRAG(System):
                 break
             except Exception:  # noqa: BLE001 — treat any client error as unscorable
                 break
+            u = getattr(resp, "usage", None)
+            if u is not None:
+                usage["input_tokens"] += getattr(u, "input_tokens", 0) or 0
+                usage["output_tokens"] += getattr(u, "output_tokens", 0) or 0
+                usage["cache_read_input_tokens"] += getattr(u, "cache_read_input_tokens", 0) or 0
+                usage["requests"] += 1
             messages.append({"role": "assistant", "content": resp.content})
             tool_uses = [b for b in resp.content if getattr(b, "type", None) == "tool_use"]
             if not tool_uses:
@@ -137,11 +171,7 @@ class AgenticRAG(System):
                 if tu.name == "submit_answer":
                     answer = str((tu.input or {}).get("answer") or "").strip()
                     citations = [str(c) for c in ((tu.input or {}).get("citations") or [])]
-                    return Prediction(
-                        answer=answer or REFUSAL,
-                        citations=citations,
-                        retrieved=retrieved[:20],
-                    )
+                    return finish(answer or REFUSAL, citations)
                 if tu.name == "search":
                     if searches >= self.max_searches:
                         results.append(_tool_result(tu.id, "Search limit reached. Call submit_answer now."))
@@ -154,7 +184,7 @@ class AgenticRAG(System):
                     results.append(_tool_result(tu.id, f"Unknown tool: {tu.name}", is_error=True))
             messages.append({"role": "user", "content": results})
         # never submitted within the budget
-        return Prediction(answer=REFUSAL, citations=[], retrieved=retrieved[:20])
+        return finish(REFUSAL, [])
 
 
 def _tool_result(tool_use_id: str, content: str, *, is_error: bool = False) -> dict:
