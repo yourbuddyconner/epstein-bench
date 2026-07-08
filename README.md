@@ -90,8 +90,14 @@ python baselines/run_baseline.py --system hybrid --split dev --out preds.jsonl
 python -m epstein_bench score preds.jsonl --split dev
 ```
 
-Baselines: `bm25`, `dense`, `hybrid`, and `closed_book` (no retrieval, public
-evidence the tasks require it).
+Baselines: `bm25`, `dense`, `hybrid` (retrieval), `closed_book` and `parametric`
+(no retrieval, public evidence the tasks require it), and `agentic` (an LLM
+tool-use agent). The baselines are built on an optional, producer-side SDK
+(`epstein_bench.sdk`: a `Retriever` protocol, a `System` protocol, and a `run`
+harness) that helps you emit a conformant `predictions.jsonl` — it never touches
+scoring or gold, so it does not breach the import-free contract. The `agentic`
+baseline needs `ANTHROPIC_API_KEY` and takes `--model` (e.g. `claude-sonnet-5`,
+`claude-opus-4-8`); no other stage uses Anthropic.
 
 ## Submitting to the leaderboard
 

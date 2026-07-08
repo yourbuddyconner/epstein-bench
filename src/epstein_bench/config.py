@@ -75,6 +75,10 @@ class Config:
     # filtering (cheap_model) tolerates a weaker model.
     judge_model: str = "gpt-5.5-2026-04-23"
     embed_model: str = "text-embedding-3-small"
+    # default model for the optional `agentic` reference baseline (Anthropic
+    # Messages API); overridable with `run_baseline.py --model`. Only this
+    # baseline touches Anthropic — generation/verification/scoring stay OpenAI.
+    agent_model: str = "claude-sonnet-5"
     temperature: float = 0.0
     seed: int = 20260705
 

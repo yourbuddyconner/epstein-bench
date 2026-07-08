@@ -1,12 +1,16 @@
-"""Reference baselines: bm25, dense, hybrid, and closed_book (no retrieval).
+"""Reference baselines, built on the optional producer-side SDK.
 
-Each reads a released ``questions.jsonl`` and emits a spec-conformant
+Each baseline is a ``System`` (see ``epstein_bench.sdk``); this script wires one
+up and runs it through ``sdk.run`` to emit a spec-conformant
 ``predictions.jsonl`` — exactly the file contract any outside system uses.
-The closed-book baseline exists as public evidence that the tasks require
-retrieval.
 
-Usage:
     python baselines/run_baseline.py --system hybrid --split dev --out preds.jsonl
+    python baselines/run_baseline.py --system agentic --model claude-sonnet-5 \
+        --split full --out preds.jsonl   # needs ANTHROPIC_API_KEY
+
+Systems: bm25, dense, hybrid (retrieval), closed_book, parametric (no retrieval,
+evidence that the tasks require retrieval), and agentic (an LLM tool-use agent
+on the Anthropic Messages API — a stronger reference).
 """
 
 from __future__ import annotations
@@ -21,66 +25,35 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from epstein_bench import DATASET_VERSION  # noqa: E402
 from epstein_bench.config import Config  # noqa: E402
 from epstein_bench.corpus import load_chunks, load_docs  # noqa: E402
-from epstein_bench.io_utils import parallel_map, read_jsonl, write_jsonl  # noqa: E402
-from epstein_bench.llm import LLM, LLMError  # noqa: E402
+from epstein_bench.llm import LLM  # noqa: E402
 from epstein_bench.retrievers import build_retrievers  # noqa: E402
+from epstein_bench.sdk import run  # noqa: E402
+from epstein_bench.sdk.agentic import AgenticRAG  # noqa: E402
+from epstein_bench.sdk.systems import NoContextSystem, RetrievalSystem  # noqa: E402
 
-REFUSAL = "The corpus does not contain enough information to answer this question."
-TOP_K = 20  # retrieved list length reported (contract max)
-CONTEXT_DOCS = 5  # docs shown to the generator
-
-
-def answer_with_context(
-    llm: LLM, question: str, context_docs: list[dict]
-) -> tuple[str, list[str]]:
-    listing = "\n\n".join(
-        f"[DOC id={d['doc_id']}]\n{d['text'][:2000]}" for d in context_docs
-    )
-    prompt = (
-        "[BASELINE] Answer the question using ONLY the documents provided, and "
-        "cite the ids of the documents that support your answer. If the documents "
-        'do not contain the answer, respond {"answer": null, "citations": []}. '
-        'Respond with JSON {"answer": str|null, "citations": [str]}.'
-        f"\n\nQuestion: {question}\n\n{listing}"
-    )
-    resp = llm.chat_json(prompt)
-    answer = resp.get("answer")
-    citations = [str(c) for c in (resp.get("citations") or [])]
-    if not answer:
-        return REFUSAL, []
-    return str(answer), citations
+RETRIEVAL_SYSTEMS = ("bm25", "dense", "hybrid")
 
 
-def answer_closed_book(llm: LLM, question: str) -> str:
-    prompt = (
-        "[BASELINE] Answer this question from your own knowledge. If you do not "
-        'know, respond {"answer": null, "citations": []}. Respond with JSON '
-        '{"answer": str|null, "citations": []}.'
-        f"\n\nQuestion: {question}"
-    )
-    resp = llm.chat_json(prompt)
-    return str(resp.get("answer")) if resp.get("answer") else REFUSAL
+def build_system(config: Config, llm: LLM, system: str, model: str | None):
+    if system in ("closed_book", "parametric"):
+        return NoContextSystem(llm, system)
 
+    docs_by_id = {d["doc_id"]: d for d in load_docs(config)}
+    chunks = load_chunks(config)
+    if system in RETRIEVAL_SYSTEMS:
+        retriever = build_retrievers(config, chunks, llm)[system]
+        return RetrievalSystem(llm, retriever, docs_by_id)
 
-def answer_parametric(llm: LLM, question: str) -> str:
-    """Best-effort recall from training data (parametric-knowledge probe).
+    if system == "agentic":
+        import anthropic  # optional dep; only needed for this baseline
 
-    Unlike closed_book (the retrieval-necessity control), this mode actively
-    encourages the model to answer from what it absorbed in training — the
-    publicly released Epstein files are on the open web, so a model may
-    genuinely know. Scored via uncited correctness; the cited headline will
-    be ~0 by construction (no citations exist)."""
-    prompt = (
-        "[PARAMETRIC] This question is about the publicly released Epstein "
-        "files, which you may have seen during training. Answer from your own "
-        "stored knowledge — recall as specifically as you can, and give your "
-        "best answer even if you are not fully certain. Only respond "
-        '{"answer": null} if you have no relevant knowledge at all. '
-        'Respond with JSON {"answer": str|null, "citations": []}.'
-        f"\n\nQuestion: {question}"
-    )
-    resp = llm.chat_json(prompt)
-    return str(resp.get("answer")) if resp.get("answer") else REFUSAL
+        # the agent reasons over retrieved evidence; hybrid RRF is the strongest
+        # reference retriever to hand it
+        retriever = build_retrievers(config, chunks, llm)["hybrid"]
+        client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY
+        return AgenticRAG(client, model or config.agent_model, retriever, docs_by_id)
+
+    raise ValueError(f"unknown system: {system}")
 
 
 def main() -> int:
@@ -88,57 +61,21 @@ def main() -> int:
     parser.add_argument(
         "--system",
         required=True,
-        choices=["bm25", "dense", "hybrid", "closed_book", "parametric"],
+        choices=[*RETRIEVAL_SYSTEMS, "closed_book", "parametric", "agentic"],
     )
     parser.add_argument("--split", default="dev", choices=["dev", "full"])
     parser.add_argument("--out", required=True)
+    parser.add_argument(
+        "--model", help="model id for the agentic system (default config.agent_model)"
+    )
     args = parser.parse_args()
 
     config = Config()
     llm = LLM(config)
-    questions = list(
-        read_jsonl(
-            config.dataset_dir / DATASET_VERSION / args.split / "questions.jsonl"
-        )
-    )
+    system = build_system(config, llm, args.system, args.model)
 
-    retriever = None
-    docs_by_id: dict[str, dict] = {}
-    if args.system not in ("closed_book", "parametric"):
-        chunks = load_chunks(config)
-        docs_by_id = {d["doc_id"]: d for d in load_docs(config)}
-        retriever = build_retrievers(config, chunks, llm)[args.system]
-
-    def answer_one(q: dict) -> dict:
-        retrieved: list[str] = []
-        try:
-            if retriever is None:
-                no_context = (
-                    answer_parametric
-                    if args.system == "parametric"
-                    else answer_closed_book
-                )
-                answer, citations = no_context(llm, q["question"]), []
-            else:
-                ranked = retriever.search(q["question"], TOP_K)
-                retrieved = [doc_id for doc_id, _ in ranked]
-                context = [
-                    docs_by_id[d] for d in retrieved[:CONTEXT_DOCS] if d in docs_by_id
-                ]
-                answer, citations = answer_with_context(llm, q["question"], context)
-        except LLMError as e:
-            print(f"warn: {q['task_id']} failed ({e}); recording refusal", file=sys.stderr)
-            answer, citations = REFUSAL, []
-        return {
-            "task_id": q["task_id"],
-            "answer": answer,
-            "citations": citations,
-            "retrieved": retrieved,
-        }
-
-    predictions = parallel_map(answer_one, questions, config.max_workers)
-
-    n = write_jsonl(args.out, predictions)
+    questions_path = config.dataset_dir / DATASET_VERSION / args.split / "questions.jsonl"
+    n = run(system, questions_path, args.out, max_retrieved=config.max_retrieved, workers=config.max_workers)
     print(json.dumps({"system": args.system, "split": args.split, "predictions": n}))
     return 0
 
