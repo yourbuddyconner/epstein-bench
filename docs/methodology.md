@@ -1,8 +1,6 @@
 # Methodology
 
 This page specifies the benchmark precisely enough to re-derive every number.
-The design rationale lives in
-[`docs/superpowers/specs/2026-07-05-benchmark-rebuild-design.md`](superpowers/specs/2026-07-05-benchmark-rebuild-design.md).
 
 ## The file contract
 
