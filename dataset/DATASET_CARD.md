@@ -118,15 +118,20 @@ scores across versions are not comparable.
   retracted, leaving 1,000 tasks, plus 38 `false_premise` (no pooling; empty
   gold set), for 1,038 released.
 - **Reference baselines** (cited correctness, 95% CI, micro; scored by
-  `gpt-5.5-2026-04-23`): hybrid 0.494 [0.46, 0.54] / 0.489, bm25 0.492
-  [0.45, 0.53] / 0.482, dense 0.440 [0.40, 0.47] / 0.398, closed_book 0.328
-  [0.32, 0.33] / 0.066, parametric 0.304 [0.28, 0.32] / 0.062. Hybrid and bm25
-  are a statistical tie; dense trails. closed_book and parametric score 0.000 on
-  every retrieval-requiring type — their macro is entirely rejection accuracy,
-  which the micro (0.066 / 0.062) exposes. All baselines refuse `false_premise`
-  at 0.95–1.00 but their premise-identification rate is 0.000: grounded
-  rejection without diagnosis. **Parametric knowledge probe:** single_hop
-  uncited 0.041 (vs closed_book 0.016): the generation-time model answers ~4% of
+  `gpt-5.5-2026-04-23`): agentic-sonnet-5 0.553 [0.52, 0.59] / 0.540,
+  agentic-opus-4-8 0.494 [0.46, 0.53] / 0.467, hybrid 0.494 [0.46, 0.54] /
+  0.489, bm25 0.492 [0.45, 0.53] / 0.482, dense 0.440 [0.40, 0.47] / 0.398,
+  closed_book 0.328 [0.32, 0.33] / 0.066, parametric 0.304 [0.28, 0.32] / 0.062.
+  Among one-shot retrievers hybrid and bm25 tie; dense trails. closed_book and
+  parametric score 0.000 on every retrieval-requiring type — their macro is
+  entirely rejection accuracy, which the micro (0.066 / 0.062) exposes. The
+  Sonnet-5 agent tops the board; the pricier Opus-4.8 agent merely ties one-shot
+  hybrid. **Cost/tokens** (agents only): Sonnet $0.053/task (~$55/split, ~14.8k
+  tok), Opus $0.114/task (~$119, ~19.6k tok). **False-premise:** every system
+  refuses at 0.95–1.00 (headline saturates), but the premise-identification
+  diagnostic separates the agents (1.0 — both name the fabrication) from every
+  non-agent baseline (0.0). **Parametric knowledge probe:** single_hop uncited
+  0.041 (vs closed_book 0.016): the generation-time model answers ~4% of
   single-hop facts from training weights alone, a small but measurable
   contamination signal.
 - **Spot-check:** all 7 dossiers reviewed by hand (real public figures such as
@@ -149,11 +154,11 @@ scores across versions are not comparable.
   the haystack, never part of the answer key.
 - The alias index driving aggregation/timeline bounding is heuristic;
   entities with unusual name forms may be under-covered.
-- `false_premise` saturates on the reference baselines (all refuse), so it does
-  not separate retrieval systems on the headline; its informative signal is the
-  premise-identification diagnostic (0.000 for every reference). Absence is
-  verified against the pooled and entity-complete document set, not proven for
-  the wider release.
+- `false_premise` saturates on the headline (all systems refuse), so it does not
+  drive the sort key; its informative signal is the premise-identification
+  diagnostic, which separates the agentic systems (1.0) from the one-shot and
+  no-context baselines (0.0). Absence is verified against the pooled and
+  entity-complete document set, not proven for the wider release.
 
 ## Ethics
 

@@ -12,16 +12,21 @@ targets five competencies drawn from the RAG evaluation literature (noise
 robustness, faithful attribution, information integration, negative rejection,
 and false-premise rejection) and adds an attribution-gated correctness metric,
 claim-level citation precision, bootstrap confidence intervals, and a
-training-contamination probe. Release v1.0 comprises 1,038 verified questions
-over a curated 83,810-document corpus, scored by a pinned strong-model judge.
-Reference systems reveal four findings: lexical and hybrid retrieval are a
-statistical tie at the top while dense retrieval trails on heavily degraded
-text; a no-retrieval control scores 0.000 on every retrieval-dependent task
-type, establishing that the tasks are not solvable from parametric knowledge
-alone; multi-document reconstruction (person timelines) remains near the floor
-for all baselines; and every baseline refuses fabricated-premise questions yet
-none identifies the specific falsehood, so grounded rejection is solved while
-premise diagnosis is open.
+training-contamination probe, plus per-task token and dollar telemetry for
+agentic systems. Release v1.0 comprises 1,038 verified questions over a curated
+83,810-document corpus, scored by a pinned strong-model judge. Six reference
+systems — three one-shot retrievers, two no-retrieval controls, and a
+multi-turn LLM tool-use agent — reveal five findings: among one-shot retrievers,
+lexical and hybrid tie while dense retrieval trails on degraded OCR; a
+no-retrieval control scores 0.000 on every retrieval-dependent type,
+establishing that the tasks are not solvable from parametric knowledge alone;
+multi-document dossier reconstruction stays near the floor for all systems;
+false-premise rejection is universal, but only the agents *diagnose* the
+fabrication (premise-identification 1.0 versus 0.0 for every non-agent
+baseline); and the cheaper Sonnet-5 agent tops the board (0.553 vs 0.494 for the
+best retriever) while the costlier Opus-4.8 agent merely ties one-shot
+retrieval — capability tier does not buy accuracy here, and both agents cost
+roughly two orders of magnitude more tokens and dollars per task.
 
 ## 1. Motivation
 
@@ -231,6 +236,14 @@ knowledge of the corpus, that is, training contamination.
 list against the pooled gold set, on answerable tasks. Reported as secondary
 columns.
 
+**Operational telemetry (agentic systems).** A system may report per-task token
+usage and dollar cost alongside its predictions; the scorer aggregates them into
+`tokens_per_task` and `cost_usd_per_task`. This makes the accuracy/cost tradeoff
+first-class — an agent that spends two orders of magnitude more tokens for a few
+points of accuracy is visible as such rather than flattered by an accuracy-only
+ranking. The cheap one-shot baselines report nothing here (a single model call);
+the columns read `n/a` for them.
+
 The judge model and prompt are part of the release. Release v1.0 pins the
 scoring judge to a strong model (`gpt-5.5-2026-04-23`), whose correctness
 agreement approaches human on this task; the generation and gauntlet stages keep
@@ -245,13 +258,18 @@ external entries.
 
 | system | cited | 95% CI | micro | single_hop | aggregation | timeline | dossier | unanswerable | false_premise | recall@5 | recall@20 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
+| agentic (sonnet-5) | 0.553 | [0.52, 0.59] | 0.540 | 0.536 | 0.349 | 0.407 | 0.024 | 1.000 | 1.000 | 0.250 | 0.321 |
+| agentic (opus-4-8) | 0.494 | [0.46, 0.53] | 0.467 | 0.467 | 0.204 | 0.296 | 0.000 | 1.000 | 1.000 | 0.272 | 0.357 |
 | hybrid | 0.494 | [0.46, 0.54] | 0.489 | 0.484 | 0.341 | 0.296 | 0.032 | 0.812 | 1.000 | 0.272 | 0.594 |
 | bm25 | 0.492 | [0.45, 0.53] | 0.482 | 0.478 | 0.297 | 0.333 | 0.000 | 0.844 | 1.000 | 0.271 | 0.589 |
 | dense | 0.440 | [0.40, 0.47] | 0.398 | 0.384 | 0.255 | 0.185 | 0.000 | 0.844 | 0.974 | 0.219 | 0.517 |
 | closed_book | 0.328 | [0.32, 0.33] | 0.066 | 0.000 | 0.000 | 0.000 | 0.000 | 0.969 | 1.000 | 0.000 | 0.000 |
 | parametric | 0.304 | [0.28, 0.32] | 0.062 | 0.000 | 0.000 | 0.000 | 0.000 | 0.875 | 0.947 | 0.000 | 0.000 |
 
-Four findings follow.
+The `agentic` rows are a multi-turn LLM tool-use agent (Claude Sonnet 5 and
+Claude Opus 4.8) that issues its own retrieval queries over the hybrid retriever
+and then commits an answer; they report per-task token usage and dollar cost
+(below). Five findings follow.
 
 1. **Lexical and hybrid retrieval tie; dense trails.** Hybrid (0.494, CI
    [0.46, 0.54]) and BM25 (0.492, [0.45, 0.53]) are statistically
@@ -274,17 +292,32 @@ Four findings follow.
 3. **Information integration is unsolved.** Dossier reconstruction stays between
    0.000 and 0.032 for every system under the strong judge. Multi-document
    synthesis on a noisy corpus is the open frontier this benchmark exposes.
-4. **Grounded rejection is solved; premise diagnosis is not.** Every baseline
-   refuses fabricated-premise questions at 0.95–1.00: a retrieval system grounds
-   in context that does not support the invented meeting and declines, and a
-   no-retrieval system declines for lack of any basis. But the
-   premise-identification rate is 0.000 across all five — none names the
-   specific fabrication. `false_premise` therefore currently measures grounded
-   rejection, which the references already achieve, and exposes premise
-   diagnosis as headroom for systems that reason about *why* a premise fails.
-   Because the type saturates, it lifts every macro uniformly and does not
-   separate the references; its discriminating value is the identification-rate
-   diagnostic, not the headline.
+4. **False-premise rejection is universal; premise *diagnosis* separates the
+   agent from everything else.** Every system refuses fabricated-premise
+   questions at 0.95–1.00, so the headline `false_premise` score saturates and
+   does not discriminate. The `premise_id_rate` diagnostic does: the agentic
+   system names the specific fabrication in all 38 tasks (1.000), while every
+   retrieval and no-context baseline scores 0.000 — they decline for lack of
+   support without articulating *what* is false. This is the axis the type was
+   built to expose: a system that reasons over evidence catches the lie; one
+   that only fails to ground it does not. The lesson for the metric is that
+   `false_premise` belongs in the diagnostics, read through `premise_id_rate`,
+   and its saturated headline should not drive the sort key.
+5. **An agent tops the board — but capability tier does not buy accuracy, and
+   the premium is steep.** The Sonnet-5 agent (0.553, CI [0.52, 0.59]) beats the
+   best one-shot retriever (hybrid 0.494): issuing several targeted queries and
+   reasoning over the results converts evidence into correct, cited answers more
+   effectively, even though its recall@20 (0.321) is *lower* than hybrid's
+   (0.594) — it does not need the gold doc in a top-20 list, only to find and
+   use it. The more expensive Opus-4.8 agent, however, scores *lower* (0.494 —
+   a statistical tie with plain hybrid) at more than double the cost: its more
+   conservative, literal tool use depresses aggregation (0.204 vs 0.349) and
+   citation precision (0.368 vs 0.485). Cost is now first-class on the
+   leaderboard: Sonnet spends **$0.053 / ~14,800 tokens per task** (~$55 for the
+   split) and Opus **$0.114 / ~19,600 tokens** (~$119), against a single cheap
+   model call for each retrieval baseline. The best system is thus the *cheaper*
+   agent, and the Opus agent buys nothing over one-shot hybrid for ~1000× the
+   cost — exactly the tradeoff the operational columns exist to expose.
 
 **Contamination probe.** The `parametric` control is prompted to answer from its
 own weights. Its single-hop uncited score is 0.041, against 0.016 for the
@@ -316,12 +349,16 @@ never used. The `dev` split is for iteration and is not leaderboard-eligible.
   of the answer key.
 - The alias index that bounds aggregation and dossier tasks is heuristic;
   entities with unusual name forms may be under-covered.
-- The `false_premise` type saturates on the reference baselines (all refuse),
-  so it does not currently separate retrieval systems on the headline; its
-  informative signal is the premise-identification diagnostic, which is 0.000
-  for every reference system. Absence is verified against the pooled and
-  entity-complete document set, not a proof of non-existence in the wider
-  release.
+- The `false_premise` headline saturates (every system refuses), so it does not
+  separate systems on the sort key; its informative signal is the
+  premise-identification diagnostic, which separates the agentic system (1.0)
+  from the one-shot and no-context baselines (0.0). Absence is verified against
+  the pooled and entity-complete document set, not proven for the wider release.
+- The `agentic` reference is nondeterministic and depends on an external
+  provider (an Anthropic key), so its exact numbers are not reproducible to the
+  digit and will drift with the model; it is a reference point, not a fixed
+  control like the retrieval baselines. Its token/cost figures are sticker-price
+  estimates.
 - Decontamination holds only against the generation-time model. Contamination
   scores for other models are informative but not a guarantee of task novelty
   for those models.
