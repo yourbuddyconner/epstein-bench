@@ -16,6 +16,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 DOCS = REPO / "docs"
 GITHUB = "https://github.com/yourbuddyconner/epstein-bench"
+BASE_URL = "https://epsteinbench.com"
+OG_IMAGE = f"{BASE_URL}/og-image.png"  # 1200x630 link-preview card (docs/og-image.png)
 
 # -- minimal markdown -> HTML (covers what our docs use) -----------------------
 
@@ -199,13 +201,49 @@ def nav(active: str) -> str:
     )
 
 
-def page(title: str, active: str, body: str) -> str:
+def _social_meta(title: str, description: str, path: str) -> str:
+    """Open Graph + Twitter Card tags so links unfurl a preview in Twitter,
+    iMessage, Slack, etc. Image and URLs are absolute (required by scrapers)."""
+    url = f"{BASE_URL}/{path}".rstrip("/")
+    t, desc = html.escape(title), html.escape(description)
+    return "\n".join(
+        [
+            f'<meta name="description" content="{desc}">',
+            f'<link rel="canonical" href="{url}">',
+            '<meta property="og:type" content="website">',
+            '<meta property="og:site_name" content="Epstein Bench">',
+            f'<meta property="og:title" content="{t}">',
+            f'<meta property="og:description" content="{desc}">',
+            f'<meta property="og:url" content="{url}">',
+            f'<meta property="og:image" content="{OG_IMAGE}">',
+            '<meta property="og:image:width" content="1200">',
+            '<meta property="og:image:height" content="630">',
+            '<meta property="og:image:type" content="image/png">',
+            f'<meta property="og:image:alt" content="{t}">',
+            '<meta name="twitter:card" content="summary_large_image">',
+            f'<meta name="twitter:title" content="{t}">',
+            f'<meta name="twitter:description" content="{desc}">',
+            f'<meta name="twitter:image" content="{OG_IMAGE}">',
+        ]
+    )
+
+
+def page(
+    title: str,
+    active: str,
+    body: str,
+    *,
+    description: str = "",
+    path: str = "",
+    share_title: str | None = None,
+) -> str:
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
+{_social_meta(share_title or title, description, path)}
 <style>{STYLE}</style>
 </head>
 <body>
@@ -337,17 +375,53 @@ LEADERBOARD_BODY = """
 """.replace("%GITHUB%", GITHUB)
 
 
+HERO_DESC = (
+    "Millions of scanned, garbled documents. Can your AI find the one sentence "
+    "that answers the question? A verified RAG benchmark over the public Epstein "
+    "Files, with a live leaderboard."
+)
+
+
 def main() -> None:
-    (DOCS / "index.html").write_text(page("Epstein Bench: Leaderboard", "home", LEADERBOARD_BODY))
+    (DOCS / "index.html").write_text(
+        page(
+            "Epstein Bench: Leaderboard",
+            "home",
+            LEADERBOARD_BODY,
+            description=HERO_DESC,
+            path="",
+            share_title="Epstein Bench",
+        )
+    )
 
     methodology = (DOCS / "methodology.md").read_text()
     (DOCS / "methodology.html").write_text(
-        page("Epstein Bench: Methodology", "methodology", md_to_html(methodology))
+        page(
+            "Epstein Bench: Methodology",
+            "methodology",
+            md_to_html(methodology),
+            description=(
+                "How Epstein Bench works: attribution-gated correctness, a "
+                "four-stage verification gauntlet, TREC-style pooled relevance, "
+                "and a pinned strong-model judge."
+            ),
+            path="methodology.html",
+        )
     )
 
     card = (REPO / "dataset" / "DATASET_CARD.md").read_text()
     (DOCS / "dataset.html").write_text(
-        page("Epstein Bench: Dataset Card", "dataset", md_to_html(card))
+        page(
+            "Epstein Bench: Dataset Card",
+            "dataset",
+            md_to_html(card),
+            description=(
+                "The Epstein Bench dataset card: task types, entity-complete "
+                "corpus construction, verification, pinned models, and release "
+                "statistics."
+            ),
+            path="dataset.html",
+        )
     )
     print("wrote docs/index.html, docs/methodology.html, docs/dataset.html")
 
