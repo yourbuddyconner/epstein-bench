@@ -255,3 +255,63 @@ def test_retrieval_metrics_in_report(config, llm):
     assert report["retrieval"]["recall@20"] == 1.0
     assert 0 < report["retrieval"]["ndcg@10"] <= 1.0
     assert report["judge_model"] == config.judge_model
+
+
+def test_ndcg_duplicates_cannot_inflate_gain():
+    """Repeating a gold doc at every rank must not stack gain (or nDCG > 1)."""
+    assert ndcg_at_k(["g"] * 10, ["g"], 10) == 1.0
+    assert ndcg_at_k(["g", "g", "x"], ["g", "x"], 10) == ndcg_at_k(
+        ["g", "x"], ["g", "x"], 10
+    )
+
+
+def test_duplicate_task_ids_rejected(config, llm):
+    with pytest.raises(ValueError, match="duplicate"):
+        score_predictions(
+            config, llm, [_single_hop_task()], [_pred(), _pred(answer="other")]
+        )
+
+
+def test_unknown_task_ids_rejected(config, llm):
+    """Padding predictions with extra task_ids (telemetry dilution) is an error."""
+    with pytest.raises(ValueError, match="unknown"):
+        score_predictions(
+            config, llm, [_single_hop_task()], [_pred(), _pred("bogus-id")]
+        )
+
+
+def test_aggregation_gate_is_per_item(config, llm):
+    """Citing one item's doc must not earn cited credit for OTHER items."""
+    task = {
+        "task_id": "a2",
+        "type": "aggregation",
+        "question": "Which people are named in correspondence with Alice Example?",
+        "answer": None,
+        "items": [
+            {"item": "Bob Sample", "doc_ids": ["d1"]},
+            {"item": "Carol Case", "doc_ids": ["d2"]},
+        ],
+        "gold_docs": ["d1", "d2"],
+        "source_doc_ids": ["d1", "d2"],
+        "provenance": {},
+    }
+    llm_mod.STUB_OVERRIDES["AGGJUDGE"] = json.dumps(
+        {"matched_items": [True, True], "extra_items": 0}
+    )
+    report = score_predictions(
+        config, llm, [task], [_pred("a2", answer="Bob Sample, Carol Case", citations=["d1"])]
+    )
+    # only Bob's item is cited-supported; Carol's is an unsupported claim that
+    # costs precision: P = 1/2, R = 1/2 -> F1 = 1/2
+    assert report["per_type"]["aggregation"] == pytest.approx(0.5)
+    assert report["per_type_uncited"]["aggregation"] == 1.0
+
+
+def test_judge_failure_aborts_instead_of_scoring_zero(config, llm):
+    """A systemically broken judge must raise, not score every task as 0."""
+    from epstein_bench.llm import LLMError
+
+    llm_mod.STUB_OVERRIDES["SCOREJUDGE"] = "this is not json"
+    tasks = [_single_hop_task("t1"), _single_hop_task("t2")]
+    with pytest.raises(LLMError, match="judge failed"):
+        score_predictions(config, llm, tasks, [_pred("t1"), _pred("t2")])

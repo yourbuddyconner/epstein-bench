@@ -140,10 +140,15 @@ def select_corpus(config: Config, llm: LLM) -> dict:
     total_docs = 0
     for doc in _iter_scan_docs(config):
         total_docs += 1
+        # dedupe per doc on the NORMALIZED name: several cased variants of one
+        # name in a doc must count that doc once, not once per variant
+        norms_in_doc: set[str] = set()
         for cased in set(extract_names(doc["text"])):
             norm = _normalize_name(cased)
-            doc_count[norm] += 1
             aliases[norm].add(cased)
+            norms_in_doc.add(norm)
+        for norm in norms_in_doc:
+            doc_count[norm] += 1
             doc_ids[norm].append(doc["doc_id"])
     if not total_docs:
         raise RuntimeError("scan cache is empty — run `scan` first")

@@ -1,28 +1,28 @@
 {
-  "overall_cited_correctness": 0.49412643607914974,
+  "overall_cited_correctness": 0.489914937072187,
   "overall_cited_correctness_ci95": [
-    0.457436,
-    0.536869
+    0.453786,
+    0.532675
   ],
-  "overall_cited_correctness_micro": 0.48943257021291703,
+  "overall_cited_correctness_micro": 0.48839730703892553,
   "per_type": {
-    "aggregation": 0.3406196906196906,
-    "single_hop": 0.4835965978128797,
+    "aggregation": 0.3129205629205629,
+    "single_hop": 0.48602673147023084,
     "timeline": 0.2962962962962963,
     "dossier": 0.03174603174603175,
     "unanswerable": 0.8125,
     "false_premise": 1.0
   },
-  "overall_uncited_correctness": 0.5330583960201937,
+  "overall_uncited_correctness": 0.5412926037278725,
   "overall_uncited_correctness_ci95": [
-    0.490317,
-    0.575578
+    0.498013,
+    0.58164
   ],
-  "overall_uncited_correctness_micro": 0.5191700774070717,
+  "overall_uncited_correctness_micro": 0.5239564492454666,
   "per_type_uncited": {
-    "aggregation": 0.35487030487030485,
-    "single_hop": 0.5139732685297691,
-    "timeline": 0.4444444444444444,
+    "aggregation": 0.3635933135933136,
+    "single_hop": 0.5176184690157959,
+    "timeline": 0.48148148148148145,
     "dossier": 0.072562358276644,
     "unanswerable": 0.8125,
     "false_premise": 1.0
@@ -36,7 +36,7 @@
   },
   "n_tasks": 1038,
   "judge_model": "gpt-5.5-2026-04-23",
-  "judge_prompt_version": "v1",
+  "judge_prompt_version": "v2",
   "judge_errors": 0,
   "premise_id_rate": 0.0,
   "premise_refused_n": 38,

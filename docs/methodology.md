@@ -14,16 +14,16 @@ and false-premise rejection) and adds an attribution-gated correctness metric,
 claim-level citation precision, bootstrap confidence intervals, and a
 training-contamination probe, plus per-task token and dollar telemetry for
 agentic systems. Release v1.0 comprises 1,038 verified questions over a curated
-83,810-document corpus, scored by a pinned strong-model judge. Six reference
-systems — three one-shot retrievers, two no-retrieval controls, and a
-multi-turn LLM tool-use agent — reveal five findings: among one-shot retrievers,
+83,810-document corpus, scored by a pinned strong-model judge. Seven reference
+systems — three one-shot retrievers, two no-retrieval controls, and two
+multi-turn LLM tool-use agents — reveal five findings: among one-shot retrievers,
 lexical and hybrid tie while dense retrieval trails on degraded OCR; a
 no-retrieval control scores 0.000 on every retrieval-dependent type,
 establishing that the tasks are not solvable from parametric knowledge alone;
 multi-document dossier reconstruction stays near the floor for all systems;
 false-premise rejection is universal, but only the agents *diagnose* the
 fabrication (premise-identification 1.0 versus 0.0 for every non-agent
-baseline); and the cheaper Sonnet-5 agent tops the board (0.553 vs 0.494 for the
+baseline); and the cheaper Sonnet-5 agent tops the board (0.538 vs 0.490 for the
 best retriever) while the costlier Opus-4.8 agent merely ties one-shot
 retrieval — capability tier does not buy accuracy here, and both agents cost
 roughly two orders of magnitude more tokens and dollars per task.
@@ -128,7 +128,7 @@ and emits `predictions.jsonl`.
 | field | type | meaning |
 |---|---|---|
 | `task_id` | str | opaque id, echoed back |
-| `type` | str | `single_hop` \| `aggregation` \| `timeline` \| `dossier` \| `unanswerable` |
+| `type` | str | `single_hop` \| `aggregation` \| `timeline` \| `dossier` \| `unanswerable` \| `false_premise` |
 | `question` | str | the question |
 
 **predictions.jsonl**, one prediction per line, every task answered:
@@ -197,12 +197,20 @@ construction and bypass pooling.
 **Cited answer correctness (headline).** A prediction is correct only when both
 conditions hold: a pinned LLM judge (fixed model and published prompt) rules the
 answer equivalent to the reference, and at least one cited document lies in the
-pooled gold set. This is an attribution-gated metric in the sense of RAGBench
-adherence: fluency without grounding earns nothing. Per type:
+pooled gold set. "Support" here is *membership in the pooled gold set* — a
+document a judge ruled sufficient to answer from — not a fresh entailment check
+of the answer against the cited document's text; a system that answers from
+memory and cites a pooled gold document passes the gate (the no-retrieval
+controls in §9 bound how much that is worth in practice). This is an
+attribution-gated metric in the spirit of RAGBench adherence: fluency without
+grounding earns nothing. Per type:
 
 - `single_hop`, `timeline`: binary cited correctness.
 - `aggregation`, `dossier`: item-level F1, where an item counts only if matched
-  *and* supported by a cited document.
+  *and* one of the gated citations is among that item's own recorded supporting
+  documents (falling back to the task's gold set only for items without
+  recorded supports). A matched item with no supporting citation is an
+  unsupported claim: it costs cited precision as well as recall.
 - `unanswerable`, `false_premise`: rejection accuracy; a confident answer that
   accepts the (absent or fabricated) premise is a hallucination and scores zero.
 
@@ -217,10 +225,14 @@ task-weighted **micro** average alongside the macro, because the macro gives the
 small rejection types outsized weight and the two numbers diverge sharply for
 no-retrieval systems (§9).
 
-**Citation precision and recall (diagnostic).** Following ALCE, we report, over
-answerable tasks, the fraction of a system's cited documents that are gold
-(precision) and the fraction of gold documents it cited (recall). Correctness
-gates on grounding; these quantify its quality.
+**Citation precision and recall (diagnostic).** In the spirit of ALCE (but
+against the pooled gold set rather than passage-level entailment), we report,
+over answerable tasks, the fraction of a system's cited documents that are gold
+(precision) and the fraction of gold documents it cited (recall). Precision is
+computed over *everything* the system cited — the list is not truncated — so
+citation stuffing pays for itself here even though the correctness gate only
+reads the first three. Correctness gates on grounding; these quantify its
+quality.
 
 **Premise-identification rate (diagnostic).** For `false_premise`, of the tasks
 a system refused, the fraction in which it named the specific fabricated fact
@@ -242,27 +254,32 @@ usage and dollar cost alongside its predictions; the scorer aggregates them into
 first-class — an agent that spends two orders of magnitude more tokens for a few
 points of accuracy is visible as such rather than flattered by an accuracy-only
 ranking. The cheap one-shot baselines report nothing here (a single model call);
-the columns read `n/a` for them.
+the columns read `n/a` for them. Unlike every accuracy metric, telemetry is
+**self-reported and unverified** — the scorer cannot audit a submitter's token
+counts — so read the cost columns as claims, not measurements.
 
 The judge model and prompt are part of the release. Release v1.0 pins the
-scoring judge to a strong model (`gpt-5.5-2026-04-23`), whose correctness
-agreement approaches human on this task; the generation and gauntlet stages keep
-a cheaper model, since filtering tolerates one. Changing the judge or its prompt
-constitutes a new benchmark version, and scores are not comparable across judge
-versions.
+scoring judge to a strong model (`gpt-5.5-2026-04-23`) and judge prompt **v2**
+(v2 fences the judged answer as untrusted data, so a prediction that embeds
+instructions to the judge cannot steer its verdict, and tightens the
+aggregation gate to per-item attribution); the judge's correctness agreement
+approaches human on this task. The generation and gauntlet stages keep a
+cheaper model, since filtering tolerates one. Changing the judge or its prompt
+constitutes a new scoring version, and scores are not comparable across judge
+versions — all reference scores below were computed under v2.
 
 ## 9. Baselines and findings
 
-Five reference systems, scored through the same submission pipeline used for
+Seven reference systems, scored through the same submission pipeline used for
 external entries.
 
 | system | cited | 95% CI | micro | single_hop | aggregation | timeline | dossier | unanswerable | false_premise | recall@5 | recall@20 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| agentic (sonnet-5) | 0.553 | [0.52, 0.59] | 0.540 | 0.536 | 0.349 | 0.407 | 0.024 | 1.000 | 1.000 | 0.250 | 0.321 |
-| agentic (opus-4-8) | 0.494 | [0.46, 0.53] | 0.467 | 0.467 | 0.204 | 0.296 | 0.000 | 1.000 | 1.000 | 0.272 | 0.357 |
-| hybrid | 0.494 | [0.46, 0.54] | 0.489 | 0.484 | 0.341 | 0.296 | 0.032 | 0.812 | 1.000 | 0.272 | 0.594 |
-| bm25 | 0.492 | [0.45, 0.53] | 0.482 | 0.478 | 0.297 | 0.333 | 0.000 | 0.844 | 1.000 | 0.271 | 0.589 |
-| dense | 0.440 | [0.40, 0.47] | 0.398 | 0.384 | 0.255 | 0.185 | 0.000 | 0.844 | 0.974 | 0.219 | 0.517 |
+| agentic (sonnet-5) | 0.538 | [0.50, 0.57] | 0.532 | 0.535 | 0.286 | 0.407 | 0.000 | 1.000 | 1.000 | 0.250 | 0.321 |
+| hybrid | 0.490 | [0.45, 0.53] | 0.488 | 0.486 | 0.313 | 0.296 | 0.032 | 0.812 | 1.000 | 0.272 | 0.594 |
+| agentic (opus-4-8) | 0.488 | [0.46, 0.52] | 0.460 | 0.463 | 0.170 | 0.296 | 0.000 | 1.000 | 1.000 | 0.272 | 0.357 |
+| bm25 | 0.483 | [0.45, 0.52] | 0.475 | 0.476 | 0.247 | 0.333 | 0.000 | 0.844 | 1.000 | 0.271 | 0.589 |
+| dense | 0.434 | [0.40, 0.47] | 0.393 | 0.383 | 0.217 | 0.185 | 0.000 | 0.844 | 0.974 | 0.219 | 0.517 |
 | closed_book | 0.328 | [0.32, 0.33] | 0.066 | 0.000 | 0.000 | 0.000 | 0.000 | 0.969 | 1.000 | 0.000 | 0.000 |
 | parametric | 0.304 | [0.28, 0.32] | 0.062 | 0.000 | 0.000 | 0.000 | 0.000 | 0.875 | 0.947 | 0.000 | 0.000 |
 
@@ -271,10 +288,10 @@ Claude Opus 4.8) that issues its own retrieval queries over the hybrid retriever
 and then commits an answer; they report per-task token usage and dollar cost
 (below). Five findings follow.
 
-1. **Lexical and hybrid retrieval tie; dense trails.** Hybrid (0.494, CI
-   [0.46, 0.54]) and BM25 (0.492, [0.45, 0.53]) are statistically
+1. **Lexical and hybrid retrieval tie; dense trails.** Hybrid (0.490, CI
+   [0.45, 0.53]) and BM25 (0.483, [0.45, 0.52]) are statistically
    indistinguishable — their intervals almost entirely overlap — while dense
-   (0.440, [0.40, 0.47]) sits clearly below both, its interval not reaching
+   (0.434, [0.40, 0.47]) sits clearly below both, its interval barely reaching
    their point estimates. On corrupted OCR, sub-word lexical matching is more
    robust than dense-vector similarity over embeddings of garbled tokens, and
    RRF hybridization matches but does not clearly beat BM25. The confidence
@@ -304,14 +321,14 @@ and then commits an answer; they report per-task token usage and dollar cost
    `false_premise` belongs in the diagnostics, read through `premise_id_rate`,
    and its saturated headline should not drive the sort key.
 5. **An agent tops the board — but capability tier does not buy accuracy, and
-   the premium is steep.** The Sonnet-5 agent (0.553, CI [0.52, 0.59]) beats the
-   best one-shot retriever (hybrid 0.494): issuing several targeted queries and
+   the premium is steep.** The Sonnet-5 agent (0.538, CI [0.50, 0.57]) leads the
+   best one-shot retriever (hybrid 0.490): issuing several targeted queries and
    reasoning over the results converts evidence into correct, cited answers more
    effectively, even though its recall@20 (0.321) is *lower* than hybrid's
    (0.594) — it does not need the gold doc in a top-20 list, only to find and
-   use it. The more expensive Opus-4.8 agent, however, scores *lower* (0.494 —
+   use it. The more expensive Opus-4.8 agent, however, scores *lower* (0.488 —
    a statistical tie with plain hybrid) at more than double the cost: its more
-   conservative, literal tool use depresses aggregation (0.204 vs 0.349) and
+   conservative, literal tool use depresses aggregation (0.170 vs 0.286) and
    citation precision (0.368 vs 0.485). Cost is now first-class on the
    leaderboard: Sonnet spends **$0.053 / ~14,800 tokens per task** (~$55 for the
    split) and Opus **$0.114 / ~19,600 tokens** (~$119), against a single cheap
@@ -320,9 +337,9 @@ and then commits an answer; they report per-task token usage and dollar cost
    cost — exactly the tradeoff the operational columns exist to expose.
 
 **Contamination probe.** The `parametric` control is prompted to answer from its
-own weights. Its single-hop uncited score is 0.041, against 0.016 for the
+own weights. Its single-hop uncited score is 0.045, against 0.017 for the
 abstention-biased `closed_book` control: the generation-time model already
-reproduces roughly 4% of single-hop facts without retrieval. Because the
+reproduces roughly 4–5% of single-hop facts without retrieval. Because the
 benchmark is decontaminated only against that generation-time model (the
 necessity stage rejects tasks it can answer closed-book), any *other* model's
 parametric score is a clean measure of its own training exposure to the public
@@ -332,19 +349,55 @@ files entered the public web.
 ## 10. Reproducibility and submissions
 
 The pipeline (`scan → select → generate → verify → pool → finalize`) is seeded
-and config-pinned. All LLM calls are disk-cached, so an interrupted run resumes
-without re-spending. A submission is built with
-`python -m epstein_bench submit`, which packages predictions, system metadata,
-and the dataset-version hash. A GitHub Action validates the bundle and
-**recomputes all scores from the raw predictions**; self-reported numbers are
-never used. The `dev` split is for iteration and is not leaderboard-eligible.
+and config-pinned, and all LLM calls are disk-cached, so an interrupted run
+resumes without re-spending. Two honest caveats on "reproducible": the
+generator models are not bit-deterministic, so a cold re-run (empty cache)
+produces a *comparable* dataset, not an identical one — byte-identical
+regeneration relies on the released LLM cache; and the shipped v1.0 split
+includes two manual steps the pipeline does not encode (one non-person dossier
+target retracted after pooling, and the 38 verified `false_premise` tasks
+appended, §7). The released split is pinned by the hashes in
+`dataset/v1.0/manifest.json`, which validation enforces.
+
+A submission is built with `python -m epstein_bench submit`, which packages
+predictions, system metadata, and the dataset-version hash. A submission PR
+also commits its `scores.json`; a GitHub Action **rescores the raw predictions
+with the base branch's scorer and dataset and fails unless the committed
+scores match the recomputation** (within a small tolerance for judge
+nondeterminism), so the leaderboard never rests on self-reported numbers. The
+validation run takes only the `submissions/` directory from the PR — dataset or
+scorer edits in the same PR have no effect on its own validation. Because this
+is a self-run benchmark, the full answer key (`tasks.jsonl`) ships next to the
+questions; recomputation proves the scores follow from the predictions, but it
+cannot prove the predictions were produced without reading the key. Leaderboard
+integrity therefore ultimately rests on submission review, as in every
+open-answer-key benchmark. The `dev` split is for iteration and is not
+leaderboard-eligible.
 
 ## 11. Limitations
 
 - Questions are LLM-generated and machine-verified, with author spot-checking,
   rather than fully human-authored. Independent third-party human review is a
   roadmap item.
-- Pooled relevance is non-exhaustive (§7).
+- One cheap model (the generation-time model) both drafts tasks and runs the
+  answerability/necessity stages of the gauntlet, so the released tasks are
+  biased toward questions that model family finds answerable, and a consistent
+  misreading of OCR by that model can survive verification. The strong model
+  enters only at adjudication and pool-stability checks.
+- Pooled relevance is non-exhaustive (§7) — and because the headline metric is
+  attribution-gated, this affects *correctness*, not just retrieval recall: a
+  right answer citing a genuinely supporting document outside the pool scores
+  zero. Systems whose retrieval diverges from the three pooling retrievers are
+  structurally disadvantaged; a doc-addition appeals process is a roadmap item.
+- Pool and gauntlet judges read a fixed-length excerpt of each document (2,500
+  characters in v1.0; 3,000 in the current pipeline), while systems under test
+  see full documents. A supporting passage past the cutoff can leave a genuinely
+  relevant document out of the gold set.
+- The generation-time absence check for `unanswerable` and `false_premise`
+  verifies absence against the top lexical (BM25) hits for the question, with
+  strong-model adjudication over those same documents — not against the full
+  pooled or entity-complete document set. A premise supported only by a document
+  those probes miss could slip through.
 - OCR noise is uncorrected by design; it is part of the haystack but never part
   of the answer key.
 - The alias index that bounds aggregation and dossier tasks is heuristic;
@@ -352,13 +405,12 @@ never used. The `dev` split is for iteration and is not leaderboard-eligible.
 - The `false_premise` headline saturates (every system refuses), so it does not
   separate systems on the sort key; its informative signal is the
   premise-identification diagnostic, which separates the agentic system (1.0)
-  from the one-shot and no-context baselines (0.0). Absence is verified against
-  the pooled and entity-complete document set, not proven for the wider release.
-- The `agentic` reference is nondeterministic and depends on an external
-  provider (an Anthropic key), so its exact numbers are not reproducible to the
-  digit and will drift with the model; it is a reference point, not a fixed
-  control like the retrieval baselines. Its token/cost figures are sticker-price
-  estimates.
+  from the one-shot and no-context baselines (0.0).
+- The `agentic` references are nondeterministic and depend on an external
+  provider (an Anthropic key), so their exact numbers are not reproducible to
+  the digit and will drift with the model; they are reference points, not fixed
+  controls like the retrieval baselines. Their token/cost figures are
+  sticker-price estimates, and telemetry in general is self-reported (§8).
 - Decontamination holds only against the generation-time model. Contamination
   scores for other models are informative but not a guarantee of task novelty
   for those models.

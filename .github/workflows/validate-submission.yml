@@ -1,11 +1,19 @@
 name: validate-submission
 
 # Leaderboard PRs add a directory under submissions/ containing
-# predictions.jsonl + metadata.json. This workflow recomputes all scores from
-# the predictions — submitted score files are never trusted.
+# predictions.jsonl + metadata.json + scores.json. This workflow rescores the
+# predictions from scratch and FAILS unless the committed scores.json matches
+# the recomputation (small tolerance for judge nondeterminism) — the committed
+# file feeds the leaderboard, so it must be proven, not trusted.
+#
+# Security model: `pull_request_target` runs the BASE branch's workflow with
+# the BASE branch's code and dataset checked out; only the PR's submissions/
+# directory is overlaid, and nothing in it is executed — predictions are data
+# to the scorer (whose judge prompts fence untrusted answer text). A PR that
+# edits src/, dataset/, or this workflow has no effect on its own validation.
 
 on:
-  pull_request:
+  pull_request_target:
     paths:
       - "submissions/**"
 
@@ -13,7 +21,14 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
+      # trusted checkout: base-branch code, scorer, and dataset
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+      - name: Overlay ONLY the PR's submissions/ directory (data, never executed)
+        run: |
+          git fetch origin ${{ github.event.pull_request.head.sha }}
+          git checkout ${{ github.event.pull_request.head.sha }} -- submissions/
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -21,18 +36,21 @@ jobs:
       - name: Find changed submission bundles
         id: bundles
         run: |
-          git fetch origin ${{ github.base_ref }} --depth=1
-          dirs=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- submissions/ \
-            | xargs -r -n1 dirname | sort -u)
-          echo "dirs=$dirs" >> "$GITHUB_OUTPUT"
-      - name: Validate and rescore
+          dirs=$(git diff --name-only ${{ github.event.pull_request.base.sha }} -- submissions/ \
+            | awk -F/ 'NF >= 3 {print $1 "/" $2}' | sort -u)
+          echo "dirs<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$dirs" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+      - name: Rescore and verify committed scores
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          set -e
-          for dir in ${{ steps.bundles.outputs.dirs }}; do
+          set -euo pipefail
+          while IFS= read -r dir; do
+            [ -n "$dir" ] || continue
             echo "== validating $dir =="
-            python -m epstein_bench validate "$dir"
-            cat "$dir/scores.json"
-          done
-        working-directory: .
+            test -f "$dir/scores.json" || { echo "$dir is missing scores.json"; exit 1; }
+            mv "$dir/scores.json" /tmp/committed-scores.json
+            python -m epstein_bench validate "$dir"   # rewrites $dir/scores.json
+            python scripts/compare_scores.py /tmp/committed-scores.json "$dir/scores.json"
+          done <<< "${{ steps.bundles.outputs.dirs }}"

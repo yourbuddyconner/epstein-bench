@@ -87,7 +87,7 @@ composition is versioned with each release.
 |---|---|
 | generation + gauntlet stages 1-3 + pool judging | `gpt-4o-mini-2024-07-18` |
 | adjudication + pool stability re-check | `gpt-4o-2024-08-06` |
-| scoring judge (prompt v1) | `gpt-5.5-2026-04-23` |
+| scoring judge (prompt v2) | `gpt-5.5-2026-04-23` |
 
 The scoring judge is a strong model because correctness judging approaches human
 agreement at that tier; generation and gauntlet filtering tolerate the cheaper
@@ -118,10 +118,11 @@ scores across versions are not comparable.
   retracted, leaving 1,000 tasks, plus 38 `false_premise` (no pooling; empty
   gold set), for 1,038 released.
 - **Reference baselines** (cited correctness, 95% CI, micro; scored by
-  `gpt-5.5-2026-04-23`): agentic-sonnet-5 0.553 [0.52, 0.59] / 0.540,
-  agentic-opus-4-8 0.494 [0.46, 0.53] / 0.467, hybrid 0.494 [0.46, 0.54] /
-  0.489, bm25 0.492 [0.45, 0.53] / 0.482, dense 0.440 [0.40, 0.47] / 0.398,
-  closed_book 0.328 [0.32, 0.33] / 0.066, parametric 0.304 [0.28, 0.32] / 0.062.
+  `gpt-5.5-2026-04-23`, judge prompt v2): agentic-sonnet-5 0.538 [0.50, 0.57] /
+  0.532, hybrid 0.490 [0.45, 0.53] / 0.488, agentic-opus-4-8 0.488
+  [0.46, 0.52] / 0.460, bm25 0.483 [0.45, 0.52] / 0.475, dense 0.434
+  [0.40, 0.47] / 0.393, closed_book 0.328 [0.32, 0.33] / 0.066, parametric
+  0.304 [0.28, 0.32] / 0.062.
   Among one-shot retrievers hybrid and bm25 tie; dense trails. closed_book and
   parametric score 0.000 on every retrieval-requiring type — their macro is
   entirely rejection accuracy, which the micro (0.066 / 0.062) exposes. The
@@ -131,7 +132,7 @@ scores across versions are not comparable.
   refuses at 0.95–1.00 (headline saturates), but the premise-identification
   diagnostic separates the agents (1.0 — both name the fabrication) from every
   non-agent baseline (0.0). **Parametric knowledge probe:** single_hop uncited
-  0.041 (vs closed_book 0.016): the generation-time model answers ~4% of
+  0.045 (vs closed_book 0.017): the generation-time model answers ~4–5% of
   single-hop facts from training weights alone, a small but measurable
   contamination signal.
 - **Spot-check:** all 7 dossiers reviewed by hand (real public figures such as
@@ -149,7 +150,28 @@ scores across versions are not comparable.
 
 - Questions are synthetic (LLM-written), human-spot-checked rather than fully
   human-authored.
-- Pooled (non-exhaustive) relevance judgments; see above.
+- One cheap model (`gpt-4o-mini`) both drafts tasks and runs the
+  answerability/necessity gauntlet stages, so the shipped tasks skew toward
+  questions that model family finds answerable, and a consistent OCR misreading
+  by that model can survive verification. The strong model enters only at
+  adjudication and pool stability.
+- Pooled (non-exhaustive) relevance judgments; see above. Because the headline
+  metric is citation-gated against the pool, this limits *correctness*, not
+  just retrieval recall: a right answer citing a supporting document outside
+  the pool scores zero.
+- Pool and gauntlet judges read a fixed-length excerpt of each document (2,500
+  chars in the v1.0 build; 3,000 in the current pipeline), while systems see
+  full documents; a supporting passage past the cutoff can keep a relevant
+  document out of the gold set.
+- The absence check for `unanswerable`/`false_premise` verifies against the top
+  BM25 hits for the question (strong-model adjudication re-reads the same
+  documents), not the full pooled or entity-complete document set; a premise
+  supported only by a document those probes miss could slip through.
+- The v1.0 split is not regenerable end-to-end from the pipeline alone: one
+  non-person dossier target was retracted by hand after pooling and the 38
+  `false_premise` tasks were appended, and the generator models are not
+  bit-deterministic without the released LLM cache. The shipped files are
+  pinned by `dataset/v1.0/manifest.json`.
 - OCR noise in degraded documents is uncorrected by design: it is part of
   the haystack, never part of the answer key.
 - The alias index driving aggregation/timeline bounding is heuristic;
@@ -157,8 +179,10 @@ scores across versions are not comparable.
 - `false_premise` saturates on the headline (all systems refuse), so it does not
   drive the sort key; its informative signal is the premise-identification
   diagnostic, which separates the agentic systems (1.0) from the one-shot and
-  no-context baselines (0.0). Absence is verified against the pooled and
-  entity-complete document set, not proven for the wider release.
+  no-context baselines (0.0).
+- This is a self-run benchmark with a public answer key (`tasks.jsonl` ships
+  beside `questions.jsonl`): CI proves committed scores follow from the
+  predictions, but cannot prove the predictions never read the key.
 
 ## Ethics
 

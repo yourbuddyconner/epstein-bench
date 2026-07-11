@@ -1,0 +1,1 @@
+This project uses anaconda for dependencies, there is an environment called epstein-bench, and if there isnt you may create it. 

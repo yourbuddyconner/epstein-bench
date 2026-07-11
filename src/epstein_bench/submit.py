@@ -72,18 +72,44 @@ def validate_bundle(config: Config, llm: LLM, bundle_dir: str | Path) -> dict:
             f"dataset_version {meta['dataset_version']} != current {DATASET_VERSION}"
         )
     split = meta["split"]
-    if _questions_sha256(config, split) != meta["questions_sha256"]:
+    actual_hash = _questions_sha256(config, split)
+    if actual_hash != meta["questions_sha256"]:
         raise ValueError("questions_sha256 does not match the released questions file")
+    # the manifest is the released pin: the working-tree questions file must
+    # match it, so a PR that tampers with the dataset cannot self-consistently
+    # validate against its own modified questions
+    manifest_path = config.dataset_dir / DATASET_VERSION / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    pinned = manifest["splits"][split]["questions_sha256"]
+    if actual_hash != pinned:
+        raise ValueError(
+            f"questions.jsonl ({split}) does not match the released manifest pin "
+            f"{pinned[:12]}… — the dataset files have been modified"
+        )
 
     predictions = list(read_jsonl(preds_path))
     for i, p in enumerate(predictions):
         if "task_id" not in p or "answer" not in p:
             raise ValueError(f"prediction line {i + 1} missing task_id/answer")
+        if len(p.get("citations") or []) > config.max_retrieved:
+            raise ValueError(
+                f"prediction line {i + 1} has more than {config.max_retrieved} citations"
+            )
+        if len(p.get("retrieved") or []) > config.max_retrieved:
+            raise ValueError(
+                f"prediction line {i + 1} has more than {config.max_retrieved} retrieved ids"
+            )
 
     tasks = list(
         read_jsonl(config.dataset_dir / DATASET_VERSION / split / "tasks.jsonl")
     )
     report = score_predictions(config, llm, tasks, predictions)
+    if report["judge_errors"]:
+        # in CI a partially-judged report must not become a green check: rerun
+        # (judge calls are cached, so a rerun only re-attempts the failures)
+        raise ValueError(
+            f"scoring hit {report['judge_errors']} judge error(s); rerun validation"
+        )
     report["system_name"] = meta["system_name"]
     report["split"] = split
     report["dataset_version"] = DATASET_VERSION

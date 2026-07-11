@@ -105,13 +105,21 @@ baseline needs `ANTHROPIC_API_KEY` and takes `--model` (e.g. `claude-sonnet-5`,
 2. `python -m epstein_bench submit predictions.jsonl --name "My System" --split full`
 3. Open a PR adding the generated `submissions/<name>/` directory.
 
-CI recomputes all scores from your predictions, submitted scores are never
-trusted. The `dev` split is for iteration and is not leaderboard-eligible.
+CI rescores your predictions from scratch (with the base branch's scorer and
+dataset — only your `submissions/` directory is taken from the PR) and fails
+unless your committed `scores.json` matches the recomputation, so the
+leaderboard never rests on self-reported numbers. Note this is a self-run
+benchmark: the answer key (`tasks.jsonl`) is public so anyone can score
+locally, which means honest results also depend on submission review. The
+`dev` split is for iteration and is not leaderboard-eligible.
 
 ## Regenerating the dataset
 
 The pipeline is seeded, config-pinned, and resumable (all LLM calls are
-disk-cached):
+disk-cached). A cold re-run produces a *comparable* dataset, not a
+byte-identical one — the shipped v1.0 split is pinned by
+`dataset/v1.0/manifest.json` and includes two documented manual steps (see the
+methodology's reproducibility section):
 
 ```bash
 python -m epstein_bench corpus
@@ -126,7 +134,7 @@ python -m epstein_bench finalize
 ```
 dataset/            versioned task splits + DATASET_CARD.md
 src/epstein_bench/  the pipeline: corpus, generate, verify, pool, score, submit
-baselines/          reference systems (bm25 / dense / hybrid / closed_book)
+baselines/          reference systems (bm25 / dense / hybrid / closed_book / parametric / agentic)
 docs/               methodology + leaderboard site
 tests/              unit + end-to-end smoke tests (stub LLM, no API key needed)
 ```

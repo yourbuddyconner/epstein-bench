@@ -1,29 +1,29 @@
 {
   "entries": [
     {
-      "overall_cited_correctness": 0.5526012522009792,
+      "overall_cited_correctness": 0.5379811722335331,
       "overall_cited_correctness_ci95": [
-        0.519024,
-        0.587692
+        0.504244,
+        0.573097
       ],
-      "overall_cited_correctness_micro": 0.5403230105365523,
+      "overall_cited_correctness_micro": 0.5324945805132907,
       "per_type": {
-        "aggregation": 0.34854611054301454,
-        "single_hop": 0.5358444714459295,
+        "aggregation": 0.28585022137653715,
+        "single_hop": 0.534629404617254,
         "timeline": 0.4074074074074074,
-        "dossier": 0.023809523809523808,
+        "dossier": 0.0,
         "unanswerable": 1.0,
         "false_premise": 1.0
       },
-      "overall_uncited_correctness": 0.6070719652440768,
+      "overall_uncited_correctness": 0.607002794868102,
       "overall_uncited_correctness_ci95": [
-        0.56993,
-        0.64319
+        0.569941,
+        0.643288
       ],
-      "overall_uncited_correctness_micro": 0.6044901080411718,
+      "overall_uncited_correctness_micro": 0.6019453583143412,
       "per_type_uncited": {
-        "aggregation": 0.4474594333693809,
-        "single_hop": 0.6002430133657352,
+        "aggregation": 0.4506896115995591,
+        "single_hop": 0.5965978128797084,
         "timeline": 0.48148148148148145,
         "dossier": 0.11324786324786325,
         "unanswerable": 1.0,
@@ -38,7 +38,7 @@
       },
       "n_tasks": 1038,
       "judge_model": "gpt-5.5-2026-04-23",
-      "judge_prompt_version": "v1",
+      "judge_prompt_version": "v2",
       "judge_errors": 0,
       "premise_id_rate": 1.0,
       "premise_refused_n": 38,
@@ -51,80 +51,30 @@
       "dataset_version": "v1.0"
     },
     {
-      "overall_cited_correctness": 0.49445529604823735,
+      "overall_cited_correctness": 0.489914937072187,
       "overall_cited_correctness_ci95": [
-        0.464096,
-        0.526719
+        0.453786,
+        0.532675
       ],
-      "overall_cited_correctness_micro": 0.4668856741558472,
+      "overall_cited_correctness_micro": 0.48839730703892553,
       "per_type": {
-        "aggregation": 0.20384981778170633,
-        "single_hop": 0.4665856622114216,
-        "timeline": 0.2962962962962963,
-        "dossier": 0.0,
-        "unanswerable": 1.0,
-        "false_premise": 1.0
-      },
-      "overall_uncited_correctness": 0.5935775382537833,
-      "overall_uncited_correctness_ci95": [
-        0.557944,
-        0.62982
-      ],
-      "overall_uncited_correctness_micro": 0.6190379308079883,
-      "per_type_uncited": {
-        "aggregation": 0.4884157653736006,
-        "single_hop": 0.6160388821385177,
-        "timeline": 0.4074074074074074,
-        "dossier": 0.0496031746031746,
-        "unanswerable": 1.0,
-        "false_premise": 1.0
-      },
-      "citation_precision": 0.3677817560864538,
-      "citation_recall": 0.20557436442922716,
-      "retrieval": {
-        "recall@5": 0.2719555810668802,
-        "recall@20": 0.35699685050841434,
-        "ndcg@10": 0.3462384319696253
-      },
-      "n_tasks": 1038,
-      "judge_model": "gpt-5.5-2026-04-23",
-      "judge_prompt_version": "v1",
-      "judge_errors": 0,
-      "premise_id_rate": 1.0,
-      "premise_refused_n": 38,
-      "tokens_total": 20329715,
-      "tokens_per_task": 19585.5,
-      "cost_usd_total": 118.537,
-      "cost_usd_per_task": 0.114197,
-      "system_name": "agentic-opus-4-8 (reference)",
-      "split": "full",
-      "dataset_version": "v1.0"
-    },
-    {
-      "overall_cited_correctness": 0.49412643607914974,
-      "overall_cited_correctness_ci95": [
-        0.457436,
-        0.536869
-      ],
-      "overall_cited_correctness_micro": 0.48943257021291703,
-      "per_type": {
-        "aggregation": 0.3406196906196906,
-        "single_hop": 0.4835965978128797,
+        "aggregation": 0.3129205629205629,
+        "single_hop": 0.48602673147023084,
         "timeline": 0.2962962962962963,
         "dossier": 0.03174603174603175,
         "unanswerable": 0.8125,
         "false_premise": 1.0
       },
-      "overall_uncited_correctness": 0.5330583960201937,
+      "overall_uncited_correctness": 0.5412926037278725,
       "overall_uncited_correctness_ci95": [
-        0.490317,
-        0.575578
+        0.498013,
+        0.58164
       ],
-      "overall_uncited_correctness_micro": 0.5191700774070717,
+      "overall_uncited_correctness_micro": 0.5239564492454666,
       "per_type_uncited": {
-        "aggregation": 0.35487030487030485,
-        "single_hop": 0.5139732685297691,
-        "timeline": 0.4444444444444444,
+        "aggregation": 0.3635933135933136,
+        "single_hop": 0.5176184690157959,
+        "timeline": 0.48148148148148145,
         "dossier": 0.072562358276644,
         "unanswerable": 0.8125,
         "false_premise": 1.0
@@ -138,7 +88,7 @@
       },
       "n_tasks": 1038,
       "judge_model": "gpt-5.5-2026-04-23",
-      "judge_prompt_version": "v1",
+      "judge_prompt_version": "v2",
       "judge_errors": 0,
       "premise_id_rate": 0.0,
       "premise_refused_n": 38,
@@ -147,29 +97,79 @@
       "dataset_version": "v1.0"
     },
     {
-      "overall_cited_correctness": 0.4919630406960804,
+      "overall_cited_correctness": 0.48812783009323873,
       "overall_cited_correctness_ci95": [
-        0.45335,
-        0.529658
+        0.458655,
+        0.519757
       ],
-      "overall_cited_correctness_micro": 0.48168234569968676,
+      "overall_cited_correctness_micro": 0.4603254862251342,
       "per_type": {
-        "aggregation": 0.2971736471736472,
-        "single_hop": 0.4775212636695018,
+        "aggregation": 0.16953022253774133,
+        "single_hop": 0.4629404617253949,
+        "timeline": 0.2962962962962963,
+        "dossier": 0.0,
+        "unanswerable": 1.0,
+        "false_premise": 1.0
+      },
+      "overall_uncited_correctness": 0.5977148368031501,
+      "overall_uncited_correctness_ci95": [
+        0.562424,
+        0.634442
+      ],
+      "overall_uncited_correctness_micro": 0.6136945437469721,
+      "per_type_uncited": {
+        "aggregation": 0.48349292060481747,
+        "single_hop": 0.6087484811664642,
+        "timeline": 0.4444444444444444,
+        "dossier": 0.0496031746031746,
+        "unanswerable": 1.0,
+        "false_premise": 1.0
+      },
+      "citation_precision": 0.3677817560864538,
+      "citation_recall": 0.20557436442922716,
+      "retrieval": {
+        "recall@5": 0.2719555810668802,
+        "recall@20": 0.35699685050841434,
+        "ndcg@10": 0.3462384319696253
+      },
+      "n_tasks": 1038,
+      "judge_model": "gpt-5.5-2026-04-23",
+      "judge_prompt_version": "v2",
+      "judge_errors": 0,
+      "premise_id_rate": 1.0,
+      "premise_refused_n": 38,
+      "tokens_total": 20329715,
+      "tokens_per_task": 19585.5,
+      "cost_usd_total": 118.537,
+      "cost_usd_per_task": 0.114197,
+      "system_name": "agentic-opus-4-8 (reference)",
+      "split": "full",
+      "dataset_version": "v1.0"
+    },
+    {
+      "overall_cited_correctness": 0.4834211295519011,
+      "overall_cited_correctness_ci95": [
+        0.44542,
+        0.522442
+      ],
+      "overall_cited_correctness_micro": 0.475368241264195,
+      "per_type": {
+        "aggregation": 0.24713724713724716,
+        "single_hop": 0.47630619684082626,
         "timeline": 0.3333333333333333,
         "dossier": 0.0,
         "unanswerable": 0.84375,
         "false_premise": 1.0
       },
-      "overall_uncited_correctness": 0.5190699375376876,
+      "overall_uncited_correctness": 0.5182429565061704,
       "overall_uncited_correctness_ci95": [
-        0.4813,
-        0.5579
+        0.479916,
+        0.556624
       ],
-      "overall_uncited_correctness_micro": 0.514505575777252,
+      "overall_uncited_correctness_micro": 0.5123080569612362,
       "per_type_uncited": {
-        "aggregation": 0.31357466357466357,
-        "single_hop": 0.5139732685297691,
+        "aggregation": 0.31104291104291104,
+        "single_hop": 0.511543134872418,
         "timeline": 0.4074074074074074,
         "dossier": 0.03571428571428571,
         "unanswerable": 0.84375,
@@ -184,7 +184,7 @@
       },
       "n_tasks": 1038,
       "judge_model": "gpt-5.5-2026-04-23",
-      "judge_prompt_version": "v1",
+      "judge_prompt_version": "v2",
       "judge_errors": 0,
       "premise_id_rate": 0.0,
       "premise_refused_n": 38,
@@ -193,29 +193,29 @@
       "dataset_version": "v1.0"
     },
     {
-      "overall_cited_correctness": 0.4403219549084192,
+      "overall_cited_correctness": 0.43378096243182523,
       "overall_cited_correctness_ci95": [
-        0.404709,
-        0.474342
+        0.398354,
+        0.467841
       ],
-      "overall_cited_correctness_micro": 0.39821193156301155,
+      "overall_cited_correctness_micro": 0.39318165355585494,
       "per_type": {
-        "aggregation": 0.2553512158775317,
-        "single_hop": 0.3839611178614824,
+        "aggregation": 0.21732032784664362,
+        "single_hop": 0.3827460510328068,
         "timeline": 0.18518518518518517,
         "dossier": 0.0,
         "unanswerable": 0.84375,
         "false_premise": 0.9736842105263158
       },
-      "overall_uncited_correctness": 0.4807142081977389,
+      "overall_uncited_correctness": 0.48146383967843565,
       "overall_uncited_correctness_ci95": [
-        0.43489,
-        0.524295
+        0.435265,
+        0.525402
       ],
-      "overall_uncited_correctness_micro": 0.4286275660248888,
+      "overall_uncited_correctness_micro": 0.42827508720420193,
       "per_type_uncited": {
-        "aggregation": 0.2733692338955497,
-        "single_hop": 0.4155528554070474,
+        "aggregation": 0.27908208960840536,
+        "single_hop": 0.41433778857837184,
         "timeline": 0.2962962962962963,
         "dossier": 0.0816326530612245,
         "unanswerable": 0.84375,
@@ -230,7 +230,7 @@
       },
       "n_tasks": 1038,
       "judge_model": "gpt-5.5-2026-04-23",
-      "judge_prompt_version": "v1",
+      "judge_prompt_version": "v2",
       "judge_errors": 0,
       "premise_id_rate": 0.0,
       "premise_refused_n": 37,
@@ -253,15 +253,15 @@
         "unanswerable": 0.96875,
         "false_premise": 1.0
       },
-      "overall_uncited_correctness": 0.3464340354718544,
+      "overall_uncited_correctness": 0.34576067073409117,
       "overall_uncited_correctness_ci95": [
-        0.328247,
-        0.367495
+        0.327549,
+        0.366601
       ],
-      "overall_uncited_correctness_micro": 0.08306190170352021,
+      "overall_uncited_correctness_micro": 0.08346331467718751,
       "per_type_uncited": {
-        "aggregation": 0.019984269984269984,
-        "single_hop": 0.015795868772782502,
+        "aggregation": 0.014729014729014731,
+        "single_hop": 0.01701093560145808,
         "timeline": 0.07407407407407407,
         "dossier": 0.0,
         "unanswerable": 0.96875,
@@ -276,7 +276,7 @@
       },
       "n_tasks": 1038,
       "judge_model": "gpt-5.5-2026-04-23",
-      "judge_prompt_version": "v1",
+      "judge_prompt_version": "v2",
       "judge_errors": 0,
       "premise_id_rate": 0.0,
       "premise_refused_n": 38,
@@ -299,15 +299,15 @@
         "unanswerable": 0.875,
         "false_premise": 0.9473684210526315
       },
-      "overall_uncited_correctness": 0.3465112514357361,
+      "overall_uncited_correctness": 0.34629198402327305,
       "overall_uncited_correctness_ci95": [
-        0.311253,
-        0.381693
+        0.31106,
+        0.380829
       ],
-      "overall_uncited_correctness_micro": 0.10245894118726488,
+      "overall_uncited_correctness_micro": 0.1048186238937684,
       "per_type_uncited": {
-        "aggregation": 0.030201630201630202,
-        "single_hop": 0.041312272174969626,
+        "aggregation": 0.02524082524082524,
+        "single_hop": 0.04495747266099635,
         "timeline": 0.18518518518518517,
         "dossier": 0.0,
         "unanswerable": 0.875,
@@ -322,7 +322,7 @@
       },
       "n_tasks": 1038,
       "judge_model": "gpt-5.5-2026-04-23",
-      "judge_prompt_version": "v1",
+      "judge_prompt_version": "v2",
       "judge_errors": 0,
       "premise_id_rate": 0.0,
       "premise_refused_n": 36,

@@ -1,27 +1,27 @@
 {
-  "overall_cited_correctness": 0.4403219549084192,
+  "overall_cited_correctness": 0.43378096243182523,
   "overall_cited_correctness_ci95": [
-    0.404709,
-    0.474342
+    0.398354,
+    0.467841
   ],
-  "overall_cited_correctness_micro": 0.39821193156301155,
+  "overall_cited_correctness_micro": 0.39318165355585494,
   "per_type": {
-    "aggregation": 0.2553512158775317,
-    "single_hop": 0.3839611178614824,
+    "aggregation": 0.21732032784664362,
+    "single_hop": 0.3827460510328068,
     "timeline": 0.18518518518518517,
     "dossier": 0.0,
     "unanswerable": 0.84375,
     "false_premise": 0.9736842105263158
   },
-  "overall_uncited_correctness": 0.4807142081977389,
+  "overall_uncited_correctness": 0.48146383967843565,
   "overall_uncited_correctness_ci95": [
-    0.43489,
-    0.524295
+    0.435265,
+    0.525402
   ],
-  "overall_uncited_correctness_micro": 0.4286275660248888,
+  "overall_uncited_correctness_micro": 0.42827508720420193,
   "per_type_uncited": {
-    "aggregation": 0.2733692338955497,
-    "single_hop": 0.4155528554070474,
+    "aggregation": 0.27908208960840536,
+    "single_hop": 0.41433778857837184,
     "timeline": 0.2962962962962963,
     "dossier": 0.0816326530612245,
     "unanswerable": 0.84375,
@@ -36,7 +36,7 @@
   },
   "n_tasks": 1038,
   "judge_model": "gpt-5.5-2026-04-23",
-  "judge_prompt_version": "v1",
+  "judge_prompt_version": "v2",
   "judge_errors": 0,
   "premise_id_rate": 0.0,
   "premise_refused_n": 37,

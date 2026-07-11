@@ -116,6 +116,9 @@ class Config:
     # the whole retrieval list into `citations` cannot game a chance gold hit
     gate_max_citations: int = 3
     bootstrap_iterations: int = 1000  # resamples for score confidence intervals
+    # judge (harness) failures above this fraction abort scoring rather than
+    # silently scoring unjudgeable tasks as 0.0 against the submitter
+    judge_error_abort_ratio: float = 0.02
 
     # --- paths ---
     build_dir: Path = REPO_ROOT / "build"

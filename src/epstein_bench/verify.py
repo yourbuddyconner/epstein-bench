@@ -40,7 +40,10 @@ def token_f1(pred: str, gold: str) -> float:
     return 2 * precision * recall / (precision + recall)
 
 
-def _doc_context(doc_ids: list[str], docs_by_id: dict[str, dict], limit: int = 2500) -> str:
+# default matches the generation-stage excerpt (generate._excerpt, 3000 chars)
+# so a fact drafted from chars 2500-3000 of a long doc is not silently
+# unverifiable. v1.0 was built with 2500 here (see DATASET_CARD limitations).
+def _doc_context(doc_ids: list[str], docs_by_id: dict[str, dict], limit: int = 3000) -> str:
     return "\n\n".join(
         f"[DOC id={d}]\n{docs_by_id[d]['text'][:limit]}"
         for d in doc_ids
@@ -159,13 +162,14 @@ class Gauntlet:
         pred = self._attempt_answer(task["question"], None, tag="CLOSEDBOOK")
         if pred is not None and self._matches(pred, reference):
             return False
-        # random distractor context must fail
-        distractor_ids = [
-            d for d in self._task_rng(task).sample(
-                self.clean_doc_ids, min(3, len(self.clean_doc_ids))
-            )
-            if d not in task["source_doc_ids"]
-        ]
+        # random distractor context must fail — sample from the non-gold
+        # population so the check cannot silently degrade to zero distractors
+        # when the sample happens to hit source docs (tiny/dev corpora)
+        source = set(task["source_doc_ids"])
+        population = [d for d in self.clean_doc_ids if d not in source]
+        distractor_ids = self._task_rng(task).sample(
+            population, min(3, len(population))
+        )
         if distractor_ids:
             pred = self._attempt_answer(
                 task["question"],
@@ -221,7 +225,7 @@ class Gauntlet:
             body = (
                 f"Question: {task['question']}\nReference answer: {reference}\n\n"
                 "Evidence:\n"
-                + _doc_context(task["source_doc_ids"], self.docs_by_id, limit=2500)
+                + _doc_context(task["source_doc_ids"], self.docs_by_id)
             )
         resp = self.llm.chat_json(instruction + "\n\n" + body, model=self.config.strong_model)
         return bool(resp.get("pass")), str(resp.get("category", "unspecified"))

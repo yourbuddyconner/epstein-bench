@@ -52,9 +52,12 @@ def judge_pool(
 ) -> dict[str, str]:
     """Return {doc_id: 'supports'|'partial'|'irrelevant'}.
 
-    Excerpt length matches the answerability stage (2500 chars) so the two
-    judges see the same evidence; 'supports' is deliberately phrased to match
-    answerability semantics — could a careful reader answer from this doc?
+    Excerpt length matches the answerability stage (3000 chars, same as
+    generation) so the judges see the same evidence; 'supports' is deliberately
+    phrased to match answerability semantics — could a careful reader answer
+    from this doc? Note systems under test see FULL documents: a supporting
+    passage past the excerpt cutoff can still be judged irrelevant, which is a
+    known gold-set limitation (see DATASET_CARD).
     """
     verdicts: dict[str, str] = {}
     reference = _reference(task)
@@ -63,7 +66,7 @@ def judge_pool(
         if not batch:
             continue
         listing = "\n\n".join(
-            f"[DOC {i}] id={d}\n{docs_by_id[d]['text'][:2500]}"
+            f"[DOC {i}] id={d}\n{docs_by_id[d]['text'][:3000]}"
             for i, d in enumerate(batch)
         )
         resp = llm.chat_json(

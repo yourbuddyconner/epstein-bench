@@ -121,3 +121,14 @@ def test_validate_rejects_tampered_questions_hash(config, llm):
 
     with pytest.raises(ValueError, match="sha256"):
         validate_bundle(config, llm, bundle)
+
+    # a self-consistent tamper (modified questions file + matching metadata
+    # hash) must still fail against the released manifest pin
+    questions_path = config.dataset_dir / DATASET_VERSION / "full" / "questions.jsonl"
+    questions_path.write_text(questions_path.read_text() + "\n")
+    import hashlib
+
+    meta["questions_sha256"] = hashlib.sha256(questions_path.read_bytes()).hexdigest()
+    (bundle / "metadata.json").write_text(json.dumps(meta))
+    with pytest.raises(ValueError, match="manifest"):
+        validate_bundle(config, llm, bundle)
