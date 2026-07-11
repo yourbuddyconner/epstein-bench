@@ -32,6 +32,12 @@ def _inline(text: str) -> str:
         return f"\x00{len(codes) - 1}\x00"
 
     text = re.sub(r"`([^`]+)`", stash, text)
+    # footnote reference: [^3] -> superscript link to the note
+    text = re.sub(
+        r"\[\^(\w+)\]",
+        r'<sup class="fnref" id="fnref-\1"><a href="#fn-\1">\1</a></sup>',
+        text,
+    )
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', text)
     text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
     text = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"<em>\1</em>", text)
@@ -56,6 +62,19 @@ def _render_table(rows: list[str]) -> str:
     return "".join(out)
 
 
+def _dedupe_fnref_ids(html_text: str) -> str:
+    """A note cited twice would emit duplicate id="fnref-N"; keep the first."""
+    seen: set[str] = set()
+
+    def strip_dupe(m: re.Match) -> str:
+        if m.group(1) in seen:
+            return '<sup class="fnref">'
+        seen.add(m.group(1))
+        return m.group(0)
+
+    return re.sub(r'<sup class="fnref" id="fnref-(\w+)">', strip_dupe, html_text)
+
+
 def md_to_html(md: str) -> str:
     lines = md.splitlines()
     out: list[str] = []
@@ -73,6 +92,24 @@ def md_to_html(md: str) -> str:
                 i += 1
             i += 1
             out.append("<pre><code>" + "\n".join(buf) + "</code></pre>")
+        elif re.match(r"^\[\^\w+\]:", line):
+            # footnote definitions: consecutive [^N]: lines (with indented
+            # continuations) render in place as the numbered notes list
+            items = []
+            while i < n and (m := re.match(r"^\[\^(\w+)\]:\s*(.*)", lines[i])):
+                num, buf = m.group(1), [m.group(2)]
+                i += 1
+                while i < n and lines[i].startswith("  ") and lines[i].strip():
+                    buf.append(lines[i].strip())
+                    i += 1
+                items.append(
+                    f'<li id="fn-{num}">{_inline(" ".join(buf))} '
+                    f'<a class="fnback" href="#fnref-{num}" '
+                    f'aria-label="back to reference {num}">&#8617;</a></li>'
+                )
+                while i < n and not lines[i].strip():
+                    i += 1
+            out.append('<ol class="footnotes">' + "".join(items) + "</ol>")
         elif line.lstrip().startswith("|") and i + 1 < n and set(lines[i + 1].strip()) <= set("|-: "):
             tbl = []
             while i < n and lines[i].lstrip().startswith("|"):
@@ -89,18 +126,28 @@ def md_to_html(md: str) -> str:
                 buf.append(_inline(lines[i].lstrip(">").strip()))
                 i += 1
             out.append("<blockquote>" + " ".join(buf) + "</blockquote>")
-        elif re.match(r"^\s*[-*]\s", line):
-            buf = []
-            while i < n and re.match(r"^\s*[-*]\s", lines[i]):
-                buf.append("<li>" + _inline(re.sub(r"^\s*[-*]\s", "", lines[i])) + "</li>")
+        elif re.match(r"^\s*[-*]\s", line) or re.match(r"^\s*\d+\.\s", line):
+            # list items may wrap: lines that follow an item and don't start a
+            # new block belong to the current item, not a new paragraph
+            marker = r"^\s*\d+\.\s" if re.match(r"^\s*\d+\.\s", line) else r"^\s*[-*]\s"
+            other_block = r"^(#{1,4}\s|>|\||```|\[\^\w+\]:)"
+            items = []
+            while i < n and re.match(marker, lines[i]):
+                buf = [re.sub(marker, "", lines[i]).strip()]
                 i += 1
-            out.append("<ul>" + "".join(buf) + "</ul>")
-        elif re.match(r"^\s*\d+\.\s", line):
-            buf = []
-            while i < n and re.match(r"^\s*\d+\.\s", lines[i]):
-                buf.append("<li>" + _inline(re.sub(r"^\s*\d+\.\s", "", lines[i])) + "</li>")
-                i += 1
-            out.append("<ol>" + "".join(buf) + "</ol>")
+                while (
+                    i < n
+                    and lines[i].strip()
+                    and not re.match(marker, lines[i])
+                    and not re.match(other_block, lines[i])
+                ):
+                    buf.append(lines[i].strip())
+                    i += 1
+                items.append("<li>" + _inline(" ".join(buf)) + "</li>")
+                while i < n and not lines[i].strip() and i + 1 < n and re.match(marker, lines[i + 1]):
+                    i += 1
+            tag = "ol" if marker == r"^\s*\d+\.\s" else "ul"
+            out.append(f"<{tag}>" + "".join(items) + f"</{tag}>")
         elif set(line.strip()) == {"-"}:
             out.append("<hr>")
             i += 1
@@ -109,78 +156,88 @@ def md_to_html(md: str) -> str:
             # that isn't a valid table must not spin here forever)
             buf = [_inline(line.strip())]
             i += 1
-            while i < n and lines[i].strip() and not re.match(r"^(#{1,4}\s|>|\s*[-*]\s|\s*\d+\.\s|\||```)", lines[i]):
+            while i < n and lines[i].strip() and not re.match(r"^(#{1,4}\s|>|\s*[-*]\s|\s*\d+\.\s|\||```|\[\^\w+\]:)", lines[i]):
                 buf.append(_inline(lines[i].strip()))
                 i += 1
             out.append("<p>" + " ".join(buf) + "</p>")
-    return "\n".join(out)
+    return _dedupe_fnref_ids("\n".join(out))
 
 
 # -- shared shell --------------------------------------------------------------
 
+FONTS = (
+    '<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+    '<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@'
+    "0,400;0,700;1,400&family=Libre+Franklin:wght@400;600;700;900&display=swap\" "
+    'rel="stylesheet">'
+)
+
 STYLE = """
-  :root { --bg:#faf9f6; --fg:#1a1a1a; --muted:#6b6b6b; --line:#e2ddd4;
-          --accent:#8b2c2c; --card:#ffffff; }
+  :root { --desk:#d6d3ca; --sheet:#fbfaf7; --ink:#1b1a17; --muted:#6e6a61;
+          --line:#c7c3b8; --sheetline:#e7e4db; --stamp:#a8231c;
+          --shadow:0 1px 2px rgba(27,26,23,.14), 0 6px 18px rgba(27,26,23,.08);
+          --mono:'Courier Prime',ui-monospace,Menlo,monospace;
+          --sans:'Libre Franklin',system-ui,'Helvetica Neue',Arial,sans-serif;
+          --serif:Georgia,'Times New Roman',serif; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#16150f; --fg:#ece9e2; --muted:#9a968c; --line:#33312a;
-            --accent:#d47b6a; --card:#1e1d16; } }
+    :root { --desk:#161511; --sheet:#221f19; --ink:#e8e4d9; --muted:#98927f;
+            --line:#33302a; --sheetline:#37332b; --stamp:#d05a4e;
+            --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 22px rgba(0,0,0,.35); } }
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg);
-         font:16px/1.65 Georgia,'Times New Roman',serif; }
+  body { margin:0; background:var(--desk); color:var(--ink);
+         font:16px/1.68 var(--serif); }
   nav { border-bottom:1px solid var(--line); position:sticky; top:0;
-        background:color-mix(in srgb, var(--bg) 92%, transparent);
-        backdrop-filter:blur(6px); z-index:10; }
-  nav .inner { max-width:60rem; margin:0 auto; padding:.9rem 1.25rem;
-        display:flex; gap:1.4rem; align-items:baseline; flex-wrap:wrap; }
-  nav .brand { font-weight:700; letter-spacing:-.01em; margin-right:.4rem; }
-  nav a { color:var(--fg); text-decoration:none; font-size:.95rem; }
-  nav a.active { color:var(--accent); }
-  nav a:hover { color:var(--accent); }
+        background:color-mix(in srgb, var(--desk) 90%, transparent);
+        backdrop-filter:blur(6px); z-index:10; font-family:var(--sans); }
+  nav .inner { max-width:60rem; margin:0 auto; padding:.85rem 1.25rem;
+        display:flex; gap:1.5rem; align-items:baseline; flex-wrap:wrap; }
+  nav .brand { font-weight:900; letter-spacing:.06em; text-transform:uppercase;
+        font-size:.9rem; margin-right:.4rem; }
+  nav a { color:var(--ink); text-decoration:none; font-size:.85rem; font-weight:600; }
+  nav a.active, nav a:hover { color:var(--stamp); }
   nav .spacer { flex:1; }
-  main { max-width:60rem; margin:0 auto; padding:2.5rem 1.25rem 5rem; }
-  h1 { font-size:2.2rem; margin:0 0 .3rem; letter-spacing:-.01em; }
-  h2 { font-size:1.35rem; margin:2.4rem 0 .7rem; }
-  h3 { font-size:1.08rem; margin:1.8rem 0 .5rem; }
-  h4 { font-size:.98rem; margin:1.4rem 0 .4rem; color:var(--muted); }
-  .sub { color:var(--muted); margin:0 0 2rem; font-size:1.05rem; }
-  a { color:var(--accent); }
+  main { max-width:60rem; margin:0 auto; padding:3rem 1.25rem 5rem; }
+  h1 { font-family:var(--sans); font-weight:900; font-size:clamp(2rem,5vw,2.8rem);
+       line-height:1.05; letter-spacing:-.02em; text-transform:uppercase;
+       margin:0 0 1.2rem; }
+  h2 { font-family:var(--sans); font-weight:800; font-size:1.1rem;
+       text-transform:uppercase; letter-spacing:.05em; margin:2.8rem 0 .7rem; }
+  h3 { font-family:var(--sans); font-weight:700; font-size:1rem;
+       margin:1.8rem 0 .5rem; }
+  h4 { font-family:var(--mono); font-weight:700; font-size:.78rem;
+       text-transform:uppercase; letter-spacing:.12em; color:var(--muted);
+       margin:1.4rem 0 .4rem; }
+  a { color:var(--stamp); }
   p, li { max-width:44rem; }
   ul, ol { padding-left:1.4rem; }
   li { margin:.25rem 0; }
   blockquote { margin:1rem 0; padding:.4rem 0 .4rem 1rem;
-        border-left:3px solid var(--line); color:var(--muted); }
+        border-left:3px solid var(--stamp); color:var(--muted); }
   hr { border:none; border-top:1px solid var(--line); margin:2rem 0; }
-  .tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:8px;
-        background:var(--card); margin:1rem 0; }
-  table { border-collapse:collapse; width:100%;
-        font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem; }
-  th, td { padding:.55rem .8rem; text-align:left; border-bottom:1px solid var(--line);
-        vertical-align:top; }
-  th { color:var(--muted); font-weight:600; white-space:nowrap; }
+  .tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:2px;
+        background:var(--sheet); box-shadow:var(--shadow); margin:1rem 0;
+        width:fit-content; max-width:100%; }
+  table { border-collapse:collapse; width:auto; font-size:.9rem; }
+  th, td { padding:.55rem 1.1rem .55rem .8rem; text-align:left;
+        border-bottom:1px solid var(--sheetline); vertical-align:top; }
+  td { max-width:34rem; }
+  th { color:var(--muted); font-weight:700; white-space:nowrap; font-size:.7rem;
+        text-transform:uppercase; letter-spacing:.08em; font-family:var(--sans); }
   tr:last-child td { border-bottom:none; }
-  code { font-size:.85em; background:var(--card); border:1px solid var(--line);
-        padding:.08em .35em; border-radius:4px; }
-  pre { background:var(--card); border:1px solid var(--line); border-radius:8px;
-        padding:.9rem 1rem; overflow-x:auto; }
+  code { font-family:var(--mono); font-size:.85em; background:var(--sheet);
+        border:1px solid var(--line); padding:.05em .35em; border-radius:2px; }
+  pre { background:var(--sheet); border:1px solid var(--line); border-radius:2px;
+        box-shadow:var(--shadow); padding:.9rem 1rem; overflow-x:auto; }
   pre code { background:none; border:none; padding:0; font-size:.82rem; }
   .note { color:var(--muted); font-size:.9rem; }
-  td.headline { font-weight:700; }
-  .empty { padding:2.5rem 1rem; text-align:center; color:var(--muted); font-style:italic; }
-  .lede { font-size:1.25rem; line-height:1.5; max-width:40rem; margin:0 0 1.5rem; }
-  .kicker { text-transform:uppercase; letter-spacing:.12em; font-size:.72rem;
-        font-weight:700; color:var(--accent); font-family:ui-monospace,Menlo,monospace; }
-  .files { display:grid; gap:.75rem; margin:1.2rem 0 1.8rem; }
-  .file { border:1px solid var(--line); border-left:3px solid var(--accent);
-        border-radius:6px; background:var(--card); padding:.85rem 1rem; }
-  .file .q { font-weight:600; }
-  .file .a { color:var(--muted); font-size:.92rem; margin-top:.3rem; }
-  .file .a b { color:var(--fg); font-style:italic; font-weight:400; }
-  .pull { font-size:1.5rem; line-height:1.4; margin:1.6rem 0; padding-left:1.1rem;
-        border-left:3px solid var(--accent); max-width:40rem; }
-  .pull cite { display:block; font-size:.85rem; color:var(--muted); font-style:normal;
-        margin-top:.5rem; font-family:ui-monospace,Menlo,monospace; }
-  .disclaimer { border:1px solid var(--line); border-radius:8px; background:var(--card);
-        padding:1rem 1.2rem; margin:2.5rem 0 0; color:var(--muted); font-size:.9rem; }
+  sup.fnref { font-family:var(--sans); font-weight:700; line-height:0; }
+  sup.fnref a { text-decoration:none; padding:0 .1em; }
+  ol.footnotes { border-top:3px solid var(--stamp); padding-top:1rem;
+        margin-top:1rem; font-size:.88rem; color:var(--muted); }
+  ol.footnotes li { margin:.5rem 0; overflow-wrap:break-word; }
+  ol.footnotes a.fnback { text-decoration:none; margin-left:.3em;
+        font-family:var(--sans); }
 """
 
 
@@ -193,6 +250,7 @@ def nav(active: str) -> str:
         '<nav><div class="inner">'
         '<span class="brand">Epstein Bench</span>'
         + link("index.html", "Leaderboard", "home")
+        + link("board.html", "The Board", "board")
         + link("methodology.html", "Methodology", "methodology")
         + link("dataset.html", "Dataset Card", "dataset")
         + '<span class="spacer"></span>'
@@ -244,6 +302,7 @@ def page(
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
 {_social_meta(share_title or title, description, path)}
+{FONTS}
 <style>{STYLE}</style>
 </head>
 <body>

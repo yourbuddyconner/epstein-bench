@@ -1,4 +1,4 @@
-# Epstein Bench: Methodology
+# Methodology
 
 ## Abstract
 
@@ -8,7 +8,7 @@ over clean, well-formed passages that bear little resemblance to production
 corpora. Epstein Bench evaluates RAG on a real, adversarial corpus: the full
 public Epstein Files, a set of court- and Congress-released records dominated by
 OCR noise, near-duplicate email threads, and legal boilerplate. The benchmark
-targets five competencies drawn from the RAG evaluation literature (noise
+targets five competencies drawn from the RAG evaluation literature[^1][^2] (noise
 robustness, faithful attribution, information integration, negative rejection,
 and false-premise rejection) and adds an attribution-gated correctness metric,
 claim-level citation precision, bootstrap confidence intervals, and a
@@ -31,9 +31,9 @@ roughly two orders of magnitude more tokens and dollars per task.
 ## 1. Motivation
 
 Recent RAG benchmarks have formalized the abilities a retrieval-augmented system
-must exhibit. RGB (arXiv:2309.01431) isolates noise robustness, negative
-rejection, information integration, and counterfactual robustness. RAGBench
-(arXiv:2407.11005) decomposes generation quality into relevance, utilization,
+must exhibit. RGB[^1] isolates noise robustness, negative
+rejection, information integration, and counterfactual robustness. RAGBench[^2]
+decomposes generation quality into relevance, utilization,
 adherence (faithfulness), and completeness. Both construct their evaluation data
 from curated or synthetically clean sources: contemporary news, well-formed
 domain passages.
@@ -63,7 +63,7 @@ Each competency maps to a concrete surface of the benchmark.
 
 ## 3. Corpus construction
 
-**Source.** The corpus derives from `aurora2424/Epstein-Files` on Hugging Face,
+**Source.** The corpus derives from `aurora2424/Epstein-Files` on Hugging Face,[^3]
 roughly 4.1M released records (about 340 GB including media). Only text-bearing
 rows are used, read directly from the parquet shards with column projection to
 avoid downloading media bytes. A full scan of all 634 shards yields
@@ -177,9 +177,9 @@ does not signal that it is false.
 
 ## 7. Retrieval ground truth by pooling
 
-Relevance labels follow the TREC pooling methodology. For each task, the union
-of the top-20 results from three diverse retrievers (BM25, dense embeddings, and
-reciprocal-rank-fusion hybrid), together with the source documents, forms a
+Relevance labels follow the TREC pooling methodology.[^4] For each task, the union
+of the top-20 results from three diverse retrievers (BM25,[^5] dense embeddings, and
+a reciprocal-rank-fusion hybrid[^6]), together with the source documents, forms a
 pool; a judge labels each pooled document supports / partial / irrelevant, and
 the gold set is the `supports` subset. A sampled re-judgment by the stronger
 model drops tasks whose labels are unstable.
@@ -202,7 +202,7 @@ document a judge ruled sufficient to answer from — not a fresh entailment chec
 of the answer against the cited document's text; a system that answers from
 memory and cites a pooled gold document passes the gate (the no-retrieval
 controls in §9 bound how much that is worth in practice). This is an
-attribution-gated metric in the spirit of RAGBench adherence: fluency without
+attribution-gated metric in the spirit of RAGBench adherence[^2]: fluency without
 grounding earns nothing. Per type:
 
 - `single_hop`, `timeline`: binary cited correctness.
@@ -218,14 +218,14 @@ Only the first three cited documents count toward the correctness gate, so a
 system cannot dump its full retrieval list into `citations` to fish for a chance
 gold hit. The overall score is the unweighted macro-average across types and is
 the leaderboard sort key. We report it with a **bootstrap 95% confidence
-interval** (resampled within each type, 1,000 draws): with type counts as skewed
+interval**[^7] (resampled within each type, 1,000 draws): with type counts as skewed
 as these (single_hop 823, dossier 7), a point estimate alone hides that two
 systems a hundredths apart are a statistical tie. We also report the
 task-weighted **micro** average alongside the macro, because the macro gives the
 small rejection types outsized weight and the two numbers diverge sharply for
 no-retrieval systems (§9).
 
-**Citation precision and recall (diagnostic).** In the spirit of ALCE (but
+**Citation precision and recall (diagnostic).** In the spirit of ALCE[^8] (but
 against the pooled gold set rather than passage-level entailment), we report,
 over answerable tasks, the fraction of a system's cited documents that are gold
 (precision) and the fraction of gold documents it cited (recall). Precision is
@@ -244,7 +244,7 @@ removed. For retrieval systems it isolates grounding failures (right answer,
 wrong or missing citation). For a no-context system it estimates parametric
 knowledge of the corpus, that is, training contamination.
 
-**Retrieval diagnostics.** recall@5, recall@20, and nDCG@10 of the `retrieved`
+**Retrieval diagnostics.** recall@5, recall@20, and nDCG@10[^9] of the `retrieved`
 list against the pooled gold set, on answerable tasks. Reported as secondary
 columns.
 
@@ -263,7 +263,7 @@ scoring judge to a strong model (`gpt-5.5-2026-04-23`) and judge prompt **v2**
 (v2 fences the judged answer as untrusted data, so a prediction that embeds
 instructions to the judge cannot steer its verdict, and tightens the
 aggregation gate to per-item attribution); the judge's correctness agreement
-approaches human on this task. The generation and gauntlet stages keep a
+approaches human on this task, consistent with the LLM-as-judge literature[^10]. The generation and gauntlet stages keep a
 cheaper model, since filtering tolerates one. Changing the judge or its prompt
 constitutes a new scoring version, and scores are not comparable across judge
 versions — all reference scores below were computed under v2.
@@ -417,11 +417,40 @@ leaderboard-eligible.
 - Correctness depends on a pinned LLM judge; a different judge is a different
   benchmark version.
 
-## References
+## Notes
 
-- Benchmarking Large Language Models in Retrieval-Augmented Generation.
-  arXiv:2309.01431.
-- RAGBench: Explainable Benchmark for Retrieval-Augmented Generation Systems.
-  arXiv:2407.11005.
-- The pooling methodology for incomplete relevance judgments follows standard
-  TREC practice.
+[^1]: Chen et al., "Benchmarking Large Language Models in Retrieval-Augmented
+  Generation" (RGB), 2023. [arXiv:2309.01431](https://arxiv.org/abs/2309.01431)
+
+[^2]: Friel, Belyi, and Sanyal, "RAGBench: Explainable Benchmark for
+  Retrieval-Augmented Generation Systems," 2024.
+  [arXiv:2407.11005](https://arxiv.org/abs/2407.11005)
+
+[^3]: The public release, mirrored on Hugging Face:
+  [huggingface.co/datasets/aurora2424/Epstein-Files](https://huggingface.co/datasets/aurora2424/Epstein-Files)
+
+[^4]: Voorhees, "The Philosophy of Information Retrieval Evaluation," CLEF 2001,
+  describes the TREC pooling methodology for incomplete relevance judgments.
+  [doi:10.1007/3-540-45691-0_34](https://link.springer.com/chapter/10.1007/3-540-45691-0_34)
+
+[^5]: Robertson and Zaragoza, "The Probabilistic Relevance Framework: BM25 and
+  Beyond," Foundations and Trends in Information Retrieval, 2009.
+  [doi:10.1561/1500000019](https://doi.org/10.1561/1500000019)
+
+[^6]: Cormack, Clarke, and Buettcher, "Reciprocal Rank Fusion Outperforms
+  Condorcet and Individual Rank Learning Methods," SIGIR 2009.
+  [doi:10.1145/1571941.1572114](https://doi.org/10.1145/1571941.1572114)
+
+[^7]: Efron and Tibshirani, *An Introduction to the Bootstrap*, Chapman and
+  Hall, 1993. [doi:10.1201/9780429246593](https://doi.org/10.1201/9780429246593)
+
+[^8]: Gao et al., "Enabling Large Language Models to Generate Text with
+  Citations" (ALCE), EMNLP 2023.
+  [arXiv:2305.14627](https://arxiv.org/abs/2305.14627)
+
+[^9]: Järvelin and Kekäläinen, "Cumulated Gain-Based Evaluation of IR
+  Techniques," ACM TOIS, 2002.
+  [doi:10.1145/582415.582418](https://doi.org/10.1145/582415.582418)
+
+[^10]: Zheng et al., "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena,"
+  NeurIPS 2023. [arXiv:2306.05685](https://arxiv.org/abs/2306.05685)

@@ -20,94 +20,90 @@
 <meta name="twitter:title" content="Epstein Bench: Dataset Card">
 <meta name="twitter:description" content="The Epstein Bench dataset card: task types, entity-complete corpus construction, verification, pinned models, and release statistics.">
 <meta name="twitter:image" content="https://epsteinbench.com/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Libre+Franklin:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#faf9f6; --fg:#1a1a1a; --muted:#6b6b6b; --line:#e2ddd4;
-          --accent:#8b2c2c; --card:#ffffff; }
+  :root { --desk:#d6d3ca; --sheet:#fbfaf7; --ink:#1b1a17; --muted:#6e6a61;
+          --line:#c7c3b8; --sheetline:#e7e4db; --stamp:#a8231c;
+          --shadow:0 1px 2px rgba(27,26,23,.14), 0 6px 18px rgba(27,26,23,.08);
+          --mono:'Courier Prime',ui-monospace,Menlo,monospace;
+          --sans:'Libre Franklin',system-ui,'Helvetica Neue',Arial,sans-serif;
+          --serif:Georgia,'Times New Roman',serif; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#16150f; --fg:#ece9e2; --muted:#9a968c; --line:#33312a;
-            --accent:#d47b6a; --card:#1e1d16; } }
+    :root { --desk:#161511; --sheet:#221f19; --ink:#e8e4d9; --muted:#98927f;
+            --line:#33302a; --sheetline:#37332b; --stamp:#d05a4e;
+            --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 22px rgba(0,0,0,.35); } }
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg);
-         font:16px/1.65 Georgia,'Times New Roman',serif; }
+  body { margin:0; background:var(--desk); color:var(--ink);
+         font:16px/1.68 var(--serif); }
   nav { border-bottom:1px solid var(--line); position:sticky; top:0;
-        background:color-mix(in srgb, var(--bg) 92%, transparent);
-        backdrop-filter:blur(6px); z-index:10; }
-  nav .inner { max-width:60rem; margin:0 auto; padding:.9rem 1.25rem;
-        display:flex; gap:1.4rem; align-items:baseline; flex-wrap:wrap; }
-  nav .brand { font-weight:700; letter-spacing:-.01em; margin-right:.4rem; }
-  nav a { color:var(--fg); text-decoration:none; font-size:.95rem; }
-  nav a.active { color:var(--accent); }
-  nav a:hover { color:var(--accent); }
+        background:color-mix(in srgb, var(--desk) 90%, transparent);
+        backdrop-filter:blur(6px); z-index:10; font-family:var(--sans); }
+  nav .inner { max-width:60rem; margin:0 auto; padding:.85rem 1.25rem;
+        display:flex; gap:1.5rem; align-items:baseline; flex-wrap:wrap; }
+  nav .brand { font-weight:900; letter-spacing:.06em; text-transform:uppercase;
+        font-size:.9rem; margin-right:.4rem; }
+  nav a { color:var(--ink); text-decoration:none; font-size:.85rem; font-weight:600; }
+  nav a.active, nav a:hover { color:var(--stamp); }
   nav .spacer { flex:1; }
-  main { max-width:60rem; margin:0 auto; padding:2.5rem 1.25rem 5rem; }
-  h1 { font-size:2.2rem; margin:0 0 .3rem; letter-spacing:-.01em; }
-  h2 { font-size:1.35rem; margin:2.4rem 0 .7rem; }
-  h3 { font-size:1.08rem; margin:1.8rem 0 .5rem; }
-  h4 { font-size:.98rem; margin:1.4rem 0 .4rem; color:var(--muted); }
-  .sub { color:var(--muted); margin:0 0 2rem; font-size:1.05rem; }
-  a { color:var(--accent); }
+  main { max-width:60rem; margin:0 auto; padding:3rem 1.25rem 5rem; }
+  h1 { font-family:var(--sans); font-weight:900; font-size:clamp(2rem,5vw,2.8rem);
+       line-height:1.05; letter-spacing:-.02em; text-transform:uppercase;
+       margin:0 0 1.2rem; }
+  h2 { font-family:var(--sans); font-weight:800; font-size:1.1rem;
+       text-transform:uppercase; letter-spacing:.05em; margin:2.8rem 0 .7rem; }
+  h3 { font-family:var(--sans); font-weight:700; font-size:1rem;
+       margin:1.8rem 0 .5rem; }
+  h4 { font-family:var(--mono); font-weight:700; font-size:.78rem;
+       text-transform:uppercase; letter-spacing:.12em; color:var(--muted);
+       margin:1.4rem 0 .4rem; }
+  a { color:var(--stamp); }
   p, li { max-width:44rem; }
   ul, ol { padding-left:1.4rem; }
   li { margin:.25rem 0; }
   blockquote { margin:1rem 0; padding:.4rem 0 .4rem 1rem;
-        border-left:3px solid var(--line); color:var(--muted); }
+        border-left:3px solid var(--stamp); color:var(--muted); }
   hr { border:none; border-top:1px solid var(--line); margin:2rem 0; }
-  .tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:8px;
-        background:var(--card); margin:1rem 0; }
-  table { border-collapse:collapse; width:100%;
-        font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem; }
-  th, td { padding:.55rem .8rem; text-align:left; border-bottom:1px solid var(--line);
-        vertical-align:top; }
-  th { color:var(--muted); font-weight:600; white-space:nowrap; }
+  .tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:2px;
+        background:var(--sheet); box-shadow:var(--shadow); margin:1rem 0;
+        width:fit-content; max-width:100%; }
+  table { border-collapse:collapse; width:auto; font-size:.9rem; }
+  th, td { padding:.55rem 1.1rem .55rem .8rem; text-align:left;
+        border-bottom:1px solid var(--sheetline); vertical-align:top; }
+  td { max-width:34rem; }
+  th { color:var(--muted); font-weight:700; white-space:nowrap; font-size:.7rem;
+        text-transform:uppercase; letter-spacing:.08em; font-family:var(--sans); }
   tr:last-child td { border-bottom:none; }
-  code { font-size:.85em; background:var(--card); border:1px solid var(--line);
-        padding:.08em .35em; border-radius:4px; }
-  pre { background:var(--card); border:1px solid var(--line); border-radius:8px;
-        padding:.9rem 1rem; overflow-x:auto; }
+  code { font-family:var(--mono); font-size:.85em; background:var(--sheet);
+        border:1px solid var(--line); padding:.05em .35em; border-radius:2px; }
+  pre { background:var(--sheet); border:1px solid var(--line); border-radius:2px;
+        box-shadow:var(--shadow); padding:.9rem 1rem; overflow-x:auto; }
   pre code { background:none; border:none; padding:0; font-size:.82rem; }
   .note { color:var(--muted); font-size:.9rem; }
-  td.headline { font-weight:700; }
-  .empty { padding:2.5rem 1rem; text-align:center; color:var(--muted); font-style:italic; }
-  .lede { font-size:1.25rem; line-height:1.5; max-width:40rem; margin:0 0 1.5rem; }
-  .kicker { text-transform:uppercase; letter-spacing:.12em; font-size:.72rem;
-        font-weight:700; color:var(--accent); font-family:ui-monospace,Menlo,monospace; }
-  .files { display:grid; gap:.75rem; margin:1.2rem 0 1.8rem; }
-  .file { border:1px solid var(--line); border-left:3px solid var(--accent);
-        border-radius:6px; background:var(--card); padding:.85rem 1rem; }
-  .file .q { font-weight:600; }
-  .file .a { color:var(--muted); font-size:.92rem; margin-top:.3rem; }
-  .file .a b { color:var(--fg); font-style:italic; font-weight:400; }
-  .pull { font-size:1.5rem; line-height:1.4; margin:1.6rem 0; padding-left:1.1rem;
-        border-left:3px solid var(--accent); max-width:40rem; }
-  .pull cite { display:block; font-size:.85rem; color:var(--muted); font-style:normal;
-        margin-top:.5rem; font-family:ui-monospace,Menlo,monospace; }
-  .disclaimer { border:1px solid var(--line); border-radius:8px; background:var(--card);
-        padding:1rem 1.2rem; margin:2.5rem 0 0; color:var(--muted); font-size:.9rem; }
+  sup.fnref { font-family:var(--sans); font-weight:700; line-height:0; }
+  sup.fnref a { text-decoration:none; padding:0 .1em; }
+  ol.footnotes { border-top:3px solid var(--stamp); padding-top:1rem;
+        margin-top:1rem; font-size:.88rem; color:var(--muted); }
+  ol.footnotes li { margin:.5rem 0; overflow-wrap:break-word; }
+  ol.footnotes a.fnback { text-decoration:none; margin-left:.3em;
+        font-family:var(--sans); }
 </style>
 </head>
 <body>
-<nav><div class="inner"><span class="brand">Epstein Bench</span><a href="index.html">Leaderboard</a><a href="methodology.html">Methodology</a><a href="dataset.html" class="active">Dataset Card</a><span class="spacer"></span><a href="https://github.com/yourbuddyconner/epstein-bench">GitHub</a></div></nav>
+<nav><div class="inner"><span class="brand">Epstein Bench</span><a href="index.html">Leaderboard</a><a href="board.html">The Board</a><a href="methodology.html">Methodology</a><a href="dataset.html" class="active">Dataset Card</a><span class="spacer"></span><a href="https://github.com/yourbuddyconner/epstein-bench">GitHub</a></div></nav>
 <main>
 <h1>Epstein Bench Dataset Card</h1>
 <p><strong>Current release:</strong> <code>v1.0</code> (2026-07-07). This card documents the methodology; the <em>Release statistics</em> section is updated whenever a version ships.</p>
 <h2>Source corpus</h2>
-<ul><li><code>aurora2424/Epstein-Files</code> (Hugging Face): the full public Epstein Files</li></ul>
-<p>release, ~4.1M rows (340GB including raw media bytes). Only the text columns are consumed, via parquet column projection; rows without <code>text_content</code> (images, audio, video) are skipped. Emails, depositions, flight logs, scanned letters. The media columns (<code>image</code>, <code>audio</code>, <code>video</code>, <code>online_url</code>) open the door to multimodal task families later; v1 is text-only.</p>
-<ul><li>Documents are quality-screened into <code>clean</code> / <code>degraded</code> / <code>garbage</code>.</li></ul>
-<p>Tasks are generated <strong>only from clean text</strong>; degraded documents remain in the retrieval corpus as natural distractors; garbage is excluded entirely.</p>
+<ul><li><code>aurora2424/Epstein-Files</code> (Hugging Face): the full public Epstein Files release, ~4.1M rows (340GB including raw media bytes). Only the text columns are consumed, via parquet column projection; rows without <code>text_content</code> (images, audio, video) are skipped. Emails, depositions, flight logs, scanned letters. The media columns (<code>image</code>, <code>audio</code>, <code>video</code>, <code>online_url</code>) open the door to multimodal task families later; v1 is text-only.</li><li>Documents are quality-screened into <code>clean</code> / <code>degraded</code> / <code>garbage</code>. Tasks are generated <strong>only from clean text</strong>; degraded documents remain in the retrieval corpus as natural distractors; garbage is excluded entirely.</li></ul>
 <h2>Task types</h2>
 <div class="tablewrap"><table><thead><tr><th>type</th><th>gold</th><th>scored as</th></tr></thead><tbody><tr><td><code>single_hop</code></td><td>short answer + supporting docs</td><td>cited answer correctness (binary)</td></tr><tr><td><code>aggregation</code></td><td>item list, per-item supporting docs</td><td>item-level P/R/F1, citation-gated</td></tr><tr><td><code>timeline</code></td><td>short answer + supporting docs (≥2 required)</td><td>cited answer correctness (binary)</td></tr><tr><td><code>dossier</code></td><td>dated event list for a notable person, per-item docs</td><td>item-level P/R/F1, citation-gated</td></tr><tr><td><code>unanswerable</code></td><td>none (refusal expected)</td><td>refusal accuracy</td></tr><tr><td><code>false_premise</code></td><td>none (rejection expected); <code>false_element</code> records the fabrication</td><td>rejection accuracy + premise-identification diagnostic</td></tr></tbody></table></div>
 <p>Corpus selection is <strong>entity-complete</strong>: a wide scan indexes entity mentions across the source dataset, an LLM notability check picks target people (public figures only; entities appearing in more than <code>max_entity_docs</code> documents are excluded as impractically pervasive), and the corpus is all documents mentioning any target plus a seeded random backbone. Single-hop facts are <strong>salience-filtered</strong> (newsworthiness ≥3/5: notable people, money flows, meetings/travel, legal exposure, never speculation; facts must be document-stated).</p>
 <p>Generation is fact-first: atomic facts are extracted from clean documents and questions are written against the fact, in investigator phrasing. Aggregation questions are <strong>bounded</strong>, scoped to an entity whose candidate documents are enumerable via an alias index, because unbounded &quot;list all X&quot; gold sets cannot be verified at corpus scale.</p>
 <h2>Verification</h2>
 <p>Every shipped task passed all of:</p>
-<ol><li><strong>Standalone</strong>: interpretable without the source document (concrete</li></ol>
-<p>entities, no deixis, no boilerplate targets).</p>
-<ol><li><strong>Answerability</strong>: an independent prompt, shown the gold documents,</li></ol>
-<p>recovers the reference answer (semantic match + token-F1 floor; ≥80% item recovery for aggregation).</p>
-<ol><li><strong>Necessity</strong>: closed-book and random-distractor attempts fail; for</li></ol>
-<p>multi-document types, no single gold document suffices.</p>
-<ol><li><strong>Adjudication</strong>: a stronger model passes/fails with a category.</li></ol>
+<ol><li><strong>Standalone</strong>: interpretable without the source document (concrete entities, no deixis, no boilerplate targets).</li><li><strong>Answerability</strong>: an independent prompt, shown the gold documents, recovers the reference answer (semantic match + token-F1 floor; ≥80% item recovery for aggregation).</li><li><strong>Necessity</strong>: closed-book and random-distractor attempts fail; for multi-document types, no single gold document suffices.</li><li><strong>Adjudication</strong>: a stronger model passes/fails with a category.</li></ol>
 <p>Unanswerable tasks run stages 1 and 4, plus a generation-time absence check (top BM25 hits confirmed non-answering). All rejections are logged with the failing stage (<code>build/rejected.jsonl</code>).</p>
 <p><strong>False-premise tasks</strong> are anchored on entity-complete targets (so &quot;no document supports this&quot; is bounded) and fabricate an interaction between the target and a prominent outside figure, rotated across a diverse pool. They skip stages 2–3 and run a generation-time absence check plus a two-stage adjudication: a neutral support check that drops any premise the on-topic documents actually support (catching premises that merely perturb a detail of a real meeting), and a quality check for plausibility and that the wording does not reveal the premise is false.</p>
 <h2>Retrieval ground truth (pooled)</h2>
@@ -118,39 +114,9 @@
 <p>The scoring judge is a strong model because correctness judging approaches human agreement at that tier; generation and gauntlet filtering tolerate the cheaper model. Changing the scoring judge or its prompt is a new benchmark version; scores across versions are not comparable.</p>
 <h2>Release statistics</h2>
 <h3>v1.0 (2026-07-07)</h3>
-<ul><li><strong>Corpus:</strong> entity-complete selection over the full source dataset, a wide</li></ul>
-<p>scan of all 634 parquet shards (~1.38M text-bearing docs) indexed entity mentions; 40 notable target people were chosen (LLM notability check) and the retrieval corpus is every document mentioning a target plus a 30,000-doc random backbone, for a corpus of 83,810 documents and 159,564 chunks.</p>
-<ul><li><strong>Tasks:</strong> 1,038 (<code>full</code>): 823 single_hop / 111 aggregation / 27 timeline /</li></ul>
-<p>7 dossier / 32 unanswerable / 38 false_premise. <code>dev</code>: 50. Multi-document types (timeline, dossier) survive verification at low rates, so they remain a small share.</p>
-<ul><li><strong>Gauntlet:</strong> 1,098 of 4,034 candidates passed (27%) in the original run.</li></ul>
-<p>Rejections: 1,528 standalone, 1,080 answerability, 786 adjudication, 229 necessity. The 38 <code>false_premise</code> tasks were added from 39 candidates that passed the two-stage adjudication (1 dropped as non-standalone; earlier candidates dropped when the corpus supported the premise or the premise merely perturbed a real meeting).</p>
-<ul><li><strong>Pooling:</strong> 1,018 of 1,098 kept; 74 dropped as unstable under strong-model</li></ul>
-<p>re-judging, 6 as source-not-supportive. One non-person dossier target was retracted, leaving 1,000 tasks, plus 38 <code>false_premise</code> (no pooling; empty gold set), for 1,038 released.</p>
-<ul><li><strong>Reference baselines</strong> (cited correctness, 95% CI, micro; scored by</li></ul>
-<p><code>gpt-5.5-2026-04-23</code>, judge prompt v2): agentic-sonnet-5 0.538 [0.50, 0.57] / 0.532, hybrid 0.490 [0.45, 0.53] / 0.488, agentic-opus-4-8 0.488 [0.46, 0.52] / 0.460, bm25 0.483 [0.45, 0.52] / 0.475, dense 0.434 [0.40, 0.47] / 0.393, closed_book 0.328 [0.32, 0.33] / 0.066, parametric 0.304 [0.28, 0.32] / 0.062. Among one-shot retrievers hybrid and bm25 tie; dense trails. closed_book and parametric score 0.000 on every retrieval-requiring type — their macro is entirely rejection accuracy, which the micro (0.066 / 0.062) exposes. The Sonnet-5 agent tops the board; the pricier Opus-4.8 agent merely ties one-shot hybrid. <strong>Cost/tokens</strong> (agents only): Sonnet $0.053/task (~$55/split, ~14.8k tok), Opus $0.114/task (~$119, ~19.6k tok). <strong>False-premise:</strong> every system refuses at 0.95–1.00 (headline saturates), but the premise-identification diagnostic separates the agents (1.0 — both name the fabrication) from every non-agent baseline (0.0). <strong>Parametric knowledge probe:</strong> single_hop uncited 0.045 (vs closed_book 0.017): the generation-time model answers ~4–5% of single-hop facts from training weights alone, a small but measurable contamination signal.</p>
-<ul><li><strong>Spot-check:</strong> all 7 dossiers reviewed by hand (real public figures such as</li></ul>
-<p>Steven Sinofsky, Reid Weingarten, Martin Weinberg, and Lesley Groff, with correctly dated, document-grounded events) plus a read of ~20 single-hop/aggregation triples against source text: no clear errors; questions are standalone and name concrete entities. Automated grounding (gold answer present in a gold document, verbatim or ≥60% token overlap): single_hop 99.0% (815/823), timeline 96.3% (26/27); the residual are date-format matching artifacts, not answer errors. Zero answerable tasks lack a gold document and zero gold references dangle. Independent third-party human review remains a roadmap item.</p>
+<ul><li><strong>Corpus:</strong> entity-complete selection over the full source dataset, a wide scan of all 634 parquet shards (~1.38M text-bearing docs) indexed entity mentions; 40 notable target people were chosen (LLM notability check) and the retrieval corpus is every document mentioning a target plus a 30,000-doc random backbone, for a corpus of 83,810 documents and 159,564 chunks.</li><li><strong>Tasks:</strong> 1,038 (<code>full</code>): 823 single_hop / 111 aggregation / 27 timeline / 7 dossier / 32 unanswerable / 38 false_premise. <code>dev</code>: 50. Multi-document types (timeline, dossier) survive verification at low rates, so they remain a small share.</li><li><strong>Gauntlet:</strong> 1,098 of 4,034 candidates passed (27%) in the original run. Rejections: 1,528 standalone, 1,080 answerability, 786 adjudication, 229 necessity. The 38 <code>false_premise</code> tasks were added from 39 candidates that passed the two-stage adjudication (1 dropped as non-standalone; earlier candidates dropped when the corpus supported the premise or the premise merely perturbed a real meeting).</li><li><strong>Pooling:</strong> 1,018 of 1,098 kept; 74 dropped as unstable under strong-model re-judging, 6 as source-not-supportive. One non-person dossier target was retracted, leaving 1,000 tasks, plus 38 <code>false_premise</code> (no pooling; empty gold set), for 1,038 released.</li><li><strong>Baselines:</strong> reference-system scores are not duplicated here; the <a href="https://epsteinbench.com">leaderboard</a> is canonical and the methodology analyzes the findings.</li><li><strong>Grounding check:</strong> an automated pass verifies that each gold answer appears in a gold document (verbatim or ≥60% token overlap): single_hop 99.0% (815/823), timeline 96.3% (26/27), with the residual traced to date-format matching artifacts. No answerable task lacks a gold document and no gold reference dangles. All 7 dossiers and ~20 sampled task/answer/ document triples were additionally reviewed by hand; independent third-party review remains a roadmap item.</li></ul>
 <h2>Known limitations</h2>
-<ul><li>Questions are synthetic (LLM-written), human-spot-checked rather than fully</li></ul>
-<p>human-authored.</p>
-<ul><li>One cheap model (<code>gpt-4o-mini</code>) both drafts tasks and runs the</li></ul>
-<p>answerability/necessity gauntlet stages, so the shipped tasks skew toward questions that model family finds answerable, and a consistent OCR misreading by that model can survive verification. The strong model enters only at adjudication and pool stability.</p>
-<ul><li>Pooled (non-exhaustive) relevance judgments; see above. Because the headline</li></ul>
-<p>metric is citation-gated against the pool, this limits <em>correctness</em>, not just retrieval recall: a right answer citing a supporting document outside the pool scores zero.</p>
-<ul><li>Pool and gauntlet judges read a fixed-length excerpt of each document (2,500</li></ul>
-<p>chars in the v1.0 build; 3,000 in the current pipeline), while systems see full documents; a supporting passage past the cutoff can keep a relevant document out of the gold set.</p>
-<ul><li>The absence check for <code>unanswerable</code>/<code>false_premise</code> verifies against the top</li></ul>
-<p>BM25 hits for the question (strong-model adjudication re-reads the same documents), not the full pooled or entity-complete document set; a premise supported only by a document those probes miss could slip through.</p>
-<ul><li>The v1.0 split is not regenerable end-to-end from the pipeline alone: one</li></ul>
-<p>non-person dossier target was retracted by hand after pooling and the 38 <code>false_premise</code> tasks were appended, and the generator models are not bit-deterministic without the released LLM cache. The shipped files are pinned by <code>dataset/v1.0/manifest.json</code>.</p>
-<ul><li>OCR noise in degraded documents is uncorrected by design: it is part of</li></ul>
-<p>the haystack, never part of the answer key.</p>
-<ul><li>The alias index driving aggregation/timeline bounding is heuristic;</li></ul>
-<p>entities with unusual name forms may be under-covered.</p>
-<ul><li><code>false_premise</code> saturates on the headline (all systems refuse), so it does not</li></ul>
-<p>drive the sort key; its informative signal is the premise-identification diagnostic, which separates the agentic systems (1.0) from the one-shot and no-context baselines (0.0).</p>
-<ul><li>This is a self-run benchmark with a public answer key (<code>tasks.jsonl</code> ships</li></ul>
-<p>beside <code>questions.jsonl</code>): CI proves committed scores follow from the predictions, but cannot prove the predictions never read the key.</p>
+<ul><li>Questions are synthetic (LLM-written), human-spot-checked rather than fully human-authored.</li><li>One cheap model (<code>gpt-4o-mini</code>) both drafts tasks and runs the answerability/necessity gauntlet stages, so the shipped tasks skew toward questions that model family finds answerable, and a consistent OCR misreading by that model can survive verification. The strong model enters only at adjudication and pool stability.</li><li>Pooled (non-exhaustive) relevance judgments; see above. Because the headline metric is citation-gated against the pool, this limits <em>correctness</em>, not just retrieval recall: a right answer citing a supporting document outside the pool scores zero.</li><li>Pool and gauntlet judges read a fixed-length excerpt of each document (2,500 chars in the v1.0 build; 3,000 in the current pipeline), while systems see full documents; a supporting passage past the cutoff can keep a relevant document out of the gold set.</li><li>The absence check for <code>unanswerable</code>/<code>false_premise</code> verifies against the top BM25 hits for the question (strong-model adjudication re-reads the same documents), not the full pooled or entity-complete document set; a premise supported only by a document those probes miss could slip through.</li><li>The v1.0 split is not regenerable end-to-end from the pipeline alone: one non-person dossier target was retracted by hand after pooling and the 38 <code>false_premise</code> tasks were appended, and the generator models are not bit-deterministic without the released LLM cache. The shipped files are pinned by <code>dataset/v1.0/manifest.json</code>.</li><li>OCR noise in degraded documents is uncorrected by design: it is part of the haystack, never part of the answer key.</li><li>The alias index driving aggregation/timeline bounding is heuristic; entities with unusual name forms may be under-covered.</li><li><code>false_premise</code> saturates on the headline (all systems refuse), so it does not drive the sort key; its informative signal is the premise-identification diagnostic, which separates the agentic systems (1.0) from the one-shot and no-context baselines (0.0).</li><li>This is a self-run benchmark with a public answer key (<code>tasks.jsonl</code> ships beside <code>questions.jsonl</code>): CI proves committed scores follow from the predictions, but cannot prove the predictions never read the key.</li></ul>
 <h2>Ethics</h2>
 <p>All source documents are public records. Tasks are generated exclusively from already-public text; no new personal information is synthesized or inferred. Retracted or erroneous tasks are removed in point releases (<code>v1.x</code>), never silently edited.</p>
 </main>

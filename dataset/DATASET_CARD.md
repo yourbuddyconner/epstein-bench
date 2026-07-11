@@ -117,34 +117,16 @@ scores across versions are not comparable.
   re-judging, 6 as source-not-supportive. One non-person dossier target was
   retracted, leaving 1,000 tasks, plus 38 `false_premise` (no pooling; empty
   gold set), for 1,038 released.
-- **Reference baselines** (cited correctness, 95% CI, micro; scored by
-  `gpt-5.5-2026-04-23`, judge prompt v2): agentic-sonnet-5 0.538 [0.50, 0.57] /
-  0.532, hybrid 0.490 [0.45, 0.53] / 0.488, agentic-opus-4-8 0.488
-  [0.46, 0.52] / 0.460, bm25 0.483 [0.45, 0.52] / 0.475, dense 0.434
-  [0.40, 0.47] / 0.393, closed_book 0.328 [0.32, 0.33] / 0.066, parametric
-  0.304 [0.28, 0.32] / 0.062.
-  Among one-shot retrievers hybrid and bm25 tie; dense trails. closed_book and
-  parametric score 0.000 on every retrieval-requiring type — their macro is
-  entirely rejection accuracy, which the micro (0.066 / 0.062) exposes. The
-  Sonnet-5 agent tops the board; the pricier Opus-4.8 agent merely ties one-shot
-  hybrid. **Cost/tokens** (agents only): Sonnet $0.053/task (~$55/split, ~14.8k
-  tok), Opus $0.114/task (~$119, ~19.6k tok). **False-premise:** every system
-  refuses at 0.95–1.00 (headline saturates), but the premise-identification
-  diagnostic separates the agents (1.0 — both name the fabrication) from every
-  non-agent baseline (0.0). **Parametric knowledge probe:** single_hop uncited
-  0.045 (vs closed_book 0.017): the generation-time model answers ~4–5% of
-  single-hop facts from training weights alone, a small but measurable
-  contamination signal.
-- **Spot-check:** all 7 dossiers reviewed by hand (real public figures such as
-  Steven Sinofsky, Reid Weingarten, Martin Weinberg, and Lesley Groff, with
-  correctly dated, document-grounded events) plus a read of ~20
-  single-hop/aggregation triples against source text: no clear errors;
-  questions are standalone and name concrete entities. Automated grounding
-  (gold answer present in a gold document, verbatim or ≥60% token overlap):
-  single_hop 99.0% (815/823), timeline 96.3% (26/27); the residual are
-  date-format matching artifacts, not answer errors. Zero answerable tasks
-  lack a gold document and zero gold references dangle. Independent
-  third-party human review remains a roadmap item.
+- **Baselines:** reference-system scores are not duplicated here; the
+  [leaderboard](https://epsteinbench.com) is canonical and the methodology
+  analyzes the findings.
+- **Grounding check:** an automated pass verifies that each gold answer
+  appears in a gold document (verbatim or ≥60% token overlap): single_hop
+  99.0% (815/823), timeline 96.3% (26/27), with the residual traced to
+  date-format matching artifacts. No answerable task lacks a gold document
+  and no gold reference dangles. All 7 dossiers and ~20 sampled task/answer/
+  document triples were additionally reviewed by hand; independent
+  third-party review remains a roadmap item.
 
 ## Known limitations
 
