@@ -256,144 +256,10 @@ def page(
 """
 
 
-# -- leaderboard page (has live JS) --------------------------------------------
-
-LEADERBOARD_BODY = """
-  <h1>Epstein Bench</h1>
-  <p class="lede">Millions of scanned, garbled, redaction-strewn documents. Can
-  your AI find the one sentence that answers the question?</p>
-
-  <p>The public Epstein Files run to millions of released records. Every other
-  retrieval benchmark quizzes AI on clean Wikipedia; the real world looks nothing
-  like this: OCR wreckage, near-duplicate emails, endless legalese, and the one
-  fact you need buried somewhere in the pile. <strong>Epstein Bench is that
-  world.</strong> It distills the release into a benchmark: a retrieval corpus of
-  about 84,000 text documents drawn from the Files, and 1,038 questions a system
-  can only answer by finding the right document and citing it &mdash; including
-  trap questions that presuppose a meeting that never happened, where the right
-  move is to reject the premise.</p>
-
-  <p class="kicker">From the files</p>
-  <p>Real, verified questions in the benchmark. Each answer is a single sentence
-  hiding somewhere in the corpus:</p>
-  <div class="files">
-    <div class="file">
-      <div class="q">Who did Jeffrey Epstein ask to find him "the best codebreaker, NSA type"?</div>
-      <div class="a">Buried in an email to a veteran TV journalist. The system has to surface the exact thread. <b>Epstein: "Can you find me the best codebreaker nsa type."</b></div>
-    </div>
-    <div class="file">
-      <div class="q">What did Steve Bannon email Epstein about "real power"?</div>
-      <div class="a"><b>"we r on the cusp of real power."</b> One line in a chain of emails between Epstein and the former White House strategist.</div>
-    </div>
-    <div class="file">
-      <div class="q">Who was on the guest list for Epstein's dinner on September 20, 2013?</div>
-      <div class="a">A calendar entry: <b>"DINNER W/ BILL GATES, TERJE, JAGBLAND, OTHERS."</b> The corpus is full of these. The trick is retrieving the right one.</div>
-    </div>
-    <div class="file">
-      <div class="q">Which account was tied to Ghislaine Maxwell at J.P. Morgan?</div>
-      <div class="a">The answer is a line item on a scanned bank statement, the kind of needle dense-vector search routinely misses on noisy OCR.</div>
-    </div>
-  </div>
-
-  <p class="pull">The hardest questions ask a system to reconstruct the entire
-  documented timeline of one person's contacts with Epstein, scattered across
-  dozens of files. Our best baseline scores near zero.
-  <cite>the "dossier" task family</cite></p>
-
-  <h2>Cited answer correctness</h2>
-  <p>A prediction is counted correct only when it satisfies two conditions
-  jointly: a pinned LLM judge rules the answer equivalent to the reference, and
-  at least one cited document belongs to the pooled gold set. Correctness thus
-  requires grounding rather than fluency. An unsupported answer, however
-  plausible, receives no credit.</p>
-  <p>A no-retrieval control fixes the floor. Given the question alone, with no
-  access to the corpus, it scores <strong>0.000</strong> on every
-  retrieval-dependent task type, confirming that the questions cannot be answered
-  from surface priors. The same control serves as a training-contamination probe:
-  its uncited score estimates how much of the corpus a model reproduces from
-  parameters alone, a quantity expected to rise as successive models are trained
-  on this public release.</p>
-  <p class="note">Full details in the <a href="methodology.html">methodology</a>
-  and <a href="dataset.html">dataset card</a>. Every task survived a four-stage
-  verification gauntlet before release.</p>
-
-  <h2>Leaderboard: <code>full</code> split, dataset v1.0</h2>
-  <div class="tablewrap">
-    <table id="board">
-      <thead><tr>
-        <th>system</th><th>overall</th><th>95% CI</th><th>micro</th><th>uncited</th>
-        <th>single_hop</th><th>aggregation</th><th>timeline</th><th>dossier</th>
-        <th>unanswerable</th><th>false_premise</th><th>cit.&nbsp;prec</th>
-        <th>recall@5</th><th>recall@20</th><th>$/task</th><th>tok/task</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-    <div class="empty" id="empty" hidden>No verified submissions yet.</div>
-  </div>
-  <p class="note">Scores are recomputed by CI from raw predictions; self-reported
-  numbers are never used. <strong>overall</strong> is the macro-average with a
-  bootstrap <strong>95% CI</strong>; <strong>micro</strong> is the task-weighted
-  average (the two diverge for no-retrieval systems, which score only on the
-  rejection types). <strong>uncited</strong> = correctness ignoring the citation
-  gate (for the <code>parametric</code> baseline, a probe of how much of the
-  corpus a model already knows from training). <strong>false_premise</strong>
-  rewards rejecting a fabricated meeting; every baseline refuses, but none yet
-  names the specific falsehood. Submit via PR. See the
-  <a href="%GITHUB%#submitting-to-the-leaderboard">README</a>.</p>
-
-  <div class="disclaimer">These are public records released by U.S. courts and
-  Congress. Appearing in the files means appearing in someone's email, calendar,
-  or financial records. It is not an accusation of wrongdoing. Epstein Bench
-  measures whether AI can retrieve and cite what the documents say; it takes no
-  position on anyone's conduct.</div>
-
-<script>
-  const fmt = x => (typeof x === "number" ? x.toFixed(3) : "n/a");
-  const ci = a => (Array.isArray(a) && a.length === 2
-    ? "[" + a[0].toFixed(2) + ", " + a[1].toFixed(2) + "]" : "n/a");
-  const usd = x => (typeof x === "number" ? "$" + x.toFixed(4) : "n/a");
-  const tok = x => (typeof x === "number" ? Math.round(x).toLocaleString() : "n/a");
-  fetch("leaderboard.json").then(r => r.json()).then(data => {
-    const rows = data.entries || [];
-    if (!rows.length) { document.getElementById("empty").hidden = false; return; }
-    const tb = document.querySelector("#board tbody");
-    for (const e of rows) {
-      const t = e.per_type || {}, r = e.retrieval || {};
-      const cells = [e.system_name || "?", fmt(e.overall_cited_correctness),
-        ci(e.overall_cited_correctness_ci95), fmt(e.overall_cited_correctness_micro),
-        fmt(e.overall_uncited_correctness), fmt(t.single_hop), fmt(t.aggregation),
-        fmt(t.timeline), fmt(t.dossier), fmt(t.unanswerable), fmt(t.false_premise),
-        fmt(e.citation_precision), fmt(r["recall@5"]), fmt(r["recall@20"]),
-        usd(e.cost_usd_per_task), tok(e.tokens_per_task)];
-      const tr = document.createElement("tr");
-      cells.forEach((v, i) => { const td = document.createElement("td");
-        if (i === 1) td.className = "headline"; td.textContent = v; tr.appendChild(td); });
-      tb.appendChild(tr);
-    }
-  }).catch(() => { document.getElementById("empty").hidden = false; });
-</script>
-""".replace("%GITHUB%", GITHUB)
-
-
-HERO_DESC = (
-    "Millions of scanned, garbled documents. Can your AI find the one sentence "
-    "that answers the question? A verified RAG benchmark over the public Epstein "
-    "Files, with a live leaderboard."
-)
-
-
 def main() -> None:
-    (DOCS / "index.html").write_text(
-        page(
-            "Epstein Bench: Leaderboard",
-            "home",
-            LEADERBOARD_BODY,
-            description=HERO_DESC,
-            path="",
-            share_title="Epstein Bench",
-        )
-    )
-
+    # docs/index.html is authored by hand; scripts/build_leaderboard.py bakes
+    # the leaderboard tables and hero stat into it in place. This script only
+    # regenerates the markdown-backed pages.
     methodology = (DOCS / "methodology.md").read_text()
     (DOCS / "methodology.html").write_text(
         page(
@@ -423,7 +289,7 @@ def main() -> None:
             path="dataset.html",
         )
     )
-    print("wrote docs/index.html, docs/methodology.html, docs/dataset.html")
+    print("wrote docs/methodology.html, docs/dataset.html")
 
 
 if __name__ == "__main__":
