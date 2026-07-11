@@ -5,21 +5,28 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Libre+Franklin:wght@700;900&display=swap" rel="stylesheet">
 <style>
   * { margin:0; box-sizing:border-box; }
-  body { width:1200px; height:630px; background:#16150f; color:#ece9e2;
-         font-family:Georgia,'Times New Roman',serif; overflow:hidden;
-         padding:72px 80px; display:flex; flex-direction:column; }
-  .rule { width:64px; height:6px; background:#d47b6a; margin-bottom:22px; }
-  .kicker { font-family:ui-monospace,Menlo,monospace; font-weight:700;
-         font-size:26px; letter-spacing:.22em; color:#d47b6a; }
+  body { width:1200px; height:630px; background:#d6d3ca; color:#1b1a17;
+         overflow:hidden; padding:64px 76px 56px; display:flex;
+         flex-direction:column;
+         font-family:'Libre Franklin',system-ui,sans-serif; }
+  .rule { width:64px; height:6px; background:#a8231c; margin-bottom:20px; }
+  .kicker { font-family:'Courier Prime',monospace; font-weight:700;
+         font-size:26px; letter-spacing:.22em; color:#a8231c; }
   .headline { flex:1; display:flex; flex-direction:column; justify-content:center; }
-  .headline p { font-size:88px; line-height:1.12; letter-spacing:-.015em;
-         font-weight:700; max-width:1000px; }
-  .headline .pct { color:#d47b6a; }
-  .foot { font-size:28px; color:#9a968c; }
-  .foot b { color:#ece9e2; font-weight:400; }
-  .foot .dot { color:#d47b6a; padding:0 .35em; }
+  .headline p { font-weight:900; font-size:92px; line-height:1.06;
+         letter-spacing:-.02em; text-transform:uppercase; max-width:1050px; }
+  .headline .pct { color:#a8231c; }
+  .redact { display:inline-block; background:#141310; color:#141310;
+         padding:0 .18em; border-radius:2px; }
+  .foot { font-family:'Courier Prime',monospace; font-size:23px; color:#6e6a61;
+         white-space:nowrap; }
+  .foot b { color:#1b1a17; font-weight:700; }
+  .foot .dot { color:#a8231c; padding:0 .35em; }
 </style>
 </head>
 <body>
@@ -28,7 +35,8 @@
     <div class="kicker">EPSTEIN BENCH</div>
   </div>
   <div class="headline">
-    <p>The best AI gets <span class="pct">54%</span> on the Epstein&nbsp;Files.</p>
+    <p>The best AI gets <span class="pct">54%</span> on the
+    <span class="redact">Epstein</span> Files.</p>
   </div>
   <div class="foot">1,038 verified questions<span class="dot">&middot;</span>an
   84,000-document haystack<span class="dot">&middot;</span><b>epsteinbench.com</b></div>

@@ -20,87 +20,141 @@
 <meta name="twitter:title" content="The best AI gets 54% on the Epstein Files">
 <meta name="twitter:description" content="Steve Bannon emailed Jeffrey Epstein: &quot;we r on the cusp of real power.&quot; Can your AI find that email in an 84,000-document haystack? A verified benchmark with a live leaderboard.">
 <meta name="twitter:image" content="https://epsteinbench.com/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Libre+Franklin:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#faf9f6; --fg:#1a1a1a; --muted:#6b6b6b; --line:#e2ddd4;
-          --accent:#8b2c2c; --card:#ffffff; }
+  :root {
+    --desk:#d6d3ca;       /* the table the files sit on */
+    --sheet:#fbfaf7;      /* paper */
+    --ink:#1b1a17;
+    --muted:#6e6a61;
+    --line:#c7c3b8;
+    --sheetline:#e7e4db;
+    --stamp:#a8231c;      /* rubber-stamp red, used only where a stamp would be */
+    --redact:#141310;
+    --shadow:0 1px 2px rgba(27,26,23,.14), 0 6px 18px rgba(27,26,23,.08);
+    --mono:'Courier Prime',ui-monospace,Menlo,monospace;
+    --sans:'Libre Franklin',system-ui,'Helvetica Neue',Arial,sans-serif;
+    --serif:Georgia,'Times New Roman',serif;
+  }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#16150f; --fg:#ece9e2; --muted:#9a968c; --line:#33312a;
-            --accent:#d47b6a; --card:#1e1d16; } }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg);
-         font:16px/1.65 Georgia,'Times New Roman',serif; }
+    :root { --desk:#161511; --sheet:#221f19; --ink:#e8e4d9; --muted:#98927f;
+            --line:#33302a; --sheetline:#37332b; --stamp:#d05a4e; --redact:#000;
+            --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 22px rgba(0,0,0,.35); } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--desk); color:var(--ink);
+         font:16px/1.68 var(--serif); }
   nav { border-bottom:1px solid var(--line); position:sticky; top:0;
-        background:color-mix(in srgb, var(--bg) 92%, transparent);
-        backdrop-filter:blur(6px); z-index:10; }
-  nav .inner { max-width:60rem; margin:0 auto; padding:.9rem 1.25rem;
-        display:flex; gap:1.4rem; align-items:baseline; flex-wrap:wrap; }
-  nav .brand { font-weight:700; letter-spacing:-.01em; margin-right:.4rem; }
-  nav a { color:var(--fg); text-decoration:none; font-size:.95rem; }
-  nav a.active { color:var(--accent); }
-  nav a:hover { color:var(--accent); }
+        background:color-mix(in srgb, var(--desk) 90%, transparent);
+        backdrop-filter:blur(6px); z-index:10; font-family:var(--sans); }
+  nav .inner { max-width:62rem; margin:0 auto; padding:.85rem 1.25rem;
+        display:flex; gap:1.5rem; align-items:baseline; flex-wrap:wrap; }
+  nav .brand { font-weight:900; letter-spacing:.06em; text-transform:uppercase;
+        font-size:.9rem; margin-right:.4rem; }
+  nav a { color:var(--ink); text-decoration:none; font-size:.85rem; font-weight:600; }
+  nav a.active, nav a:hover { color:var(--stamp); }
   nav .spacer { flex:1; }
-  main { max-width:60rem; margin:0 auto; padding:2.5rem 1.25rem 5rem; }
-  h1 { font-size:2.2rem; margin:0 0 .3rem; letter-spacing:-.01em; }
-  h2 { font-size:1.35rem; margin:2.4rem 0 .7rem; }
-  .sub { color:var(--muted); margin:0 0 2rem; font-size:1.05rem; }
-  a { color:var(--accent); }
+  main { max-width:62rem; margin:0 auto; padding:3rem 1.25rem 5rem; }
+  h1 { font-family:var(--sans); font-weight:900; font-size:clamp(2.4rem,6vw,3.4rem);
+       line-height:1.02; letter-spacing:-.02em; text-transform:uppercase;
+       margin:0 0 1.6rem; }
+  h2 { font-family:var(--sans); font-weight:800; font-size:1.15rem;
+       text-transform:uppercase; letter-spacing:.05em; margin:3rem 0 .8rem; }
+  a { color:var(--stamp); }
   p, li { max-width:44rem; }
-  ul, ol { padding-left:1.4rem; }
-  li { margin:.25rem 0; }
-  hr { border:none; border-top:1px solid var(--line); margin:2rem 0; }
-  .tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:8px;
-        background:var(--card); margin:1rem 0; }
+  .kicker { font-family:var(--mono); text-transform:uppercase; letter-spacing:.18em;
+        font-size:.72rem; font-weight:700; color:var(--stamp); margin:0 0 .6rem; }
+  .lede { font-size:1.28rem; line-height:1.5; max-width:40rem; margin:0 0 1.1rem; }
+  .note { color:var(--muted); font-size:.88rem; }
+  code { font-family:var(--mono); font-size:.85em; background:var(--sheet);
+        border:1px solid var(--line); padding:.05em .35em; border-radius:2px; }
+
+  /* sheets: anything quoted from or derived from the files sits on paper */
+  .sheet, .hero { background:var(--sheet); border:1px solid var(--line);
+        box-shadow:var(--shadow); border-radius:2px; }
+
+  .hero { padding:1.7rem 1.9rem; margin:2.2rem 0; display:flex; gap:1.8rem;
+        align-items:center; flex-wrap:wrap; }
+  .hero .big { font-family:var(--sans); font-weight:900; font-size:4.6rem;
+        line-height:1; letter-spacing:-.03em; }
+  .hero .caption { max-width:28rem; font-family:var(--sans); font-size:.95rem;
+        line-height:1.55; }
+  .hero .caption p { margin:0 0 .55rem; }
+  .hero .cta { font-weight:700; }
+
+  .files { display:grid; gap:1rem; margin:1.4rem 0 .6rem; }
+  .file { padding:1rem 1.15rem 1.05rem; position:relative; }
+  .file:nth-child(odd) { transform:rotate(-.35deg); }
+  .file:nth-child(even) { transform:rotate(.3deg); }
+  .file .bates { position:absolute; top:.65rem; right:.85rem;
+        font-family:var(--mono); font-size:.68rem; letter-spacing:.12em;
+        color:var(--muted); }
+  .file .q { font-family:var(--sans); font-weight:700; font-size:1rem;
+        padding-right:8rem; }
+  .file .a { color:var(--muted); font-size:.9rem; margin-top:.4rem; }
+  .file .a .doc { font-family:var(--mono); font-size:.92em; color:var(--ink); }
+  @media (max-width:640px) { .file .q { padding-right:0; }
+        .file .bates { position:static; display:block; margin-bottom:.3rem; } }
+
+  /* the signature: answers ship redacted; hover, tap, or focus to unredact */
+  .redacted { background:var(--redact); color:transparent; border-radius:1px;
+        padding:.06em .3em; cursor:pointer; outline-offset:2px;
+        transition:background-color .35s ease, color .35s ease;
+        -webkit-tap-highlight-color:transparent; }
+  .redacted .doc { color:inherit; transition:color .35s ease; }
+  .redacted:hover, .redacted:focus-visible, .redacted.revealed {
+        background:transparent; color:var(--ink); }
+  .redacted:hover .doc, .redacted:focus-visible .doc, .redacted.revealed .doc {
+        color:var(--ink); }
+  @media (prefers-reduced-motion: reduce) {
+    .redacted, .redacted .doc { transition:none; }
+    .file:nth-child(odd), .file:nth-child(even) { transform:none; } }
+  .reveal-hint { font-family:var(--mono); font-size:.72rem; letter-spacing:.12em;
+        text-transform:uppercase; color:var(--muted); margin:.2rem 0 0; }
+
+  .pull { font-size:1.45rem; line-height:1.42; margin:2.2rem 0; padding-left:1.1rem;
+        border-left:3px solid var(--stamp); max-width:40rem; }
+  .pull cite { display:block; font-size:.78rem; color:var(--muted); font-style:normal;
+        margin-top:.6rem; font-family:var(--mono); letter-spacing:.08em; }
+
+  .tablewrap { overflow-x:auto; margin:1rem 0; }
   table { border-collapse:collapse; width:100%; font-size:.92rem; }
-  th, td { padding:.55rem .8rem; text-align:left; border-bottom:1px solid var(--line);
+  th, td { padding:.6rem .85rem; text-align:left; border-bottom:1px solid var(--sheetline);
         vertical-align:top; }
-  th { color:var(--muted); font-weight:600; white-space:nowrap; font-size:.8rem;
-        text-transform:uppercase; letter-spacing:.05em;
-        font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  th { color:var(--muted); font-weight:700; white-space:nowrap; font-size:.7rem;
+        text-transform:uppercase; letter-spacing:.1em; font-family:var(--sans); }
   tr:last-child td { border-bottom:none; }
-  code { font-size:.85em; background:var(--card); border:1px solid var(--line);
-        padding:.08em .35em; border-radius:4px; }
-  .note { color:var(--muted); font-size:.9rem; }
-  td.headline { font-weight:700; white-space:nowrap; }
-  td.ci, td.cost { font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-        font-size:.82rem; color:var(--muted); white-space:nowrap; }
+  td { font-family:var(--sans); }
+  td.headline { font-weight:800; white-space:nowrap; }
+  td.ci, td.cost { font-family:var(--mono); font-size:.82rem; color:var(--muted);
+        white-space:nowrap; }
   tr.control td { color:var(--muted); }
   tr.control td.headline { font-weight:400; }
-  .tag { display:inline-block; font-family:ui-monospace,Menlo,monospace;
-        font-size:.68rem; text-transform:uppercase; letter-spacing:.08em;
-        border:1px solid var(--line); border-radius:4px; padding:.05em .4em;
-        margin-left:.5em; color:var(--muted); vertical-align:middle; }
-  .lede { font-size:1.25rem; line-height:1.5; max-width:40rem; margin:0 0 1.1rem; }
-  .kicker { text-transform:uppercase; letter-spacing:.12em; font-size:.72rem;
-        font-weight:700; color:var(--accent); font-family:ui-monospace,Menlo,monospace; }
-  .hero { border:1px solid var(--line); border-radius:10px; background:var(--card);
-        padding:1.6rem 1.8rem; margin:2.2rem 0; display:flex; gap:1.6rem;
-        align-items:center; flex-wrap:wrap; }
-  .hero .big { font-size:4.2rem; font-weight:700; line-height:1;
-        letter-spacing:-.03em; color:var(--accent); }
-  .hero .caption { max-width:28rem; }
-  .hero .caption p { margin:0 0 .5rem; }
-  .hero .cta { font-weight:600; }
-  .files { display:grid; gap:.75rem; margin:1.2rem 0 .6rem; }
-  .file { border:1px solid var(--line); border-left:3px solid var(--accent);
-        border-radius:6px; background:var(--card); padding:.85rem 1rem; }
-  .file .q { font-weight:600; }
-  .file .a { color:var(--muted); font-size:.92rem; margin-top:.3rem; }
-  .file .a b { color:var(--fg); font-style:italic; font-weight:400; }
-  .pull { font-size:1.5rem; line-height:1.4; margin:1.6rem 0; padding-left:1.1rem;
-        border-left:3px solid var(--accent); max-width:40rem; }
-  .pull cite { display:block; font-size:.85rem; color:var(--muted); font-style:normal;
-        margin-top:.5rem; font-family:ui-monospace,Menlo,monospace; }
-  details.metrics { margin:1rem 0; }
-  details.metrics summary { cursor:pointer; color:var(--accent); font-size:.95rem; }
-  details.metrics table { font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-        font-size:.78rem; }
-  details.metrics th { text-transform:none; letter-spacing:0; }
-  .disclaimer { border:1px solid var(--line); border-radius:8px; background:var(--card);
-        padding:1rem 1.2rem; margin:2.5rem 0 0; color:var(--muted); font-size:.9rem; }
+  .tag { display:inline-block; font-family:var(--mono); font-size:.62rem;
+        text-transform:uppercase; letter-spacing:.1em; border:1px solid var(--line);
+        border-radius:2px; padding:.1em .45em; margin-left:.55em;
+        color:var(--muted); vertical-align:middle; }
+  details.metrics { margin:1.2rem 0; }
+  details.metrics summary { cursor:pointer; color:var(--stamp);
+        font-family:var(--sans); font-weight:600; font-size:.9rem; }
+  details.metrics table, details.metrics td { font-family:var(--mono);
+        font-size:.76rem; }
+  details.metrics th { font-family:var(--sans); }
+  details.metrics .tablewrap { border:1px solid var(--line); background:var(--sheet);
+        box-shadow:var(--shadow); border-radius:2px; }
+
+  .submit-cta { font-family:var(--sans); font-weight:700; font-size:1.05rem;
+        max-width:34rem; }
+  .submit-cta a { color:var(--stamp); text-decoration-thickness:2px;
+        text-underline-offset:3px; }
+
+  .disclaimer { padding:1rem 1.2rem; margin:2.8rem 0 0; color:var(--muted);
+        font-size:.88rem; }
 </style>
 </head>
 <body>
-<nav><div class="inner"><span class="brand">Epstein Bench</span><a href="index.html" class="active">Leaderboard</a><a href="methodology.html">Methodology</a><a href="dataset.html">Dataset Card</a><span class="spacer"></span><a href="https://github.com/yourbuddyconner/epstein-bench">GitHub</a></div></nav>
+<nav><div class="inner"><span class="brand">Epstein Bench</span><a href="index.html" class="active">Leaderboard</a><a href="board.html">The Board</a><a href="methodology.html">Methodology</a><a href="dataset.html">Dataset Card</a><span class="spacer"></span><a href="https://github.com/yourbuddyconner/epstein-bench">GitHub</a></div></nav>
 <main>
 
   <p class="kicker">A retrieval benchmark over the Epstein Files</p>
@@ -109,11 +163,12 @@
   <p class="lede">Steve Bannon emailed Jeffrey Epstein eight words:
   &ldquo;we r on the cusp of real power.&rdquo;</p>
 
-  <p class="lede">That email is real. It sits somewhere in 84,000 documents
-  released by Congress and the courts, between flight logs, scanned bank
-  statements, and thousands of pages of OCR sludge. We asked the best AI
-  systems in the world to find it. The best one succeeds a little more than
-  half the time.</p>
+  <p class="lede">He sent it at 10:22 on a Monday morning in February 2018.
+  It sits somewhere in the roughly 3.5 million pages of records released by
+  Congress and the Justice Department, between flight logs, scanned bank
+  statements, and endless OCR sludge. We distilled the release into an
+  84,000-document haystack and asked the best AI systems in the world to
+  find that email. The best one succeeds a little more than half the time.</p>
 
   <p class="lede">This is the scoreboard.</p>
 
@@ -121,44 +176,46 @@
   <div class="hero">
     <div class="big">54%</div>
     <div class="caption">
-      <p>The best system on the board, Claude Sonnet 5 agent, answers
-      54% of the questions correctly with a valid citation, at about $0.05 a question.</p>
+      <p>The current high score, set by the Claude Sonnet 5 agent at about $0.05 a question:
+      54% answered correctly with a valid citation. It gets the
+      other 46% wrong.</p>
       <p class="cta"><a href="https://github.com/yourbuddyconner/epstein-bench#submitting-to-the-leaderboard">Think yours does better? Submit a run.</a></p>
     </div>
   </div>
   <!-- generated:hero:end -->
 
   <p>Most retrieval benchmarks quiz AI on clean text. The Epstein Files are
-  the opposite. This benchmark distills the 4-million-row public release into
-  an 84,000-document haystack of garbled scans, near-duplicate emails, and
-  legalese, plus 1,038 questions a system can only answer by finding the right
-  document and citing it.</p>
+  the opposite. This benchmark distills that release into an 84,000-document
+  haystack of garbled scans, near-duplicate emails, and legalese, plus 1,038
+  questions a system can only answer by finding the right document and citing
+  it.</p>
 
   <h2>From the files</h2>
   <p>Real questions from the benchmark. Each answer is a sentence hiding
-  somewhere in the corpus, quoted here exactly as the documents record it.</p>
+  somewhere in the corpus, quoted exactly as the documents record it.</p>
+  <p class="reveal-hint">Hover or tap the black bars to unredact.</p>
   <div class="files">
-    <div class="file">
+    <div class="file sheet">
+      <span class="bates">EFTA01820789</span>
       <div class="q">Who did Jeffrey Epstein ask to find him &ldquo;the best codebreaker, NSA type&rdquo;?</div>
-      <div class="a">Buried in an email to a veteran TV journalist. The system has to surface the exact thread. <b>&ldquo;Can you find me the best codebreaker nsa type.&rdquo;</b></div>
+      <div class="a">Buried in an email to a veteran TV journalist. The system has to surface the exact thread. <span class="redacted" tabindex="0" role="button" aria-label="reveal quoted answer"><span class="doc">&ldquo;Can you find me the best codebreaker nsa type.&rdquo;</span></span></div>
     </div>
-    <div class="file">
+    <div class="file sheet">
+      <span class="bates">EFTA00384983</span>
       <div class="q">What high-profile dinner was planned for September 20, 2013?</div>
-      <div class="a">One line in a calendar: <b>&ldquo;TBD DINNER W/BILL GATES, TERJE, JAGBLAND, OTHERS (?)&rdquo;</b> The corpus holds thousands of entries like it. The trick is retrieving the right one.</div>
+      <div class="a">One line in a calendar: <span class="redacted" tabindex="0" role="button" aria-label="reveal quoted answer"><span class="doc">&ldquo;TBD DINNER W/BILL GATES, TERJE, JAGBLAND, OTHERS (?)&rdquo;</span></span> The corpus holds thousands of entries like it. The trick is retrieving the right one.</div>
     </div>
-    <div class="file">
+    <div class="file sheet">
+      <span class="bates">EFTA01978481</span>
       <div class="q">What did Epstein say about Prince Andrew&rsquo;s stay in New York?</div>
-      <div class="a">A single sentence in a single email: <b>&ldquo;Prince Andrew will be staying with me for the week in New York.&rdquo;</b></div>
+      <div class="a">A single sentence in a single email: <span class="redacted" tabindex="0" role="button" aria-label="reveal quoted answer"><span class="doc">&ldquo;Prince Andrew will be staying with me for the week in New York.&rdquo;</span></span></div>
     </div>
-    <div class="file">
+    <div class="file sheet">
+      <span class="bates">EFTA01522843</span>
       <div class="q">Which account was tied to Ghislaine Maxwell at J.P. Morgan?</div>
-      <div class="a">A line item on a scanned bank statement that misspells her name: <b>&ldquo;CHISLAINE MAXWELL-HY ACCT&rdquo;</b>. The answer key preserves the garble, because the garble is what is in the file.</div>
+      <div class="a">A line item on a scanned bank statement that misspells her name: <span class="redacted" tabindex="0" role="button" aria-label="reveal quoted answer"><span class="doc">&ldquo;CHISLAINE MAXWELL-HY ACCT&rdquo;</span></span> The answer key preserves the garble, because the garble is what is in the file.</div>
     </div>
   </div>
-  <p class="note">Appearing in these records means appearing in someone&rsquo;s
-  email, calendar, or bank statement. It is not an accusation of wrongdoing.
-  See the note at the bottom of this page.</p>
-
   <p class="pull">The hardest questions ask a system to reconstruct the entire
   documented timeline of one person&rsquo;s contacts with Epstein, scattered
   across dozens of files. Our best baseline scores near zero.
@@ -168,18 +225,18 @@
   <p class="note"><code>full</code> split, dataset v1.0, 1,038 tasks. Scored as
   cited answer correctness: the judged answer has to match the reference and
   cite a gold document. Higher is better.</p>
-  <div class="tablewrap">
+  <div class="tablewrap sheet">
     <table id="board">
       <thead><tr>
         <th>#</th><th>system</th><th>correct &amp; cited</th><th>95% CI</th><th>$ / task</th>
       </tr></thead>
       <tbody>
       <!-- generated:board:start -->
-      <tr><td>1</td><td>Claude Sonnet 5 agent<span class="tag">self-run</span></td><td class="headline">53.8%</td><td class="ci">50.4 to 57.3</td><td class="cost">$0.053</td></tr>
-      <tr><td>2</td><td>Hybrid retrieval (BM25 + dense)<span class="tag">self-run</span></td><td class="headline">49.0%</td><td class="ci">45.4 to 53.3</td><td class="cost">n/a</td></tr>
-      <tr><td>3</td><td>Claude Opus 4.8 agent<span class="tag">self-run</span></td><td class="headline">48.8%</td><td class="ci">45.9 to 52.0</td><td class="cost">$0.114</td></tr>
-      <tr><td>4</td><td>BM25 keyword search<span class="tag">self-run</span></td><td class="headline">48.3%</td><td class="ci">44.5 to 52.2</td><td class="cost">n/a</td></tr>
-      <tr><td>5</td><td>Dense embeddings<span class="tag">self-run</span></td><td class="headline">43.4%</td><td class="ci">39.8 to 46.8</td><td class="cost">n/a</td></tr>
+      <tr><td>1</td><td>Claude Sonnet 5 agent<span class="tag">reference</span></td><td class="headline">53.8%</td><td class="ci">50.4 to 57.3</td><td class="cost">$0.053</td></tr>
+      <tr><td>2</td><td>Hybrid retrieval (BM25 + dense)<span class="tag">reference</span></td><td class="headline">49.0%</td><td class="ci">45.4 to 53.3</td><td class="cost">n/a</td></tr>
+      <tr><td>3</td><td>Claude Opus 4.8 agent<span class="tag">reference</span></td><td class="headline">48.8%</td><td class="ci">45.9 to 52.0</td><td class="cost">$0.114</td></tr>
+      <tr><td>4</td><td>BM25 keyword search<span class="tag">reference</span></td><td class="headline">48.3%</td><td class="ci">44.5 to 52.2</td><td class="cost">n/a</td></tr>
+      <tr><td>5</td><td>Dense embeddings<span class="tag">reference</span></td><td class="headline">43.4%</td><td class="ci">39.8 to 46.8</td><td class="cost">n/a</td></tr>
       <tr class="control"><td>&mdash;</td><td>Closed book<span class="tag">control</span></td><td class="headline">32.8%</td><td class="ci">31.8 to 33.3</td><td class="cost">n/a</td></tr>
       <tr class="control"><td>&mdash;</td><td>Parametric probe<span class="tag">control</span></td><td class="headline">30.4%</td><td class="ci">28.0 to 32.4</td><td class="cost">n/a</td></tr>
   <!-- generated:board:end -->
@@ -241,19 +298,31 @@
   release. Full details in the <a href="methodology.html">methodology</a> and
   <a href="dataset.html">dataset card</a>.</p>
 
-  <h2>Fine print</h2>
-  <p>Scores are recomputed by CI from raw predictions. Self-reported numbers
-  are never used. Every row so far is a reference system we ran ourselves, and
-  the answer key is public, so read self-run rows with that in mind. The fix
-  for both is independent submissions:
-  <a href="https://github.com/yourbuddyconner/epstein-bench#submitting-to-the-leaderboard">submit
-  a run via pull request</a>.</p>
+  <h2>Add your system</h2>
+  <p>The rows above are reference baselines we built so a new system has
+  something to measure against. Every score is recomputed from a
+  submission&rsquo;s raw predictions before it lands on the board.</p>
+  <p class="submit-cta"><a href="https://github.com/yourbuddyconner/epstein-bench#submitting-to-the-leaderboard">Run
+  your system on the full split, open a pull request with your predictions,
+  and get on the board.</a></p>
 
-  <div class="disclaimer">These are public records released by U.S. courts and
+  <div class="disclaimer sheet">These are public records released by U.S. courts and
   Congress. Appearing in the files means appearing in someone's email, calendar,
   or financial records. It is not an accusation of wrongdoing. Epstein Bench
   measures whether AI can retrieve and cite what the documents say; it takes no
-  position on anyone's conduct.</div>
+  position on any individual's conduct. For the avoidance of doubt, this
+  neutrality does not extend to the crimes themselves.</div>
+
+<script>
+  // touch and keyboard: tap or Enter/Space toggles a redaction bar open
+  for (const el of document.querySelectorAll(".redacted")) {
+    const toggle = () => el.classList.toggle("revealed");
+    el.addEventListener("click", toggle);
+    el.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+    });
+  }
+</script>
 
 </main>
 </body>

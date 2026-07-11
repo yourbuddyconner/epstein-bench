@@ -56,13 +56,13 @@ def _pct(x) -> str:
 
 
 def _display_name(entry: dict) -> tuple[str, str]:
-    """Return (display name, tag). Tag is 'control', 'self-run', or ''."""
+    """Return (display name, tag). Tag is 'control', 'reference', or ''."""
     raw = entry["system_name"]
     name = DISPLAY_NAMES.get(raw, raw)
     if raw in CONTROLS:
         return name, "control"
     if raw.endswith(REFERENCE_SUFFIX):
-        return name, "self-run"
+        return name, "reference"
     return name, ""
 
 
@@ -72,14 +72,16 @@ def _hero_html(entries: list[dict]) -> str:
     pct = round(top["overall_cited_correctness"] * 100)
     cost = top.get("cost_usd_per_task")
     cost_line = (
-        f", at about ${cost:.2f} a question" if isinstance(cost, (int, float)) else ""
+        f" at about ${cost:.2f} a question" if isinstance(cost, (int, float)) else ""
     )
+    article = "the " if name.endswith(" agent") else ""
     return (
         '  <div class="hero">\n'
         f'    <div class="big">{pct}%</div>\n'
         '    <div class="caption">\n'
-        f"      <p>The best system on the board, {html.escape(name)}, answers\n"
-        f"      {pct}% of the questions correctly with a valid citation{cost_line}.</p>\n"
+        f"      <p>The current high score, set by {article}{html.escape(name)}{cost_line}:\n"
+        f"      {pct}% answered correctly with a valid citation. It gets the\n"
+        f"      other {100 - pct}% wrong.</p>\n"
         '      <p class="cta"><a href="https://github.com/yourbuddyconner/epstein-bench'
         '#submitting-to-the-leaderboard">Think yours does better? Submit a run.</a></p>\n'
         "    </div>\n"
