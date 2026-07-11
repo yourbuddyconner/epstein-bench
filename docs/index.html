@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Epstein Bench: Leaderboard</title>
-<meta name="description" content="Millions of scanned, garbled documents. Can your AI find the one sentence that answers the question? A verified RAG benchmark over the public Epstein Files, with a live leaderboard.">
+<title>Epstein Bench leaderboard</title>
+<meta name="description" content="Steve Bannon emailed Jeffrey Epstein: &quot;we r on the cusp of real power.&quot; Can your AI find that email in an 84,000-document haystack? The best system so far gets 54%.">
 <link rel="canonical" href="https://epsteinbench.com">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Epstein Bench">
-<meta property="og:title" content="Epstein Bench">
-<meta property="og:description" content="Millions of scanned, garbled documents. Can your AI find the one sentence that answers the question? A verified RAG benchmark over the public Epstein Files, with a live leaderboard.">
+<meta property="og:title" content="The best AI gets 54% on the Epstein Files">
+<meta property="og:description" content="Steve Bannon emailed Jeffrey Epstein: &quot;we r on the cusp of real power.&quot; Can your AI find that email in an 84,000-document haystack? A verified benchmark with a live leaderboard.">
 <meta property="og:url" content="https://epsteinbench.com">
 <meta property="og:image" content="https://epsteinbench.com/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -17,8 +17,8 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:alt" content="Epstein Bench">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Epstein Bench">
-<meta name="twitter:description" content="Millions of scanned, garbled documents. Can your AI find the one sentence that answers the question? A verified RAG benchmark over the public Epstein Files, with a live leaderboard.">
+<meta name="twitter:title" content="The best AI gets 54% on the Epstein Files">
+<meta name="twitter:description" content="Steve Bannon emailed Jeffrey Epstein: &quot;we r on the cusp of real power.&quot; Can your AI find that email in an 84,000-document haystack? A verified benchmark with a live leaderboard.">
 <meta name="twitter:image" content="https://epsteinbench.com/og-image.png">
 <style>
   :root { --bg:#faf9f6; --fg:#1a1a1a; --muted:#6b6b6b; --line:#e2ddd4;
@@ -42,36 +42,45 @@
   main { max-width:60rem; margin:0 auto; padding:2.5rem 1.25rem 5rem; }
   h1 { font-size:2.2rem; margin:0 0 .3rem; letter-spacing:-.01em; }
   h2 { font-size:1.35rem; margin:2.4rem 0 .7rem; }
-  h3 { font-size:1.08rem; margin:1.8rem 0 .5rem; }
-  h4 { font-size:.98rem; margin:1.4rem 0 .4rem; color:var(--muted); }
   .sub { color:var(--muted); margin:0 0 2rem; font-size:1.05rem; }
   a { color:var(--accent); }
   p, li { max-width:44rem; }
   ul, ol { padding-left:1.4rem; }
   li { margin:.25rem 0; }
-  blockquote { margin:1rem 0; padding:.4rem 0 .4rem 1rem;
-        border-left:3px solid var(--line); color:var(--muted); }
   hr { border:none; border-top:1px solid var(--line); margin:2rem 0; }
   .tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:8px;
         background:var(--card); margin:1rem 0; }
-  table { border-collapse:collapse; width:100%;
-        font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem; }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; }
   th, td { padding:.55rem .8rem; text-align:left; border-bottom:1px solid var(--line);
         vertical-align:top; }
-  th { color:var(--muted); font-weight:600; white-space:nowrap; }
+  th { color:var(--muted); font-weight:600; white-space:nowrap; font-size:.8rem;
+        text-transform:uppercase; letter-spacing:.05em;
+        font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
   tr:last-child td { border-bottom:none; }
   code { font-size:.85em; background:var(--card); border:1px solid var(--line);
         padding:.08em .35em; border-radius:4px; }
-  pre { background:var(--card); border:1px solid var(--line); border-radius:8px;
-        padding:.9rem 1rem; overflow-x:auto; }
-  pre code { background:none; border:none; padding:0; font-size:.82rem; }
   .note { color:var(--muted); font-size:.9rem; }
-  td.headline { font-weight:700; }
-  .empty { padding:2.5rem 1rem; text-align:center; color:var(--muted); font-style:italic; }
-  .lede { font-size:1.25rem; line-height:1.5; max-width:40rem; margin:0 0 1.5rem; }
+  td.headline { font-weight:700; white-space:nowrap; }
+  td.ci, td.cost { font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+        font-size:.82rem; color:var(--muted); white-space:nowrap; }
+  tr.control td { color:var(--muted); }
+  tr.control td.headline { font-weight:400; }
+  .tag { display:inline-block; font-family:ui-monospace,Menlo,monospace;
+        font-size:.68rem; text-transform:uppercase; letter-spacing:.08em;
+        border:1px solid var(--line); border-radius:4px; padding:.05em .4em;
+        margin-left:.5em; color:var(--muted); vertical-align:middle; }
+  .lede { font-size:1.25rem; line-height:1.5; max-width:40rem; margin:0 0 1.1rem; }
   .kicker { text-transform:uppercase; letter-spacing:.12em; font-size:.72rem;
         font-weight:700; color:var(--accent); font-family:ui-monospace,Menlo,monospace; }
-  .files { display:grid; gap:.75rem; margin:1.2rem 0 1.8rem; }
+  .hero { border:1px solid var(--line); border-radius:10px; background:var(--card);
+        padding:1.6rem 1.8rem; margin:2.2rem 0; display:flex; gap:1.6rem;
+        align-items:center; flex-wrap:wrap; }
+  .hero .big { font-size:4.2rem; font-weight:700; line-height:1;
+        letter-spacing:-.03em; color:var(--accent); }
+  .hero .caption { max-width:28rem; }
+  .hero .caption p { margin:0 0 .5rem; }
+  .hero .cta { font-weight:600; }
+  .files { display:grid; gap:.75rem; margin:1.2rem 0 .6rem; }
   .file { border:1px solid var(--line); border-left:3px solid var(--accent);
         border-radius:6px; background:var(--card); padding:.85rem 1rem; }
   .file .q { font-weight:600; }
@@ -81,6 +90,11 @@
         border-left:3px solid var(--accent); max-width:40rem; }
   .pull cite { display:block; font-size:.85rem; color:var(--muted); font-style:normal;
         margin-top:.5rem; font-family:ui-monospace,Menlo,monospace; }
+  details.metrics { margin:1rem 0; }
+  details.metrics summary { cursor:pointer; color:var(--accent); font-size:.95rem; }
+  details.metrics table { font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+        font-size:.78rem; }
+  details.metrics th { text-transform:none; letter-spacing:0; }
   .disclaimer { border:1px solid var(--line); border-radius:8px; background:var(--card);
         padding:1rem 1.2rem; margin:2.5rem 0 0; color:var(--muted); font-size:.9rem; }
 </style>
@@ -89,119 +103,157 @@
 <nav><div class="inner"><span class="brand">Epstein Bench</span><a href="index.html" class="active">Leaderboard</a><a href="methodology.html">Methodology</a><a href="dataset.html">Dataset Card</a><span class="spacer"></span><a href="https://github.com/yourbuddyconner/epstein-bench">GitHub</a></div></nav>
 <main>
 
+  <p class="kicker">A retrieval benchmark over the Epstein Files</p>
   <h1>Epstein Bench</h1>
-  <p class="lede">Millions of scanned, garbled, redaction-strewn documents. Can
-  your AI find the one sentence that answers the question?</p>
 
-  <p>The public Epstein Files run to millions of released records. Every other
-  retrieval benchmark quizzes AI on clean Wikipedia; the real world looks nothing
-  like this: OCR wreckage, near-duplicate emails, endless legalese, and the one
-  fact you need buried somewhere in the pile. <strong>Epstein Bench is that
-  world.</strong> It distills the release into a benchmark: a retrieval corpus of
-  about 84,000 text documents drawn from the Files, and 1,038 questions a system
-  can only answer by finding the right document and citing it &mdash; including
-  trap questions that presuppose a meeting that never happened, where the right
-  move is to reject the premise.</p>
+  <p class="lede">Steve Bannon emailed Jeffrey Epstein eight words:
+  &ldquo;we r on the cusp of real power.&rdquo;</p>
 
-  <p class="kicker">From the files</p>
-  <p>Real, verified questions in the benchmark. Each answer is a single sentence
-  hiding somewhere in the corpus:</p>
+  <p class="lede">That email is real. It sits somewhere in 84,000 documents
+  released by Congress and the courts, between flight logs, scanned bank
+  statements, and thousands of pages of OCR sludge. We asked the best AI
+  systems in the world to find it. The best one succeeds a little more than
+  half the time.</p>
+
+  <p class="lede">This is the scoreboard.</p>
+
+  <!-- generated:hero:start -->
+  <div class="hero">
+    <div class="big">54%</div>
+    <div class="caption">
+      <p>The best system on the board, Claude Sonnet 5 agent, answers
+      54% of the questions correctly with a valid citation, at about $0.05 a question.</p>
+      <p class="cta"><a href="https://github.com/yourbuddyconner/epstein-bench#submitting-to-the-leaderboard">Think yours does better? Submit a run.</a></p>
+    </div>
+  </div>
+  <!-- generated:hero:end -->
+
+  <p>Most retrieval benchmarks quiz AI on clean text. The Epstein Files are
+  the opposite. This benchmark distills the 4-million-row public release into
+  an 84,000-document haystack of garbled scans, near-duplicate emails, and
+  legalese, plus 1,038 questions a system can only answer by finding the right
+  document and citing it.</p>
+
+  <h2>From the files</h2>
+  <p>Real questions from the benchmark. Each answer is a sentence hiding
+  somewhere in the corpus, quoted here exactly as the documents record it.</p>
   <div class="files">
     <div class="file">
-      <div class="q">Who did Jeffrey Epstein ask to find him "the best codebreaker, NSA type"?</div>
-      <div class="a">Buried in an email to a veteran TV journalist. The system has to surface the exact thread. <b>Epstein: "Can you find me the best codebreaker nsa type."</b></div>
+      <div class="q">Who did Jeffrey Epstein ask to find him &ldquo;the best codebreaker, NSA type&rdquo;?</div>
+      <div class="a">Buried in an email to a veteran TV journalist. The system has to surface the exact thread. <b>&ldquo;Can you find me the best codebreaker nsa type.&rdquo;</b></div>
     </div>
     <div class="file">
-      <div class="q">What did Steve Bannon email Epstein about "real power"?</div>
-      <div class="a"><b>"we r on the cusp of real power."</b> One line in a chain of emails between Epstein and the former White House strategist.</div>
+      <div class="q">What high-profile dinner was planned for September 20, 2013?</div>
+      <div class="a">One line in a calendar: <b>&ldquo;TBD DINNER W/BILL GATES, TERJE, JAGBLAND, OTHERS (?)&rdquo;</b> The corpus holds thousands of entries like it. The trick is retrieving the right one.</div>
     </div>
     <div class="file">
-      <div class="q">Who was on the guest list for Epstein's dinner on September 20, 2013?</div>
-      <div class="a">A calendar entry: <b>"DINNER W/ BILL GATES, TERJE, JAGBLAND, OTHERS."</b> The corpus is full of these. The trick is retrieving the right one.</div>
+      <div class="q">What did Epstein say about Prince Andrew&rsquo;s stay in New York?</div>
+      <div class="a">A single sentence in a single email: <b>&ldquo;Prince Andrew will be staying with me for the week in New York.&rdquo;</b></div>
     </div>
     <div class="file">
       <div class="q">Which account was tied to Ghislaine Maxwell at J.P. Morgan?</div>
-      <div class="a">The answer is a line item on a scanned bank statement, the kind of needle dense-vector search routinely misses on noisy OCR.</div>
+      <div class="a">A line item on a scanned bank statement that misspells her name: <b>&ldquo;CHISLAINE MAXWELL-HY ACCT&rdquo;</b>. The answer key preserves the garble, because the garble is what is in the file.</div>
     </div>
   </div>
+  <p class="note">Appearing in these records means appearing in someone&rsquo;s
+  email, calendar, or bank statement. It is not an accusation of wrongdoing.
+  See the note at the bottom of this page.</p>
 
   <p class="pull">The hardest questions ask a system to reconstruct the entire
-  documented timeline of one person's contacts with Epstein, scattered across
-  dozens of files. Our best baseline scores near zero.
-  <cite>the "dossier" task family</cite></p>
+  documented timeline of one person&rsquo;s contacts with Epstein, scattered
+  across dozens of files. Our best baseline scores near zero.
+  <cite>the dossier tasks, 7 of 1,038</cite></p>
 
-  <h2>Cited answer correctness</h2>
-  <p>A prediction is counted correct only when it satisfies two conditions
-  jointly: a pinned LLM judge rules the answer equivalent to the reference, and
-  at least one cited document belongs to the pooled gold set. Correctness thus
-  requires grounding rather than fluency. An unsupported answer, however
-  plausible, receives no credit.</p>
-  <p>A no-retrieval control fixes the floor. Given the question alone, with no
-  access to the corpus, it scores <strong>0.000</strong> on every
-  retrieval-dependent task type, confirming that the questions cannot be answered
-  from surface priors. The same control serves as a training-contamination probe:
-  its uncited score estimates how much of the corpus a model reproduces from
-  parameters alone, a quantity expected to rise as successive models are trained
-  on this public release.</p>
-  <p class="note">Full details in the <a href="methodology.html">methodology</a>
-  and <a href="dataset.html">dataset card</a>. Every task survived a four-stage
-  verification gauntlet before release.</p>
-
-  <h2>Leaderboard: <code>full</code> split, dataset v1.0</h2>
+  <h2>The scoreboard</h2>
+  <p class="note"><code>full</code> split, dataset v1.0, 1,038 tasks. Scored as
+  cited answer correctness: the judged answer has to match the reference and
+  cite a gold document. Higher is better.</p>
   <div class="tablewrap">
     <table id="board">
       <thead><tr>
-        <th>system</th><th>overall</th><th>95% CI</th><th>micro</th><th>uncited</th>
-        <th>single_hop</th><th>aggregation</th><th>timeline</th><th>dossier</th>
-        <th>unanswerable</th><th>false_premise</th><th>cit.&nbsp;prec</th>
-        <th>recall@5</th><th>recall@20</th><th>$/task</th><th>tok/task</th>
+        <th>#</th><th>system</th><th>correct &amp; cited</th><th>95% CI</th><th>$ / task</th>
       </tr></thead>
-      <tbody></tbody>
+      <tbody>
+      <!-- generated:board:start -->
+      <tr><td>1</td><td>Claude Sonnet 5 agent<span class="tag">self-run</span></td><td class="headline">53.8%</td><td class="ci">50.4 to 57.3</td><td class="cost">$0.053</td></tr>
+      <tr><td>2</td><td>Hybrid retrieval (BM25 + dense)<span class="tag">self-run</span></td><td class="headline">49.0%</td><td class="ci">45.4 to 53.3</td><td class="cost">n/a</td></tr>
+      <tr><td>3</td><td>Claude Opus 4.8 agent<span class="tag">self-run</span></td><td class="headline">48.8%</td><td class="ci">45.9 to 52.0</td><td class="cost">$0.114</td></tr>
+      <tr><td>4</td><td>BM25 keyword search<span class="tag">self-run</span></td><td class="headline">48.3%</td><td class="ci">44.5 to 52.2</td><td class="cost">n/a</td></tr>
+      <tr><td>5</td><td>Dense embeddings<span class="tag">self-run</span></td><td class="headline">43.4%</td><td class="ci">39.8 to 46.8</td><td class="cost">n/a</td></tr>
+      <tr class="control"><td>&mdash;</td><td>Closed book<span class="tag">control</span></td><td class="headline">32.8%</td><td class="ci">31.8 to 33.3</td><td class="cost">n/a</td></tr>
+      <tr class="control"><td>&mdash;</td><td>Parametric probe<span class="tag">control</span></td><td class="headline">30.4%</td><td class="ci">28.0 to 32.4</td><td class="cost">n/a</td></tr>
+  <!-- generated:board:end -->
+      </tbody>
     </table>
-    <div class="empty" id="empty" hidden>No verified submissions yet.</div>
   </div>
-  <p class="note">Scores are recomputed by CI from raw predictions; self-reported
-  numbers are never used. <strong>overall</strong> is the macro-average with a
-  bootstrap <strong>95% CI</strong>; <strong>micro</strong> is the task-weighted
-  average (the two diverge for no-retrieval systems, which score only on the
-  rejection types). <strong>uncited</strong> = correctness ignoring the citation
-  gate (for the <code>parametric</code> baseline, a probe of how much of the
-  corpus a model already knows from training). <strong>false_premise</strong>
-  rewards rejecting a fabricated meeting; every baseline refuses, but none yet
-  names the specific falsehood. Submit via PR. See the
-  <a href="https://github.com/yourbuddyconner/epstein-bench#submitting-to-the-leaderboard">README</a>.</p>
+  <p class="note">The two controls answer from the question alone and never see
+  the documents. Nearly all of their credit comes from correctly refusing the
+  trap questions; on every question that requires the documents, they score
+  zero. They sit on the board as a floor, unranked.</p>
+
+  <details class="metrics">
+    <summary>Full metrics: per-type scores, citation precision, retrieval recall, tokens</summary>
+    <div class="tablewrap">
+      <table id="board-detail">
+        <thead><tr>
+          <th>system</th><th>overall</th><th>micro</th><th>uncited</th>
+          <th>single_hop</th><th>aggregation</th><th>timeline</th><th>dossier</th>
+          <th>unanswerable</th><th>false_premise</th><th>cit.&nbsp;prec</th>
+          <th>recall@5</th><th>recall@20</th><th>tok/task</th>
+        </tr></thead>
+        <tbody>
+        <!-- generated:detail:start -->
+        <tr><td>agentic-sonnet-5 (reference)</td><td>0.538</td><td>0.532</td><td>0.607</td><td>0.535</td><td>0.286</td><td>0.407</td><td>0.000</td><td>1.000</td><td>1.000</td><td>0.485</td><td>0.250</td><td>0.321</td><td>14,787</td></tr>
+        <tr><td>hybrid (reference)</td><td>0.490</td><td>0.488</td><td>0.541</td><td>0.486</td><td>0.313</td><td>0.296</td><td>0.032</td><td>0.812</td><td>1.000</td><td>0.483</td><td>0.272</td><td>0.594</td><td>n/a</td></tr>
+        <tr><td>agentic-opus-4-8 (reference)</td><td>0.488</td><td>0.460</td><td>0.598</td><td>0.463</td><td>0.170</td><td>0.296</td><td>0.000</td><td>1.000</td><td>1.000</td><td>0.368</td><td>0.272</td><td>0.357</td><td>19,586</td></tr>
+        <tr><td>bm25 (reference)</td><td>0.483</td><td>0.475</td><td>0.518</td><td>0.476</td><td>0.247</td><td>0.333</td><td>0.000</td><td>0.844</td><td>1.000</td><td>0.462</td><td>0.271</td><td>0.589</td><td>n/a</td></tr>
+        <tr><td>dense (reference)</td><td>0.434</td><td>0.393</td><td>0.481</td><td>0.383</td><td>0.217</td><td>0.185</td><td>0.000</td><td>0.844</td><td>0.974</td><td>0.406</td><td>0.219</td><td>0.517</td><td>n/a</td></tr>
+        <tr><td>closed_book (reference)</td><td>0.328</td><td>0.066</td><td>0.346</td><td>0.000</td><td>0.000</td><td>0.000</td><td>0.000</td><td>0.969</td><td>1.000</td><td>0.000</td><td>0.000</td><td>0.000</td><td>n/a</td></tr>
+        <tr><td>parametric (reference)</td><td>0.304</td><td>0.062</td><td>0.346</td><td>0.000</td><td>0.000</td><td>0.000</td><td>0.000</td><td>0.875</td><td>0.947</td><td>0.000</td><td>0.000</td><td>0.000</td><td>n/a</td></tr>
+  <!-- generated:detail:end -->
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><strong>overall</strong> is the macro-average across task
+    types; <strong>micro</strong> is the task-weighted average. The two diverge
+    for the controls, which score only on the rejection types.
+    <strong>uncited</strong> is correctness with the citation gate removed.
+    <strong>false_premise</strong> rewards rejecting a fabricated meeting.
+    Raw numbers in <a href="leaderboard.json">leaderboard.json</a>.</p>
+  </details>
+
+  <h2>How scoring works</h2>
+  <p>An answer counts only if two things hold at once. A pinned LLM judge has
+  to rule it equivalent to the reference, and at least one cited document has
+  to belong to the pooled gold set. A right answer with no supporting citation
+  scores zero. Confident prose gets no partial credit.</p>
+  <p>We also run the whole benchmark with the documents taken away. Given
+  nothing but the question, a closed-book model answers under 2 percent of the
+  single-hop questions correctly, and the model that wrote the questions
+  manages about 5 percent from its training weights alone. That number is the
+  contamination gauge. As future models train on this public release it will
+  climb, and we will be tracking it.</p>
+  <p>The set also includes 38 questions built on a meeting that never happened.
+  Every system we tested refuses them, so the trap itself is saturated. The
+  difference shows up one level down: the agents name the specific fabricated
+  claim, and nothing else can.</p>
+  <p class="note">Every task survived a four-stage verification gauntlet before
+  release. Full details in the <a href="methodology.html">methodology</a> and
+  <a href="dataset.html">dataset card</a>.</p>
+
+  <h2>Fine print</h2>
+  <p>Scores are recomputed by CI from raw predictions. Self-reported numbers
+  are never used. Every row so far is a reference system we ran ourselves, and
+  the answer key is public, so read self-run rows with that in mind. The fix
+  for both is independent submissions:
+  <a href="https://github.com/yourbuddyconner/epstein-bench#submitting-to-the-leaderboard">submit
+  a run via pull request</a>.</p>
 
   <div class="disclaimer">These are public records released by U.S. courts and
   Congress. Appearing in the files means appearing in someone's email, calendar,
   or financial records. It is not an accusation of wrongdoing. Epstein Bench
   measures whether AI can retrieve and cite what the documents say; it takes no
   position on anyone's conduct.</div>
-
-<script>
-  const fmt = x => (typeof x === "number" ? x.toFixed(3) : "n/a");
-  const ci = a => (Array.isArray(a) && a.length === 2
-    ? "[" + a[0].toFixed(2) + ", " + a[1].toFixed(2) + "]" : "n/a");
-  const usd = x => (typeof x === "number" ? "$" + x.toFixed(4) : "n/a");
-  const tok = x => (typeof x === "number" ? Math.round(x).toLocaleString() : "n/a");
-  fetch("leaderboard.json").then(r => r.json()).then(data => {
-    const rows = data.entries || [];
-    if (!rows.length) { document.getElementById("empty").hidden = false; return; }
-    const tb = document.querySelector("#board tbody");
-    for (const e of rows) {
-      const t = e.per_type || {}, r = e.retrieval || {};
-      const cells = [e.system_name || "?", fmt(e.overall_cited_correctness),
-        ci(e.overall_cited_correctness_ci95), fmt(e.overall_cited_correctness_micro),
-        fmt(e.overall_uncited_correctness), fmt(t.single_hop), fmt(t.aggregation),
-        fmt(t.timeline), fmt(t.dossier), fmt(t.unanswerable), fmt(t.false_premise),
-        fmt(e.citation_precision), fmt(r["recall@5"]), fmt(r["recall@20"]),
-        usd(e.cost_usd_per_task), tok(e.tokens_per_task)];
-      const tr = document.createElement("tr");
-      cells.forEach((v, i) => { const td = document.createElement("td");
-        if (i === 1) td.className = "headline"; td.textContent = v; tr.appendChild(td); });
-      tb.appendChild(tr);
-    }
-  }).catch(() => { document.getElementById("empty").hidden = false; });
-</script>
 
 </main>
 </body>
