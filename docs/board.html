@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Board | Epstein Bench</title>
+<meta name="description" content="Thirty-eight people from the Epstein Files, pinned to a corkboard. Every red thread is a stack of documents naming both. Built from the benchmark's alias index.">
+<link rel="canonical" href="https://epsteinbench.com/board.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Epstein Bench">
+<meta property="og:title" content="The Board">
+<meta property="og:description" content="Thirty-eight people from the Epstein Files, pinned to a corkboard. Every red thread is a stack of documents naming both.">
+<meta property="og:url" content="https://epsteinbench.com/board.html">
+<meta property="og:image" content="https://epsteinbench.com/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Board">
+<meta name="twitter:description" content="Thirty-eight people from the Epstein Files, pinned to a corkboard. Every red thread is a stack of documents naming both.">
+<meta name="twitter:image" content="https://epsteinbench.com/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Libre+Franklin:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --desk:#d6d3ca; --sheet:#fbfaf7; --ink:#1b1a17; --muted:#6e6a61;
+    --line:#c7c3b8; --sheetline:#e7e4db; --stamp:#a8231c; --redact:#141310;
+    --cork:#e6e1d3;
+    --shadow:0 1px 2px rgba(27,26,23,.14), 0 6px 18px rgba(27,26,23,.08);
+    --mono:'Courier Prime',ui-monospace,Menlo,monospace;
+    --sans:'Libre Franklin',system-ui,'Helvetica Neue',Arial,sans-serif;
+    --serif:Georgia,'Times New Roman',serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --desk:#161511; --sheet:#221f19; --ink:#e8e4d9; --muted:#98927f;
+            --line:#33302a; --sheetline:#37332b; --stamp:#d05a4e; --redact:#000;
+            --cork:#1d1b15;
+            --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 22px rgba(0,0,0,.35); } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--desk); color:var(--ink);
+         font:16px/1.68 var(--serif); }
+  nav { border-bottom:1px solid var(--line); position:sticky; top:0;
+        background:color-mix(in srgb, var(--desk) 90%, transparent);
+        backdrop-filter:blur(6px); z-index:10; font-family:var(--sans); }
+  nav .inner { max-width:72rem; margin:0 auto; padding:.85rem 1.25rem;
+        display:flex; gap:1.5rem; align-items:baseline; flex-wrap:wrap; }
+  nav .brand { font-weight:900; letter-spacing:.06em; text-transform:uppercase;
+        font-size:.9rem; margin-right:.4rem; }
+  nav a { color:var(--ink); text-decoration:none; font-size:.85rem; font-weight:600; }
+  nav a.active, nav a:hover { color:var(--stamp); }
+  nav .spacer { flex:1; }
+  main { max-width:72rem; margin:0 auto; padding:3rem 1.25rem 5rem; }
+  h1 { font-family:var(--sans); font-weight:900; font-size:clamp(2.4rem,6vw,3.4rem);
+       line-height:1.02; letter-spacing:-.02em; text-transform:uppercase;
+       margin:0 0 1.2rem; }
+  a { color:var(--stamp); }
+  p { max-width:44rem; }
+  .kicker { font-family:var(--mono); text-transform:uppercase; letter-spacing:.18em;
+        font-size:.72rem; font-weight:700; color:var(--stamp); margin:0 0 .6rem; }
+  .lede { font-size:1.28rem; line-height:1.5; max-width:40rem; margin:0 0 1.4rem; }
+  .note { color:var(--muted); font-size:.88rem; }
+  .hint { font-family:var(--mono); font-size:.72rem; letter-spacing:.12em;
+        text-transform:uppercase; color:var(--muted); margin:.4rem 0 .8rem; }
+  .sheet { background:var(--sheet); border:1px solid var(--line);
+        box-shadow:var(--shadow); border-radius:2px; }
+
+  .boardwrap { overflow-x:auto; margin:1.2rem 0; }
+  .board { position:relative; min-width:900px; background:var(--cork);
+        border:1px solid var(--line); border-radius:2px; box-shadow:var(--shadow),
+        inset 0 0 60px rgba(27,26,23,.06); }
+  .board svg { position:absolute; inset:0; width:100%; height:100%; }
+  .yarn { fill:none; stroke:var(--stamp); opacity:var(--yo,.4);
+        transition:opacity .25s ease, stroke-width .25s ease; }
+  .pin-card { position:absolute; transform:translate(-50%,-50%) rotate(var(--tilt,0deg));
+        background:var(--sheet); border:1px solid var(--line); border-radius:1px;
+        box-shadow:0 2px 5px rgba(27,26,23,.25); padding:.5rem .7rem .4rem;
+        font-family:var(--sans); font-weight:800; font-size:.68rem;
+        letter-spacing:.04em; color:var(--ink); cursor:pointer; text-align:center;
+        transition:opacity .25s ease; }
+  .pin-card:nth-child(3n) { --tilt:-1.2deg; }
+  .pin-card:nth-child(3n+1) { --tilt:.9deg; }
+  .pin-card:nth-child(7n) { --tilt:2deg; }
+  .pin-card .pin { position:absolute; top:-5px; left:50%; margin-left:-5px;
+        width:10px; height:10px; border-radius:50%; background:var(--stamp);
+        box-shadow:0 1px 2px rgba(27,26,23,.4); }
+  .pin-card .count { display:block; font-family:var(--mono); font-weight:400;
+        font-size:.6rem; letter-spacing:.06em; color:var(--muted); margin-top:.15rem; }
+  .pin-card:focus-visible { outline:2px solid var(--stamp); outline-offset:2px; }
+
+  /* isolate mode */
+  .board.focused .yarn { opacity:.06; }
+  .board.focused .yarn.lit { opacity:.85; }
+  .board.focused .pin-card { opacity:.25; }
+  .board.focused .pin-card.active, .board.focused .pin-card.linked { opacity:1; }
+  .board.focused .pin-card.active { outline:2px solid var(--stamp); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce) {
+    .yarn, .pin-card { transition:none; } }
+
+  .connections { padding:1rem 1.2rem; margin:0 0 1rem; max-width:44rem;
+        font-family:var(--mono); font-size:.85rem; display:none; }
+  .connections.open { display:block; }
+  .connections h3 { font-family:var(--sans); font-weight:800; font-size:.9rem;
+        text-transform:uppercase; letter-spacing:.06em; margin:0 0 .5rem; }
+  .connections ol { list-style:none; margin:0; padding:0; }
+  .connections li { display:flex; justify-content:space-between; gap:1rem;
+        border-bottom:1px solid var(--sheetline); padding:.25rem 0; }
+  .connections li:last-child { border-bottom:none; }
+  .connections .w { color:var(--stamp); font-weight:700; white-space:nowrap; }
+
+  h2 { font-family:var(--sans); font-weight:800; font-size:1.15rem;
+       text-transform:uppercase; letter-spacing:.05em; margin:3rem 0 1rem; }
+  .findings { display:grid; grid-template-columns:repeat(auto-fit,minmax(19rem,1fr));
+        gap:1.6rem 2.4rem; margin:0 0 2.4rem; }
+  .finding .flabel { display:block; font-family:var(--mono); font-weight:700;
+        font-size:.72rem; letter-spacing:.14em; text-transform:uppercase;
+        color:var(--stamp); border-top:3px solid var(--stamp);
+        padding-top:.5rem; margin-bottom:.4rem; }
+  .finding p { margin:0; font-size:.95rem; }
+
+  .disclaimer { padding:1rem 1.2rem; margin:2.8rem 0 0; color:var(--muted);
+        font-size:.88rem; max-width:none; }
+</style>
+</head>
+<body>
+<nav><div class="inner"><span class="brand">Epstein Bench</span><a href="index.html">Leaderboard</a><a href="board.html" class="active">The Board</a><a href="methodology.html">Methodology</a><a href="dataset.html">Dataset Card</a><span class="spacer"></span><a href="https://github.com/yourbuddyconner/epstein-bench">GitHub</a></div></nav>
+<main>
+
+  <p class="kicker">The corkboard</p>
+  <h1>The Board</h1>
+
+  <p class="lede">Each red thread connects two of the 38 people the benchmark
+  tracks through the Epstein Files, weighted by the number of documents that
+  name both. The heaviest thread on the board connects two of its least
+  famous names.</p>
+
+  <p>A thread is a count, not a claim: how many of the corpus&rsquo;s 84,000
+  documents mention both people, using the same alias index the benchmark
+  uses to build its tasks. Threads representing fewer than three shared
+  documents are not drawn.</p>
+  <p class="hint">Hover a name to pull their threads. Click to pin, Esc to let go.</p>
+
+  <div class="boardwrap">
+  <!-- generated:board-viz:start -->
+  <div class="board" style="aspect-ratio:1150/780">
+    <svg viewBox="0 0 1150 780" preserveAspectRatio="none" aria-hidden="true">
+    <path class="yarn" data-a="lesle-groff" data-b="ehud-barak" data-w="3" d="M 373 537 Q 377 479 381 385" stroke-width="1.2" style="--yo:0.33"><title>LESLEY GROFF and EHUD BARAK: 3 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="brock-pierce" data-w="3" d="M 373 537 Q 304 507 234 436" stroke-width="1.2" style="--yo:0.33"><title>LESLEY GROFF and BROCK PIERCE: 3 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="peter-mandelson" data-w="3" d="M 373 537 Q 609 481 845 365" stroke-width="1.2" style="--yo:0.33"><title>LESLEY GROFF and PETER MANDELSON: 3 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="reid-weingarten" data-w="3" d="M 373 537 Q 523 532 672 466" stroke-width="1.2" style="--yo:0.33"><title>LESLEY GROFF and REID WEINGARTEN: 3 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="joichi-ito" data-w="3" d="M 381 385 Q 586 354 791 263" stroke-width="1.2" style="--yo:0.33"><title>EHUD BARAK and JOICHI ITO: 3 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="luciano-fontanilla" data-w="3" d="M 780 415 Q 690 547 600 619" stroke-width="1.2" style="--yo:0.33"><title>NATHAN MYHRVOLD and LUCIANO FONTANILLA: 3 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="adam-bly" data-w="3" d="M 780 415 Q 505 532 229 588" stroke-width="1.2" style="--yo:0.33"><title>NATHAN MYHRVOLD and ADAM BLY: 3 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="luciano-fontanilla" data-w="3" d="M 568 334 Q 584 506 600 619" stroke-width="1.2" style="--yo:0.33"><title>BILL GATES and LUCIANO FONTANILLA: 3 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="darren-ind" data-w="3" d="M 568 334 Q 450 362 331 334" stroke-width="1.2" style="--yo:0.33"><title>BILL GATES and DARREN INDYKE: 3 shared documents</title></path>
+    <path class="yarn" data-a="roy-hodges" data-b="george-church" data-w="3" d="M 602 385 Q 570 469 538 517" stroke-width="1.2" style="--yo:0.33"><title>ROY HODGES and GEORGE CHURCH: 3 shared documents</title></path>
+    <path class="yarn" data-a="roy-hodges" data-b="barry-josephson" data-w="3" d="M 602 385 Q 521 516 439 588" stroke-width="1.2" style="--yo:0.33"><title>ROY HODGES and BARRY JOSEPHSON: 3 shared documents</title></path>
+    <path class="yarn" data-a="brock-pierce" data-b="john-christensen" data-w="3" d="M 234 436 Q 502 354 770 212" stroke-width="1.2" style="--yo:0.33"><title>BROCK PIERCE and JOHN CHRISTENSEN: 3 shared documents</title></path>
+    <path class="yarn" data-a="anthony-barrett" data-b="nili-priell-barak" data-w="3" d="M 934 415 Q 556 403 177 331" stroke-width="1.2" style="--yo:0.33"><title>ANTHONY BARRETT and NILI PRIELL BARAK: 3 shared documents</title></path>
+    <path class="yarn" data-a="craig-martin" data-b="adam-bly" data-w="3" d="M 652 670 Q 441 659 229 588" stroke-width="1.2" style="--yo:0.33"><title>CRAIG MARTIN and ADAM BLY: 3 shared documents</title></path>
+    <path class="yarn" data-a="craig-martin" data-b="darren-ind" data-w="3" d="M 652 670 Q 492 532 331 334" stroke-width="1.2" style="--yo:0.33"><title>CRAIG MARTIN and DARREN INDYKE: 3 shared documents</title></path>
+    <path class="yarn" data-a="mortimer-zuckerman" data-b="jennie-saunders" data-w="3" d="M 941 314 Q 939 440 938 517" stroke-width="1.2" style="--yo:0.33"><title>MORTIMER ZUCKERMAN and JENNIE SAUNDERS: 3 shared documents</title></path>
+    <path class="yarn" data-a="mortimer-zuckerman" data-b="darren-ind" data-w="3" d="M 941 314 Q 636 354 331 334" stroke-width="1.2" style="--yo:0.33"><title>MORTIMER ZUCKERMAN and DARREN INDYKE: 3 shared documents</title></path>
+    <path class="yarn" data-a="danny-hillis" data-b="justin-nelson" data-w="3" d="M 424 283 Q 573 328 723 314" stroke-width="1.2" style="--yo:0.33"><title>DANNY HILLIS and JUSTIN NELSON: 3 shared documents</title></path>
+    <path class="yarn" data-a="danny-hillis" data-b="john-christensen" data-w="3" d="M 424 283 Q 597 277 770 212" stroke-width="1.2" style="--yo:0.33"><title>DANNY HILLIS and JOHN CHRISTENSEN: 3 shared documents</title></path>
+    <path class="yarn" data-a="adam-bly" data-b="barry-josephson" data-w="3" d="M 229 588 Q 334 614 439 588" stroke-width="1.2" style="--yo:0.33"><title>ADAM BLY and BARRY JOSEPHSON: 3 shared documents</title></path>
+    <path class="yarn" data-a="john-christensen" data-b="darren-ind" data-w="3" d="M 770 212 Q 551 303 331 334" stroke-width="1.2" style="--yo:0.33"><title>JOHN CHRISTENSEN and DARREN INDYKE: 3 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="todd-meister" data-w="4" d="M 373 537 Q 498 583 622 568" stroke-width="1.2" style="--yo:0.34"><title>LESLEY GROFF and TODD MEISTER: 4 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="roy-hodges" data-w="4" d="M 373 537 Q 488 491 602 385" stroke-width="1.2" style="--yo:0.34"><title>LESLEY GROFF and ROY HODGES: 4 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="justin-nelson" data-w="4" d="M 373 537 Q 548 456 723 314" stroke-width="1.2" style="--yo:0.34"><title>LESLEY GROFF and JUSTIN NELSON: 4 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="todd-meister" data-w="4" d="M 780 415 Q 701 518 622 568" stroke-width="1.2" style="--yo:0.34"><title>NATHAN MYHRVOLD and TODD MEISTER: 4 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="steve-bannon" data-w="4" d="M 568 334 Q 587 269 606 161" stroke-width="1.2" style="--yo:0.34"><title>BILL GATES and STEVE BANNON: 4 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="jennie-saunders" data-w="4" d="M 568 334 Q 753 456 938 517" stroke-width="1.2" style="--yo:0.34"><title>BILL GATES and JENNIE SAUNDERS: 4 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="adam-bly" data-w="4" d="M 568 334 Q 399 491 229 588" stroke-width="1.2" style="--yo:0.34"><title>BILL GATES and ADAM BLY: 4 shared documents</title></path>
+    <path class="yarn" data-a="brock-pierce" data-b="craig-martin" data-w="4" d="M 234 436 Q 443 583 652 670" stroke-width="1.2" style="--yo:0.34"><title>BROCK PIERCE and CRAIG MARTIN: 4 shared documents</title></path>
+    <path class="yarn" data-a="larry-cohen" data-b="george-church" data-w="4" d="M 351 486 Q 444 525 538 517" stroke-width="1.2" style="--yo:0.34"><title>LARRY COHEN and GEORGE CHURCH: 4 shared documents</title></path>
+    <path class="yarn" data-a="larry-cohen" data-b="steven-sinofsky" data-w="4" d="M 351 486 Q 374 364 397 181" stroke-width="1.2" style="--yo:0.34"><title>LARRY COHEN and STEVEN SINOFSKY: 4 shared documents</title></path>
+    <path class="yarn" data-a="anthony-barrett" data-b="justin-nelson" data-w="4" d="M 934 415 Q 829 393 723 314" stroke-width="1.2" style="--yo:0.34"><title>ANTHONY BARRETT and JUSTIN NELSON: 4 shared documents</title></path>
+    <path class="yarn" data-a="alireza-ittihadieh" data-b="darren-ind" data-w="4" d="M 259 639 Q 295 516 331 334" stroke-width="1.2" style="--yo:0.34"><title>ALIREZA ITTIHADIEH and DARREN INDYKE: 4 shared documents</title></path>
+    <path class="yarn" data-a="george-church" data-b="luciano-fontanilla" data-w="4" d="M 538 517 Q 569 582 600 619" stroke-width="1.2" style="--yo:0.34"><title>GEORGE CHURCH and LUCIANO FONTANILLA: 4 shared documents</title></path>
+    <path class="yarn" data-a="george-church" data-b="barry-josephson" data-w="4" d="M 538 517 Q 489 567 439 588" stroke-width="1.2" style="--yo:0.34"><title>GEORGE CHURCH and BARRY JOSEPHSON: 4 shared documents</title></path>
+    <path class="yarn" data-a="joichi-ito" data-b="adam-bly" data-w="4" d="M 791 263 Q 510 456 229 588" stroke-width="1.2" style="--yo:0.34"><title>JOICHI ITO and ADAM BLY: 4 shared documents</title></path>
+    <path class="yarn" data-a="joichi-ito" data-b="stephanie-hodges" data-w="4" d="M 791 263 Q 628 379 465 436" stroke-width="1.2" style="--yo:0.34"><title>JOICHI ITO and STEPHANIE HODGES: 4 shared documents</title></path>
+    <path class="yarn" data-a="joichi-ito" data-b="steven-sinofsky" data-w="4" d="M 791 263 Q 594 252 397 181" stroke-width="1.2" style="--yo:0.34"><title>JOICHI ITO and STEVEN SINOFSKY: 4 shared documents</title></path>
+    <path class="yarn" data-a="stephanie-remington" data-b="darren-ind" data-w="4" d="M 597 110 Q 464 252 331 334" stroke-width="1.2" style="--yo:0.34"><title>STEPHANIE REMINGTON and DARREN INDYKE: 4 shared documents</title></path>
+    <path class="yarn" data-a="danny-hillis" data-b="barry-josephson" data-w="4" d="M 424 283 Q 432 466 439 588" stroke-width="1.2" style="--yo:0.34"><title>DANNY HILLIS and BARRY JOSEPHSON: 4 shared documents</title></path>
+    <path class="yarn" data-a="reid-weingarten" data-b="john-christensen" data-w="4" d="M 672 466 Q 721 369 770 212" stroke-width="1.2" style="--yo:0.34"><title>REID WEINGARTEN and JOHN CHRISTENSEN: 4 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="peter-attia" data-w="5" d="M 373 537 Q 594 583 816 568" stroke-width="1.3" style="--yo:0.34"><title>LESLEY GROFF and PETER ATTIA: 5 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="anthony-barrett" data-w="5" d="M 373 537 Q 654 506 934 415" stroke-width="1.3" style="--yo:0.34"><title>LESLEY GROFF and ANTHONY BARRETT: 5 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="stephanie-hodges" data-w="5" d="M 373 537 Q 419 503 465 436" stroke-width="1.3" style="--yo:0.34"><title>LESLEY GROFF and STEPHANIE HODGES: 5 shared documents</title></path>
+    <path class="yarn" data-a="todd-meister" data-b="anthony-barrett" data-w="5" d="M 622 568 Q 778 522 934 415" stroke-width="1.3" style="--yo:0.34"><title>TODD MEISTER and ANTHONY BARRETT: 5 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="mortimer-zuckerman" data-w="5" d="M 568 334 Q 755 354 941 314" stroke-width="1.3" style="--yo:0.34"><title>BILL GATES and MORTIMER ZUCKERMAN: 5 shared documents</title></path>
+    <path class="yarn" data-a="brock-pierce" data-b="prince-andrew" data-w="5" d="M 234 436 Q 432 379 631 263" stroke-width="1.3" style="--yo:0.34"><title>BROCK PIERCE and PRINCE ANDREW: 5 shared documents</title></path>
+    <path class="yarn" data-a="peter-mandelson" data-b="george-church" data-w="5" d="M 845 365 Q 691 471 538 517" stroke-width="1.3" style="--yo:0.34"><title>PETER MANDELSON and GEORGE CHURCH: 5 shared documents</title></path>
+    <path class="yarn" data-a="steve-bannon" data-b="prince-andrew" data-w="5" d="M 606 161 Q 618 224 631 263" stroke-width="1.3" style="--yo:0.34"><title>STEVE BANNON and PRINCE ANDREW: 5 shared documents</title></path>
+    <path class="yarn" data-a="anthony-barrett" data-b="adam-bly" data-w="5" d="M 934 415 Q 582 532 229 588" stroke-width="1.3" style="--yo:0.34"><title>ANTHONY BARRETT and ADAM BLY: 5 shared documents</title></path>
+    <path class="yarn" data-a="prince-andrew" data-b="george-church" data-w="5" d="M 631 263 Q 584 420 538 517" stroke-width="1.3" style="--yo:0.34"><title>PRINCE ANDREW and GEORGE CHURCH: 5 shared documents</title></path>
+    <path class="yarn" data-a="george-church" data-b="adam-bly" data-w="5" d="M 538 517 Q 384 583 229 588" stroke-width="1.3" style="--yo:0.34"><title>GEORGE CHURCH and ADAM BLY: 5 shared documents</title></path>
+    <path class="yarn" data-a="danny-hillis" data-b="adam-bly" data-w="5" d="M 424 283 Q 327 466 229 588" stroke-width="1.3" style="--yo:0.34"><title>DANNY HILLIS and ADAM BLY: 5 shared documents</title></path>
+    <path class="yarn" data-a="ariane-dwyer" data-b="darren-ind" data-w="5" d="M 1040 365 Q 686 379 331 334" stroke-width="1.3" style="--yo:0.34"><title>ARIANE DWYER and DARREN INDYKE: 5 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="nathan-myhrvold" data-w="6" d="M 373 537 Q 577 506 780 415" stroke-width="1.3" style="--yo:0.35"><title>LESLEY GROFF and NATHAN MYHRVOLD: 6 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="bill-gates" data-w="6" d="M 373 537 Q 471 466 568 334" stroke-width="1.3" style="--yo:0.35"><title>LESLEY GROFF and BILL GATES: 6 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="george-church" data-w="6" d="M 373 537 Q 456 547 538 517" stroke-width="1.3" style="--yo:0.35"><title>LESLEY GROFF and GEORGE CHURCH: 6 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="danny-hillis" data-w="6" d="M 373 537 Q 399 440 424 283" stroke-width="1.3" style="--yo:0.35"><title>LESLEY GROFF and DANNY HILLIS: 6 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="luciano-fontanilla" data-w="6" d="M 381 385 Q 490 532 600 619" stroke-width="1.3" style="--yo:0.35"><title>EHUD BARAK and LUCIANO FONTANILLA: 6 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="danny-hillis" data-w="6" d="M 381 385 Q 402 347 424 283" stroke-width="1.3" style="--yo:0.35"><title>EHUD BARAK and DANNY HILLIS: 6 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="steven-sinofsky" data-w="6" d="M 568 334 Q 483 285 397 181" stroke-width="1.3" style="--yo:0.35"><title>BILL GATES and STEVEN SINOFSKY: 6 shared documents</title></path>
+    <path class="yarn" data-a="brock-pierce" data-b="barry-josephson" data-w="6" d="M 234 436 Q 337 542 439 588" stroke-width="1.3" style="--yo:0.35"><title>BROCK PIERCE and BARRY JOSEPHSON: 6 shared documents</title></path>
+    <path class="yarn" data-a="peter-attia" data-b="steve-bannon" data-w="6" d="M 816 568 Q 711 395 606 161" stroke-width="1.3" style="--yo:0.35"><title>PETER ATTIA and STEVE BANNON: 6 shared documents</title></path>
+    <path class="yarn" data-a="peter-attia" data-b="george-church" data-w="6" d="M 816 568 Q 677 573 538 517" stroke-width="1.3" style="--yo:0.35"><title>PETER ATTIA and GEORGE CHURCH: 6 shared documents</title></path>
+    <path class="yarn" data-a="peter-attia" data-b="danny-hillis" data-w="6" d="M 816 568 Q 620 456 424 283" stroke-width="1.3" style="--yo:0.35"><title>PETER ATTIA and DANNY HILLIS: 6 shared documents</title></path>
+    <path class="yarn" data-a="peter-attia" data-b="justin-nelson" data-w="6" d="M 816 568 Q 769 471 723 314" stroke-width="1.3" style="--yo:0.35"><title>PETER ATTIA and JUSTIN NELSON: 6 shared documents</title></path>
+    <path class="yarn" data-a="anthony-barrett" data-b="george-church" data-w="6" d="M 934 415 Q 736 496 538 517" stroke-width="1.3" style="--yo:0.35"><title>ANTHONY BARRETT and GEORGE CHURCH: 6 shared documents</title></path>
+    <path class="yarn" data-a="prince-andrew" data-b="darren-ind" data-w="6" d="M 631 263 Q 481 328 331 334" stroke-width="1.3" style="--yo:0.35"><title>PRINCE ANDREW and DARREN INDYKE: 6 shared documents</title></path>
+    <path class="yarn" data-a="george-church" data-b="justin-nelson" data-w="6" d="M 538 517 Q 630 445 723 314" stroke-width="1.3" style="--yo:0.35"><title>GEORGE CHURCH and JUSTIN NELSON: 6 shared documents</title></path>
+    <path class="yarn" data-a="jennie-saunders" data-b="adam-bly" data-w="6" d="M 938 517 Q 584 583 229 588" stroke-width="1.3" style="--yo:0.35"><title>JENNIE SAUNDERS and ADAM BLY: 6 shared documents</title></path>
+    <path class="yarn" data-a="luciano-fontanilla" data-b="justin-nelson" data-w="6" d="M 600 619 Q 661 496 723 314" stroke-width="1.3" style="--yo:0.35"><title>LUCIANO FONTANILLA and JUSTIN NELSON: 6 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="brock-pierce" data-w="7" d="M 568 334 Q 401 415 234 436" stroke-width="1.3" style="--yo:0.35"><title>BILL GATES and BROCK PIERCE: 7 shared documents</title></path>
+    <path class="yarn" data-a="brock-pierce" data-b="joichi-ito" data-w="7" d="M 234 436 Q 513 379 791 263" stroke-width="1.3" style="--yo:0.35"><title>BROCK PIERCE and JOICHI ITO: 7 shared documents</title></path>
+    <path class="yarn" data-a="steve-bannon" data-b="george-church" data-w="7" d="M 606 161 Q 572 369 538 517" stroke-width="1.3" style="--yo:0.35"><title>STEVE BANNON and GEORGE CHURCH: 7 shared documents</title></path>
+    <path class="yarn" data-a="prince-andrew" data-b="danny-hillis" data-w="7" d="M 631 263 Q 527 298 424 283" stroke-width="1.3" style="--yo:0.35"><title>PRINCE ANDREW and DANNY HILLIS: 7 shared documents</title></path>
+    <path class="yarn" data-a="george-church" data-b="jennie-saunders" data-w="7" d="M 538 517 Q 738 547 938 517" stroke-width="1.3" style="--yo:0.35"><title>GEORGE CHURCH and JENNIE SAUNDERS: 7 shared documents</title></path>
+    <path class="yarn" data-a="joichi-ito" data-b="masha-drokova" data-w="7" d="M 791 263 Q 451 405 110 486" stroke-width="1.3" style="--yo:0.35"><title>JOICHI ITO and MASHA DROKOVA: 7 shared documents</title></path>
+    <path class="yarn" data-a="mortimer-zuckerman" data-b="martin-zeman" data-w="7" d="M 941 314 Q 564 277 188 181" stroke-width="1.3" style="--yo:0.35"><title>MORTIMER ZUCKERMAN and MARTIN ZEMAN: 7 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="peter-attia" data-w="8" d="M 381 385 Q 598 506 816 568" stroke-width="1.3" style="--yo:0.35"><title>EHUD BARAK and PETER ATTIA: 8 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="brock-pierce" data-w="8" d="M 780 415 Q 507 456 234 436" stroke-width="1.3" style="--yo:0.35"><title>NATHAN MYHRVOLD and BROCK PIERCE: 8 shared documents</title></path>
+    <path class="yarn" data-a="brock-pierce" data-b="george-church" data-w="8" d="M 234 436 Q 386 506 538 517" stroke-width="1.3" style="--yo:0.35"><title>BROCK PIERCE and GEORGE CHURCH: 8 shared documents</title></path>
+    <path class="yarn" data-a="peter-mandelson" data-b="jennie-saunders" data-w="8" d="M 845 365 Q 891 462 938 517" stroke-width="1.3" style="--yo:0.35"><title>PETER MANDELSON and JENNIE SAUNDERS: 8 shared documents</title></path>
+    <path class="yarn" data-a="jennie-saunders" data-b="reid-weingarten" data-w="8" d="M 938 517 Q 805 522 672 466" stroke-width="1.3" style="--yo:0.35"><title>JENNIE SAUNDERS and REID WEINGARTEN: 8 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="adam-bly" data-w="9" d="M 381 385 Q 305 516 229 588" stroke-width="1.4" style="--yo:0.36"><title>EHUD BARAK and ADAM BLY: 9 shared documents</title></path>
+    <path class="yarn" data-a="todd-meister" data-b="brock-pierce" data-w="9" d="M 622 568 Q 428 532 234 436" stroke-width="1.4" style="--yo:0.36"><title>TODD MEISTER and BROCK PIERCE: 9 shared documents</title></path>
+    <path class="yarn" data-a="roy-hodges" data-b="darren-ind" data-w="9" d="M 602 385 Q 467 389 331 334" stroke-width="1.4" style="--yo:0.36"><title>ROY HODGES and DARREN INDYKE: 9 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="george-church" data-w="10" d="M 381 385 Q 459 476 538 517" stroke-width="1.4" style="--yo:0.36"><title>EHUD BARAK and GEORGE CHURCH: 10 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="larry-cohen" data-w="10" d="M 780 415 Q 566 481 351 486" stroke-width="1.4" style="--yo:0.36"><title>NATHAN MYHRVOLD and LARRY COHEN: 10 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="barry-josephson" data-w="10" d="M 780 415 Q 610 532 439 588" stroke-width="1.4" style="--yo:0.36"><title>NATHAN MYHRVOLD and BARRY JOSEPHSON: 10 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="joichi-ito" data-w="10" d="M 568 334 Q 680 326 791 263" stroke-width="1.4" style="--yo:0.36"><title>BILL GATES and JOICHI ITO: 10 shared documents</title></path>
+    <path class="yarn" data-a="anthony-barrett" data-b="reid-weingarten" data-w="10" d="M 934 415 Q 803 471 672 466" stroke-width="1.4" style="--yo:0.36"><title>ANTHONY BARRETT and REID WEINGARTEN: 10 shared documents</title></path>
+    <path class="yarn" data-a="craig-martin" data-b="danny-hillis" data-w="10" d="M 652 670 Q 538 506 424 283" stroke-width="1.4" style="--yo:0.36"><title>CRAIG MARTIN and DANNY HILLIS: 10 shared documents</title></path>
+    <path class="yarn" data-a="adam-bly" data-b="justin-nelson" data-w="10" d="M 229 588 Q 476 481 723 314" stroke-width="1.4" style="--yo:0.36"><title>ADAM BLY and JUSTIN NELSON: 10 shared documents</title></path>
+    <path class="yarn" data-a="stephanie-hodges" data-b="darren-ind" data-w="10" d="M 465 436 Q 398 405 331 334" stroke-width="1.4" style="--yo:0.36"><title>STEPHANIE HODGES and DARREN INDYKE: 10 shared documents</title></path>
+    <path class="yarn" data-a="todd-meister" data-b="george-church" data-w="11" d="M 622 568 Q 580 555 538 517" stroke-width="1.4" style="--yo:0.36"><title>TODD MEISTER and GEORGE CHURCH: 11 shared documents</title></path>
+    <path class="yarn" data-a="peter-mandelson" data-b="adam-bly" data-w="11" d="M 845 365 Q 537 506 229 588" stroke-width="1.4" style="--yo:0.36"><title>PETER MANDELSON and ADAM BLY: 11 shared documents</title></path>
+    <path class="yarn" data-a="steve-bannon" data-b="reid-weingarten" data-w="11" d="M 606 161 Q 639 344 672 466" stroke-width="1.4" style="--yo:0.36"><title>STEVE BANNON and REID WEINGARTEN: 11 shared documents</title></path>
+    <path class="yarn" data-a="luciano-fontanilla" data-b="reid-weingarten" data-w="11" d="M 600 619 Q 636 563 672 466" stroke-width="1.4" style="--yo:0.36"><title>LUCIANO FONTANILLA and REID WEINGARTEN: 11 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="john-christensen" data-w="12" d="M 381 385 Q 576 328 770 212" stroke-width="1.4" style="--yo:0.36"><title>EHUD BARAK and JOHN CHRISTENSEN: 12 shared documents</title></path>
+    <path class="yarn" data-a="adam-bly" data-b="reid-weingarten" data-w="12" d="M 229 588 Q 451 557 672 466" stroke-width="1.4" style="--yo:0.36"><title>ADAM BLY and REID WEINGARTEN: 12 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="justin-nelson" data-w="13" d="M 568 334 Q 646 342 723 314" stroke-width="1.4" style="--yo:0.37"><title>BILL GATES and JUSTIN NELSON: 13 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="luciano-fontanilla" data-w="14" d="M 373 537 Q 486 607 600 619" stroke-width="1.4" style="--yo:0.37"><title>LESLEY GROFF and LUCIANO FONTANILLA: 14 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="anthony-barrett" data-w="14" d="M 381 385 Q 658 430 934 415" stroke-width="1.4" style="--yo:0.37"><title>EHUD BARAK and ANTHONY BARRETT: 14 shared documents</title></path>
+    <path class="yarn" data-a="todd-meister" data-b="joichi-ito" data-w="14" d="M 622 568 Q 707 445 791 263" stroke-width="1.4" style="--yo:0.37"><title>TODD MEISTER and JOICHI ITO: 14 shared documents</title></path>
+    <path class="yarn" data-a="brock-pierce" data-b="reid-weingarten" data-w="14" d="M 234 436 Q 453 481 672 466" stroke-width="1.4" style="--yo:0.37"><title>BROCK PIERCE and REID WEINGARTEN: 14 shared documents</title></path>
+    <path class="yarn" data-a="prince-andrew" data-b="reid-weingarten" data-w="15" d="M 631 263 Q 651 389 672 466" stroke-width="1.5" style="--yo:0.37"><title>PRINCE ANDREW and REID WEINGARTEN: 15 shared documents</title></path>
+    <path class="yarn" data-a="joichi-ito" data-b="reid-weingarten" data-w="15" d="M 791 263 Q 732 393 672 466" stroke-width="1.5" style="--yo:0.37"><title>JOICHI ITO and REID WEINGARTEN: 15 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="nathan-myhrvold" data-w="16" d="M 381 385 Q 581 430 780 415" stroke-width="1.5" style="--yo:0.37"><title>EHUD BARAK and NATHAN MYHRVOLD: 16 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="anthony-barrett" data-w="16" d="M 780 415 Q 857 434 934 415" stroke-width="1.5" style="--yo:0.37"><title>NATHAN MYHRVOLD and ANTHONY BARRETT: 16 shared documents</title></path>
+    <path class="yarn" data-a="reid-weingarten" data-b="barry-josephson" data-w="16" d="M 672 466 Q 556 557 439 588" stroke-width="1.5" style="--yo:0.37"><title>REID WEINGARTEN and BARRY JOSEPHSON: 16 shared documents</title></path>
+    <path class="yarn" data-a="todd-meister" data-b="prince-andrew" data-w="17" d="M 622 568 Q 626 445 631 263" stroke-width="1.5" style="--yo:0.38"><title>TODD MEISTER and PRINCE ANDREW: 17 shared documents</title></path>
+    <path class="yarn" data-a="peter-attia" data-b="reid-weingarten" data-w="17" d="M 816 568 Q 744 538 672 466" stroke-width="1.5" style="--yo:0.38"><title>PETER ATTIA and REID WEINGARTEN: 17 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="mark-tollison" data-w="18" d="M 780 415 Q 560 354 339 232" stroke-width="1.5" style="--yo:0.38"><title>NATHAN MYHRVOLD and MARK TOLLISON: 18 shared documents</title></path>
+    <path class="yarn" data-a="martin-weinberg" data-b="darren-ind" data-w="18" d="M 556 212 Q 444 303 331 334" stroke-width="1.5" style="--yo:0.38"><title>MARTIN WEINBERG and DARREN INDYKE: 18 shared documents</title></path>
+    <path class="yarn" data-a="anthony-barrett" data-b="mark-tollison" data-w="21" d="M 934 415 Q 637 354 339 232" stroke-width="1.5" style="--yo:0.39"><title>ANTHONY BARRETT and MARK TOLLISON: 21 shared documents</title></path>
+    <path class="yarn" data-a="reid-weingarten" data-b="mark-tollison" data-w="21" d="M 672 466 Q 505 379 339 232" stroke-width="1.5" style="--yo:0.39"><title>REID WEINGARTEN and MARK TOLLISON: 21 shared documents</title></path>
+    <path class="yarn" data-a="peter-mandelson" data-b="prince-andrew" data-w="23" d="M 845 365 Q 738 342 631 263" stroke-width="1.6" style="--yo:0.39"><title>PETER MANDELSON and PRINCE ANDREW: 23 shared documents</title></path>
+    <path class="yarn" data-a="masha-drokova" data-b="steven-sinofsky" data-w="23" d="M 110 486 Q 253 364 397 181" stroke-width="1.6" style="--yo:0.39"><title>MASHA DROKOVA and STEVEN SINOFSKY: 23 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="peter-mandelson" data-w="24" d="M 568 334 Q 706 379 845 365" stroke-width="1.6" style="--yo:0.39"><title>BILL GATES and PETER MANDELSON: 24 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="brock-pierce" data-w="25" d="M 381 385 Q 307 429 234 436" stroke-width="1.6" style="--yo:0.39"><title>EHUD BARAK and BROCK PIERCE: 25 shared documents</title></path>
+    <path class="yarn" data-a="todd-meister" data-b="bill-gates" data-w="25" d="M 622 568 Q 595 480 568 334" stroke-width="1.6" style="--yo:0.39"><title>TODD MEISTER and BILL GATES: 25 shared documents</title></path>
+    <path class="yarn" data-a="peter-mandelson" data-b="reid-weingarten" data-w="25" d="M 845 365 Q 758 440 672 466" stroke-width="1.6" style="--yo:0.39"><title>PETER MANDELSON and REID WEINGARTEN: 25 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="prince-andrew" data-w="27" d="M 780 415 Q 706 365 631 263" stroke-width="1.6" style="--yo:0.40"><title>NATHAN MYHRVOLD and PRINCE ANDREW: 27 shared documents</title></path>
+    <path class="yarn" data-a="george-church" data-b="joichi-ito" data-w="27" d="M 538 517 Q 664 420 791 263" stroke-width="1.6" style="--yo:0.40"><title>GEORGE CHURCH and JOICHI ITO: 27 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="reid-weingarten" data-w="28" d="M 780 415 Q 726 455 672 466" stroke-width="1.6" style="--yo:0.40"><title>NATHAN MYHRVOLD and REID WEINGARTEN: 28 shared documents</title></path>
+    <path class="yarn" data-a="george-church" data-b="reid-weingarten" data-w="29" d="M 538 517 Q 605 509 672 466" stroke-width="1.6" style="--yo:0.40"><title>GEORGE CHURCH and REID WEINGARTEN: 29 shared documents</title></path>
+    <path class="yarn" data-a="prince-andrew" data-b="mortimer-zuckerman" data-w="30" d="M 631 263 Q 786 318 941 314" stroke-width="1.6" style="--yo:0.40"><title>PRINCE ANDREW and MORTIMER ZUCKERMAN: 30 shared documents</title></path>
+    <path class="yarn" data-a="joichi-ito" data-b="danny-hillis" data-w="30" d="M 791 263 Q 608 303 424 283" stroke-width="1.6" style="--yo:0.40"><title>JOICHI ITO and DANNY HILLIS: 30 shared documents</title></path>
+    <path class="yarn" data-a="peter-mandelson" data-b="justin-nelson" data-w="31" d="M 845 365 Q 784 355 723 314" stroke-width="1.7" style="--yo:0.40"><title>PETER MANDELSON and JUSTIN NELSON: 31 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="prince-andrew" data-w="33" d="M 381 385 Q 506 354 631 263" stroke-width="1.7" style="--yo:0.41"><title>EHUD BARAK and PRINCE ANDREW: 33 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="mark-tollison" data-w="34" d="M 381 385 Q 360 327 339 232" stroke-width="1.7" style="--yo:0.41"><title>EHUD BARAK and MARK TOLLISON: 34 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="danny-hillis" data-w="37" d="M 568 334 Q 496 327 424 283" stroke-width="1.7" style="--yo:0.41"><title>BILL GATES and DANNY HILLIS: 37 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="todd-meister" data-w="39" d="M 381 385 Q 501 506 622 568" stroke-width="1.7" style="--yo:0.42"><title>EHUD BARAK and TODD MEISTER: 39 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="bill-gates" data-w="39" d="M 381 385 Q 475 383 568 334" stroke-width="1.7" style="--yo:0.42"><title>EHUD BARAK and BILL GATES: 39 shared documents</title></path>
+    <path class="yarn" data-a="brock-pierce" data-b="danny-hillis" data-w="39" d="M 234 436 Q 329 388 424 283" stroke-width="1.7" style="--yo:0.42"><title>BROCK PIERCE and DANNY HILLIS: 39 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="george-church" data-w="40" d="M 780 415 Q 659 496 538 517" stroke-width="1.7" style="--yo:0.42"><title>NATHAN MYHRVOLD and GEORGE CHURCH: 40 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="steve-bannon" data-w="41" d="M 381 385 Q 493 303 606 161" stroke-width="1.8" style="--yo:0.42"><title>EHUD BARAK and STEVE BANNON: 41 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="george-church" data-w="41" d="M 568 334 Q 553 448 538 517" stroke-width="1.8" style="--yo:0.42"><title>BILL GATES and GEORGE CHURCH: 41 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="nili-priell-barak" data-w="46" d="M 381 385 Q 279 383 177 331" stroke-width="1.8" style="--yo:0.43"><title>EHUD BARAK and NILI PRIELL BARAK: 46 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="danny-hillis" data-w="47" d="M 780 415 Q 602 379 424 283" stroke-width="1.8" style="--yo:0.43"><title>NATHAN MYHRVOLD and DANNY HILLIS: 47 shared documents</title></path>
+    <path class="yarn" data-a="todd-meister" data-b="justin-nelson" data-w="47" d="M 622 568 Q 672 471 723 314" stroke-width="1.8" style="--yo:0.43"><title>TODD MEISTER and JUSTIN NELSON: 47 shared documents</title></path>
+    <path class="yarn" data-a="luciano-fontanilla" data-b="darren-ind" data-w="52" d="M 600 619 Q 465 506 331 334" stroke-width="1.9" style="--yo:0.43"><title>LUCIANO FONTANILLA and DARREN INDYKE: 52 shared documents</title></path>
+    <path class="yarn" data-a="reid-weingarten" data-b="justin-nelson" data-w="55" d="M 672 466 Q 697 409 723 314" stroke-width="1.9" style="--yo:0.44"><title>REID WEINGARTEN and JUSTIN NELSON: 55 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="reid-weingarten" data-w="58" d="M 568 334 Q 620 420 672 466" stroke-width="1.9" style="--yo:0.44"><title>BILL GATES and REID WEINGARTEN: 58 shared documents</title></path>
+    <path class="yarn" data-a="martin-weinberg" data-b="prince-andrew" data-w="58" d="M 556 212 Q 594 248 631 263" stroke-width="1.9" style="--yo:0.44"><title>MARTIN WEINBERG and PRINCE ANDREW: 58 shared documents</title></path>
+    <path class="yarn" data-a="todd-meister" data-b="reid-weingarten" data-w="66" d="M 622 568 Q 647 531 672 466" stroke-width="2.0" style="--yo:0.45"><title>TODD MEISTER and REID WEINGARTEN: 66 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="prince-andrew" data-w="67" d="M 568 334 Q 600 310 631 263" stroke-width="2.0" style="--yo:0.45"><title>BILL GATES and PRINCE ANDREW: 67 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="peter-mandelson" data-w="73" d="M 381 385 Q 613 405 845 365" stroke-width="2.0" style="--yo:0.46"><title>EHUD BARAK and PETER MANDELSON: 73 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="justin-nelson" data-w="81" d="M 381 385 Q 552 379 723 314" stroke-width="2.1" style="--yo:0.47"><title>EHUD BARAK and JUSTIN NELSON: 81 shared documents</title></path>
+    <path class="yarn" data-a="martin-weinberg" data-b="reid-weingarten" data-w="88" d="M 556 212 Q 614 369 672 466" stroke-width="2.1" style="--yo:0.47"><title>MARTIN WEINBERG and REID WEINGARTEN: 88 shared documents</title></path>
+    <path class="yarn" data-a="ehud-barak" data-b="reid-weingarten" data-w="92" d="M 381 385 Q 526 456 672 466" stroke-width="2.1" style="--yo:0.48"><title>EHUD BARAK and REID WEINGARTEN: 92 shared documents</title></path>
+    <path class="yarn" data-a="nathan-myhrvold" data-b="bill-gates" data-w="92" d="M 780 415 Q 674 402 568 334" stroke-width="2.1" style="--yo:0.48"><title>NATHAN MYHRVOLD and BILL GATES: 92 shared documents</title></path>
+    <path class="yarn" data-a="lesle-groff" data-b="darren-ind" data-w="93" d="M 373 537 Q 352 461 331 334" stroke-width="2.1" style="--yo:0.48"><title>LESLEY GROFF and DARREN INDYKE: 93 shared documents</title></path>
+    <path class="yarn" data-a="george-church" data-b="danny-hillis" data-w="129" d="M 538 517 Q 481 430 424 283" stroke-width="2.3" style="--yo:0.51"><title>GEORGE CHURCH and DANNY HILLIS: 129 shared documents</title></path>
+    <path class="yarn" data-a="gina-magliocco" data-b="justin-nelson" data-w="155" d="M 834 466 Q 778 413 723 314" stroke-width="2.5" style="--yo:0.53"><title>GINA MAGLIOCCO and JUSTIN NELSON: 155 shared documents</title></path>
+    <path class="yarn" data-a="bill-gates" data-b="larry-cohen" data-w="303" d="M 568 334 Q 460 440 351 486" stroke-width="3.1" style="--yo:0.62"><title>BILL GATES and LARRY COHEN: 303 shared documents</title></path>
+    <path class="yarn" data-a="roy-hodges" data-b="stephanie-hodges" data-w="874" d="M 602 385 Q 534 428 465 436" stroke-width="4.5" style="--yo:0.85"><title>ROY HODGES and STEPHANIE HODGES: 874 shared documents</title></path>
+    </svg>
+    <button class="pin-card" data-id="lesle-groff" style="left:32.47%;top:68.90%"><span class="pin"></span>LESLEY GROFF<span class="count">2,506 docs</span></button>
+    <button class="pin-card" data-id="ehud-barak" style="left:33.11%;top:49.32%"><span class="pin"></span>EHUD BARAK<span class="count">1,967 docs</span></button>
+    <button class="pin-card" data-id="nathan-myhrvold" style="left:67.86%;top:53.26%"><span class="pin"></span>NATHAN MYHRVOLD<span class="count">1,964 docs</span></button>
+    <button class="pin-card" data-id="todd-meister" style="left:54.09%;top:72.84%"><span class="pin"></span>TODD MEISTER<span class="count">1,889 docs</span></button>
+    <button class="pin-card" data-id="bill-gates" style="left:49.43%;top:42.79%"><span class="pin"></span>BILL GATES<span class="count">1,777 docs</span></button>
+    <button class="pin-card" data-id="roy-hodges" style="left:52.37%;top:49.32%"><span class="pin"></span>ROY HODGES<span class="count">1,767 docs</span></button>
+    <button class="pin-card" data-id="nicholas-ribis" style="left:78.92%;top:79.37%"><span class="pin"></span>NICHOLAS RIBIS<span class="count">1,743 docs</span></button>
+    <button class="pin-card" data-id="martin-weinberg" style="left:48.37%;top:27.16%"><span class="pin"></span>MARTIN WEINBERG<span class="count">1,736 docs</span></button>
+    <button class="pin-card" data-id="brock-pierce" style="left:20.33%;top:55.84%"><span class="pin"></span>BROCK PIERCE<span class="count">1,709 docs</span></button>
+    <button class="pin-card" data-id="gina-magliocco" style="left:72.55%;top:59.79%"><span class="pin"></span>GINA MAGLIOCCO<span class="count">1,706 docs</span></button>
+    <button class="pin-card" data-id="peter-mandelson" style="left:73.44%;top:46.74%"><span class="pin"></span>PETER MANDELSON<span class="count">1,705 docs</span></button>
+    <button class="pin-card" data-id="larry-cohen" style="left:30.53%;top:62.37%"><span class="pin"></span>LARRY COHEN<span class="count">1,692 docs</span></button>
+    <button class="pin-card" data-id="peter-attia" style="left:70.92%;top:72.85%"><span class="pin"></span>PETER ATTIA<span class="count">1,692 docs</span></button>
+    <button class="pin-card" data-id="steve-bannon" style="left:52.70%;top:20.63%"><span class="pin"></span>STEVE BANNON<span class="count">1,673 docs</span></button>
+    <button class="pin-card" data-id="anthony-barrett" style="left:81.26%;top:53.27%"><span class="pin"></span>ANTHONY BARRETT<span class="count">1,671 docs</span></button>
+    <button class="pin-card" data-id="prince-andrew" style="left:54.85%;top:33.68%"><span class="pin"></span>PRINCE ANDREW<span class="count">1,669 docs</span></button>
+    <button class="pin-card" data-id="alireza-ittihadieh" style="left:22.52%;top:81.95%"><span class="pin"></span>ALIREZA ITTIHADIEH<span class="count">1,657 docs</span></button>
+    <button class="pin-card" data-id="craig-martin" style="left:56.67%;top:85.90%"><span class="pin"></span>CRAIG MARTIN<span class="count">1,643 docs</span></button>
+    <button class="pin-card" data-id="george-church" style="left:46.76%;top:66.32%"><span class="pin"></span>GEORGE CHURCH<span class="count">1,616 docs</span></button>
+    <button class="pin-card" data-id="joichi-ito" style="left:68.81%;top:33.68%"><span class="pin"></span>JOICHI ITO<span class="count">1,589 docs</span></button>
+    <button class="pin-card" data-id="mortimer-zuckerman" style="left:81.80%;top:40.21%"><span class="pin"></span>MORTIMER ZUCKERMAN<span class="count">1,585 docs</span></button>
+    <button class="pin-card" data-id="jennie-saunders" style="left:81.55%;top:66.32%"><span class="pin"></span>JENNIE SAUNDERS<span class="count">1,580 docs</span></button>
+    <button class="pin-card" data-id="masha-drokova" style="left:9.57%;top:62.37%"><span class="pin"></span>MASHA DROKOVA<span class="count">1,580 docs</span></button>
+    <button class="pin-card" data-id="luciano-fontanilla" style="left:52.13%;top:79.37%"><span class="pin"></span>LUCIANO FONTANILLA<span class="count">1,550 docs</span></button>
+    <button class="pin-card" data-id="stephanie-remington" style="left:51.91%;top:14.10%"><span class="pin"></span>STEPHANIE REMINGTON<span class="count">1,547 docs</span></button>
+    <button class="pin-card" data-id="danny-hillis" style="left:36.87%;top:36.26%"><span class="pin"></span>DANNY HILLIS<span class="count">1,529 docs</span></button>
+    <button class="pin-card" data-id="adam-bly" style="left:19.95%;top:75.42%"><span class="pin"></span>ADAM BLY<span class="count">1,525 docs</span></button>
+    <button class="pin-card" data-id="reid-weingarten" style="left:58.41%;top:59.79%"><span class="pin"></span>REID WEINGARTEN<span class="count">1,507 docs</span></button>
+    <button class="pin-card" data-id="stephanie-hodges" style="left:40.46%;top:55.84%"><span class="pin"></span>STEPHANIE HODGES<span class="count">1,494 docs</span></button>
+    <button class="pin-card" data-id="barry-josephson" style="left:38.21%;top:75.42%"><span class="pin"></span>BARRY JOSEPHSON<span class="count">1,431 docs</span></button>
+    <button class="pin-card" data-id="justin-nelson" style="left:62.84%;top:40.21%"><span class="pin"></span>JUSTIN NELSON<span class="count">1,392 docs</span></button>
+    <button class="pin-card" data-id="mark-tollison" style="left:29.49%;top:29.73%"><span class="pin"></span>MARK TOLLISON<span class="count">1,378 docs</span></button>
+    <button class="pin-card" data-id="nili-priell-barak" style="left:15.39%;top:42.49%"><span class="pin"></span>NILI PRIELL BARAK<span class="count">1,372 docs</span></button>
+    <button class="pin-card" data-id="john-christensen" style="left:67.00%;top:27.15%"><span class="pin"></span>JOHN CHRISTENSEN<span class="count">1,359 docs</span></button>
+    <button class="pin-card" data-id="steven-sinofsky" style="left:34.50%;top:23.21%"><span class="pin"></span>STEVEN SINOFSKY<span class="count">1,353 docs</span></button>
+    <button class="pin-card" data-id="ariane-dwyer" style="left:90.43%;top:46.74%"><span class="pin"></span>ARIANE DWYER<span class="count">1,312 docs</span></button>
+    <button class="pin-card" data-id="martin-zeman" style="left:16.35%;top:23.21%"><span class="pin"></span>MARTIN ZEMAN<span class="count">1,296 docs</span></button>
+    <button class="pin-card" data-id="darren-ind" style="left:28.82%;top:42.79%"><span class="pin"></span>DARREN INDYKE<span class="count">1,275 docs</span></button>
+  </div>
+  <!-- generated:board-viz:end -->
+  </div>
+
+  <div class="connections sheet" id="connections" aria-live="polite"></div>
+
+  <h2>Reading the board</h2>
+  <div class="findings">
+    <div class="finding">
+      <span class="flabel">The thickest thread</span>
+      <p>Roy Hodges and Stephanie Hodges appear together in 874 documents,
+      more than twice any other pair on the board. A sample of the shared
+      records shows day-to-day operations: property maintenance emails and
+      staff contact sheets that list both names. On this board, heavy threads
+      generally reflect shared paperwork rather than prominence: the
+      second-heaviest, at 303 documents, connects Bill Gates and Larry Cohen,
+      a longtime Gates adviser.</p>
+    </div>
+    <div class="finding">
+      <span class="flabel">The most connected</span>
+      <p>Measured by number of connections rather than document volume,
+      George Church, the Harvard geneticist, and Reid Weingarten, a criminal
+      defense attorney, each share documents with 21 of the other 37 people.
+      Ehud Barak and Bill Gates follow with 20. The scientists on the board
+      tend to connect to one another; the attorneys connect broadly across
+      it.</p>
+    </div>
+    <div class="finding">
+      <span class="flabel">The bankers</span>
+      <p>The third-heaviest thread, 155 documents, connects Gina Magliocco
+      and Justin Nelson. Nearly all of it is monthly J.P. Morgan account
+      statements for Epstein&rsquo;s accounts and related trusts, each of which
+      prints the names of the banking team assigned to the account. The
+      corpus preserves these statements page by page, which is why two
+      bankers outrank most of the board&rsquo;s better-known pairs.</p>
+    </div>
+    <div class="finding">
+      <span class="flabel">Why Epstein is absent</span>
+      <p>Jeffrey Epstein does not appear as a node. Nearly every document in
+      the corpus mentions him, so a thread from him to each name would carry
+      no information. The board shows only the connections among the other
+      people in his files.</p>
+    </div>
+  </div>
+
+  <p class="note">Method: a thread between two people counts the corpus
+  documents whose text mentions an alias of each, using the same alias index
+  the benchmark uses to build tasks. The index is heuristic and undercounts
+  unusual name forms; details and limitations in the
+  <a href="dataset.html">dataset card</a>. The benchmark's raw target list has
+  40 entries; for display, two scan fragments of the same person are merged and
+  one organization misread as a person is dropped. Co-occurring in a mail
+  archive is a fact about paperwork, not a relationship claim.</p>
+
+  <div class="disclaimer sheet">These are public records released by U.S. courts and
+  Congress. Appearing in the files means appearing in someone's email, calendar,
+  or financial records. It is not an accusation of wrongdoing. Epstein Bench
+  measures whether AI can retrieve and cite what the documents say; it takes no
+  position on any individual's conduct. For the avoidance of doubt, this
+  neutrality does not extend to the crimes themselves.</div>
+
+<script>
+  const board = document.querySelector(".board");
+  const panel = document.getElementById("connections");
+  const yarns = [...document.querySelectorAll(".yarn")];
+  const cards = new Map(
+    [...document.querySelectorAll(".pin-card")].map(c => [c.dataset.id, c]));
+  const nameOf = c => c.childNodes[1].textContent;
+
+  let pinned = null;
+
+  function unhighlight() {
+    board.classList.remove("focused");
+    for (const y of yarns) y.classList.remove("lit");
+    for (const c of cards.values()) c.classList.remove("active", "linked");
+  }
+
+  function highlight(id) {
+    unhighlight();
+    board.classList.add("focused");
+    cards.get(id).classList.add("active");
+    const links = [];
+    for (const y of yarns) {
+      const other = y.dataset.a === id ? y.dataset.b
+                  : y.dataset.b === id ? y.dataset.a : null;
+      if (!other) continue;
+      y.classList.add("lit");
+      cards.get(other).classList.add("linked");
+      links.push({ other, w: +y.dataset.w });
+    }
+    return links;
+  }
+
+  function unpin() {
+    pinned = null;
+    unhighlight();
+    panel.classList.remove("open");
+    panel.innerHTML = "";
+  }
+
+  function pin(id) {
+    pinned = id;
+    const links = highlight(id);
+    links.sort((p, q) => q.w - p.w);
+    panel.classList.add("open");
+    panel.innerHTML = "<h3>" + nameOf(cards.get(id)) + "</h3><ol>" +
+      links.map(l => "<li><span>" + nameOf(cards.get(l.other)) + "</span>" +
+        '<span class="w">' + l.w.toLocaleString() + " docs</span></li>").join("") +
+      "</ol>";
+  }
+
+  for (const [id, c] of cards) {
+    c.addEventListener("click", () => (pinned === id ? unpin() : pin(id)));
+    // hover and keyboard focus preview the threads; click pins them
+    c.addEventListener("mouseenter", () => { if (!pinned) highlight(id); });
+    c.addEventListener("mouseleave", () => { if (!pinned) unhighlight(); });
+    c.addEventListener("focus", () => { if (!pinned) highlight(id); });
+    c.addEventListener("blur", () => { if (!pinned) unhighlight(); });
+  }
+  document.addEventListener("keydown", e => { if (e.key === "Escape") unpin(); });
+</script>
+
+</main>
+</body>
+</html>
