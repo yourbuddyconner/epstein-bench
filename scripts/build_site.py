@@ -39,7 +39,7 @@ def _inline(text: str) -> str:
         text,
     )
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', text)
-    text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
+    text = re.sub(r"\*\*((?:[^*]|\*(?!\*))+)\*\*", r"<strong>\1</strong>", text)
     text = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"<em>\1</em>", text)
     text = re.sub(r"\x00(\d+)\x00", lambda m: f"<code>{codes[int(m.group(1))]}</code>", text)
     return text
@@ -123,9 +123,9 @@ def md_to_html(md: str) -> str:
         elif line.startswith(">"):
             buf = []
             while i < n and lines[i].startswith(">"):
-                buf.append(_inline(lines[i].lstrip(">").strip()))
+                buf.append(lines[i].lstrip(">").strip())
                 i += 1
-            out.append("<blockquote>" + " ".join(buf) + "</blockquote>")
+            out.append("<blockquote>" + _inline(" ".join(buf)) + "</blockquote>")
         elif re.match(r"^\s*[-*]\s", line) or re.match(r"^\s*\d+\.\s", line):
             # list items may wrap: lines that follow an item and don't start a
             # new block belong to the current item, not a new paragraph
@@ -154,12 +154,12 @@ def md_to_html(md: str) -> str:
         else:
             # always consume the current line so i advances (a stray '|' line
             # that isn't a valid table must not spin here forever)
-            buf = [_inline(line.strip())]
+            buf = [line.strip()]
             i += 1
             while i < n and lines[i].strip() and not re.match(r"^(#{1,4}\s|>|\s*[-*]\s|\s*\d+\.\s|\||```|\[\^\w+\]:)", lines[i]):
-                buf.append(_inline(lines[i].strip()))
+                buf.append(lines[i].strip())
                 i += 1
-            out.append("<p>" + " ".join(buf) + "</p>")
+            out.append("<p>" + _inline(" ".join(buf)) + "</p>")
     return _dedupe_fnref_ids("\n".join(out))
 
 
