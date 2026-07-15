@@ -3,30 +3,34 @@
 ## Abstract
 
 Retrieval-augmented generation (RAG) is now the standard way to ground large
-language models in a document collection, but most public benchmarks evaluate it
-over clean, well-formed passages that bear little resemblance to production
-corpora. Epstein Bench evaluates RAG on a real, adversarial corpus: the full
-public Epstein Files, a set of court- and Congress-released records dominated by
-OCR noise, near-duplicate email threads, and legal boilerplate. The benchmark
-targets five competencies drawn from the RAG evaluation literature[^1][^2] (noise
-robustness, faithful attribution, information integration, negative rejection,
-and false-premise rejection) and adds an attribution-gated correctness metric,
-claim-level citation precision, bootstrap confidence intervals, and a
-training-contamination probe, plus per-task token and dollar telemetry for
-agentic systems. Release v1.0 comprises 1,038 verified questions over a curated
-83,810-document corpus, scored by a pinned strong-model judge. Seven reference
-systems — three one-shot retrievers, two no-retrieval controls, and two
-multi-turn LLM tool-use agents — reveal five findings: among one-shot retrievers,
-lexical and hybrid tie while dense retrieval trails on degraded OCR; a
-no-retrieval control scores 0.000 on every retrieval-dependent type,
-establishing that the tasks are not solvable from parametric knowledge alone;
-multi-document dossier reconstruction stays near the floor for all systems;
-false-premise rejection is universal, but only the agents *diagnose* the
-fabrication (premise-identification 1.0 versus 0.0 for every non-agent
-baseline); and the cheaper Sonnet-5 agent tops the board (0.538 vs 0.490 for the
-best retriever) while the costlier Opus-4.8 agent merely ties one-shot
-retrieval — capability tier does not buy accuracy here, and both agents cost
-roughly two orders of magnitude more tokens and dollars per task.
+language models in a document collection. Most public benchmarks, however,
+evaluate it over clean, well-formed passages that bear little resemblance to
+production corpora. Epstein Bench evaluates RAG on a real, adversarial corpus:
+the full public Epstein Files, a set of court- and Congress-released records
+dominated by OCR noise, near-duplicate email threads, and legal boilerplate.
+
+The benchmark targets five competencies drawn from the RAG evaluation
+literature[^1][^2]: noise robustness, faithful attribution, information
+integration, negative rejection, and false-premise rejection. To these it adds
+an attribution-gated correctness metric, claim-level citation precision,
+bootstrap confidence intervals, a training-contamination probe, and per-task
+token and dollar telemetry for agentic systems. Release v1.0 comprises 1,038
+verified questions over a curated 83,810-document corpus, scored by a pinned
+strong-model judge.
+
+Seven reference systems — three one-shot retrievers, two no-retrieval controls,
+and two multi-turn LLM tool-use agents — yield five findings. Among one-shot
+retrievers, lexical and hybrid tie while dense retrieval trails on degraded OCR.
+A no-retrieval control scores 0.000 on every retrieval-dependent type,
+establishing that the tasks are not solvable from parametric knowledge alone.
+Multi-document dossier reconstruction stays near the floor for all systems.
+False-premise rejection is universal, but only the agents *diagnose* the
+fabrication, naming it in every task they refuse (premise-identification 1.0,
+against 0.0 for every non-agent baseline). Finally, the cheaper Sonnet-5 agent
+tops the board (0.538 against 0.490 for the best retriever) while the costlier
+Opus-4.8 agent merely ties one-shot retrieval: capability tier does not buy
+accuracy here, and the agents spend $0.053 and $0.114 per task against a single
+model call for each retriever.
 
 ## 1. Motivation
 
@@ -109,14 +113,14 @@ selection of §3, which is what makes a claimed person timeline verifiable.
 
 False-premise tasks reuse that same entity-complete property for the opposite
 purpose. A premise is anchored on a target person whose *entire* document set is
-in the corpus, then fabricates a specific interaction (a meeting, call, or deal)
-with a prominent public figure — rotated across a diverse pool so the type does
-not collapse onto one name — whom those documents never connect them to.
-Anchoring on an entity-complete target is what makes the negative claim ("no
-document supports this") bounded and checkable; anchoring elsewhere would make
-it unfalsifiable. The premise is a fabricated *relationship*, never a perturbed
-date or place of a real meeting, so a system that finds the real record cannot
-be unfairly penalized.
+in the corpus, then fabricates a specific interaction — a meeting, call, or
+deal — with a prominent public figure those documents never connect them to. The
+outside figure is rotated across a diverse pool, so the type does not collapse
+onto one name. Anchoring on an entity-complete target is what makes the negative
+claim ("no document supports this") bounded and checkable; anchoring elsewhere
+would make it unfalsifiable. The premise is always a fabricated *relationship*,
+never a perturbed date or place of a real meeting, so a system that finds the
+real record cannot be unfairly penalized.
 
 ## 5. The evaluation contract
 
@@ -186,10 +190,10 @@ model drops tasks whose labels are unstable.
 
 Pooled relevance is not exhaustive: a document outside the pool that happens to
 state the answer is scored as non-gold. Pool composition is versioned with the
-release. In v1.0, 1,018 of 1,098 verified tasks survived pooling; one non-person
-dossier target was retracted, leaving 1,000 tasks, to which 38 verified
-`false_premise` tasks were added for the current release (1,038 total). The
-rejection types (`unanswerable`, `false_premise`) carry an empty gold set by
+release. In v1.0, 1,018 of 1,098 verified tasks survived pooling. Retracting one
+non-person dossier target removed a further 18 tasks, leaving 1,000, to which 38
+verified `false_premise` tasks were added for the current release (1,038 total).
+The rejection types (`unanswerable`, `false_premise`) carry an empty gold set by
 construction and bypass pooling.
 
 ## 8. Metrics
@@ -216,13 +220,16 @@ grounding earns nothing. Per type:
 
 Only the first three cited documents count toward the correctness gate, so a
 system cannot dump its full retrieval list into `citations` to fish for a chance
-gold hit. The overall score is the unweighted macro-average across types and is
-the leaderboard sort key. We report it with a **bootstrap 95% confidence
-interval**[^7] (resampled within each type, 1,000 draws): with type counts as skewed
-as these (single_hop 823, dossier 7), a point estimate alone hides that two
-systems a hundredths apart are a statistical tie. We also report the
-task-weighted **micro** average alongside the macro, because the macro gives the
-small rejection types outsized weight and the two numbers diverge sharply for
+gold hit.
+
+The overall score is the unweighted macro-average across types, and it is the
+leaderboard sort key. Two reporting decisions surround it. First, we report it
+with a **bootstrap 95% confidence interval**[^7], resampled within each type over
+1,000 draws. Type counts here are badly skewed — single_hop holds 823 tasks and
+dossier holds 7 — so a bare point estimate would hide the fact that two systems
+a few hundredths apart are a statistical tie. Second, we report the
+task-weighted **micro** average alongside the macro. The macro gives the small
+rejection types outsized weight, and the two numbers diverge sharply for
 no-retrieval systems (§9).
 
 **Citation precision and recall (diagnostic).** In the spirit of ALCE[^8] (but
@@ -263,10 +270,11 @@ scoring judge to a strong model (`gpt-5.5-2026-04-23`) and judge prompt **v2**
 (v2 fences the judged answer as untrusted data, so a prediction that embeds
 instructions to the judge cannot steer its verdict, and tightens the
 aggregation gate to per-item attribution); the judge's correctness agreement
-approaches human on this task, consistent with the LLM-as-judge literature[^10]. The generation and gauntlet stages keep a
-cheaper model, since filtering tolerates one. Changing the judge or its prompt
-constitutes a new scoring version, and scores are not comparable across judge
-versions — all reference scores below were computed under v2.
+approaches human agreement on this task, consistent with the LLM-as-judge
+literature[^10]. The generation and gauntlet stages keep a cheaper model, since
+filtering tolerates one. Changing the judge or its prompt constitutes a new
+scoring version, and scores are not comparable across judge versions — all
+reference scores below were computed under v2.
 
 ## 9. Baselines and findings
 
@@ -290,14 +298,17 @@ and then commits an answer; they report per-task token usage and dollar cost
 
 1. **Lexical and hybrid retrieval tie; dense trails.** Hybrid (0.490, CI
    [0.45, 0.53]) and BM25 (0.483, [0.45, 0.52]) are statistically
-   indistinguishable — their intervals almost entirely overlap — while dense
-   (0.434, [0.40, 0.47]) sits clearly below both, its interval barely reaching
-   their point estimates. On corrupted OCR, sub-word lexical matching is more
-   robust than dense-vector similarity over embeddings of garbled tokens, and
-   RRF hybridization matches but does not clearly beat BM25. The confidence
-   intervals are what license reading this as "a tie at the top with dense
-   behind" rather than a spurious three-way rank order; the result inverts the
-   usual clean-benchmark ordering, where dense leads.
+   indistinguishable; their intervals almost entirely overlap. Dense (0.434,
+   [0.40, 0.47]) sits clearly below both, its interval barely reaching their
+   point estimates. The confidence intervals are what license reading this as a
+   tie at the top with dense behind, rather than a spurious three-way rank
+   order. The likely mechanism is that BM25 scores a passage on whichever rare
+   terms survive: a name or account number that OCR left intact still matches
+   exactly, and corruption elsewhere in the passage costs nothing. A dense
+   encoder instead pools the whole garbled passage into a single vector, so
+   noise anywhere degrades the match. RRF hybridization matches BM25 but does
+   not clearly beat it. The ordering inverts the usual clean-benchmark result,
+   where dense leads.
 2. **The tasks require retrieval, and the macro can hide it.** The `closed_book`
    and `parametric` controls score 0.000 on every retrieval-dependent type;
    their nonzero overall is entirely rejection accuracy on `unanswerable` and
@@ -320,21 +331,23 @@ and then commits an answer; they report per-task token usage and dollar cost
    that only fails to ground it does not. The lesson for the metric is that
    `false_premise` belongs in the diagnostics, read through `premise_id_rate`,
    and its saturated headline should not drive the sort key.
-5. **An agent tops the board — but capability tier does not buy accuracy, and
-   the premium is steep.** The Sonnet-5 agent (0.538, CI [0.50, 0.57]) leads the
-   best one-shot retriever (hybrid 0.490): issuing several targeted queries and
-   reasoning over the results converts evidence into correct, cited answers more
-   effectively, even though its recall@20 (0.321) is *lower* than hybrid's
-   (0.594) — it does not need the gold doc in a top-20 list, only to find and
-   use it. The more expensive Opus-4.8 agent, however, scores *lower* (0.488 —
-   a statistical tie with plain hybrid) at more than double the cost: its more
-   conservative, literal tool use depresses aggregation (0.170 vs 0.286) and
-   citation precision (0.368 vs 0.485). Cost is now first-class on the
-   leaderboard: Sonnet spends **$0.053 / ~14,800 tokens per task** (~$55 for the
-   split) and Opus **$0.114 / ~19,600 tokens** (~$119), against a single cheap
-   model call for each retrieval baseline. The best system is thus the *cheaper*
-   agent, and the Opus agent buys nothing over one-shot hybrid for ~1000× the
-   cost — exactly the tradeoff the operational columns exist to expose.
+5. **An agent tops the board, but capability tier does not buy accuracy.** The
+   Sonnet-5 agent (0.538, CI [0.50, 0.57]) leads the best one-shot retriever
+   (hybrid 0.490). Issuing several targeted queries and reasoning over the
+   results converts evidence into correct, cited answers more effectively. It
+   does so even though the agent's recall@20 (0.321) is *lower* than hybrid's
+   (0.594): the agent does not need the gold document sitting in a top-20 list,
+   only to find it and use it. The more expensive Opus-4.8 agent scores
+   *lower* (0.488, a statistical tie with plain hybrid) at more than double the
+   cost. Its more conservative, literal tool use depresses aggregation (0.170
+   against 0.286) and citation precision (0.368 against 0.485). Cost is
+   first-class on the leaderboard: Sonnet spends **$0.053 and ~14,800 tokens per
+   task** (~$55 for the split), Opus **$0.114 and ~19,600 tokens** (~$119). Each
+   retrieval baseline instead makes a single model call and reports no
+   telemetry, so the exact multiple is unmeasured — but it is large, and the
+   Opus agent buys nothing over one-shot hybrid for it. The best system is the
+   *cheaper* agent, which is exactly the tradeoff the operational columns exist
+   to expose.
 
 **Contamination probe.** The `parametric` control is prompted to answer from its
 own weights. Its single-hop uncited score is 0.045, against 0.017 for the
